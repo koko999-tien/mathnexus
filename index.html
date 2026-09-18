@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#c5e8a0">
+<meta name="description" content="MathNexus — không gian học toán: bài học, công thức, luyện tập, đồ thị, công cụ.">
+<title>Tổng quan · MathNexus</title>
+<style>
+:root{
+  --ink:#1c241f; --muted:#5e7268; --bg:#f3f7f1; --panel:#ffffff; --line:#d7e4d6;
+  --sidebar:#e7f2e4; --side-text:#1c241f; --lime:#c5e8a0; --lime-ink:#1c241f;
+  --forest:#4d7c5a; --sage:#8fbc5a; --sage-2:#a8c99a; --mist:#cfe3c4;
+  --warm:#c57a32; --shadow:0 1px 2px rgba(28,36,31,.05),0 4px 12px rgba(28,36,31,.04);
+}
+[data-theme="dark"]{
+  --ink:#f3f6f3; --muted:#a8b5ae; --bg:#121814; --panel:#1a221d; --line:rgba(255,255,255,.14);
+  --sidebar:#0b1410; --side-text:#d7e6de; --forest:#15241d;
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:72px}
+html,body{height:100%;margin:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:16px;line-height:1.5}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--lime);outline-offset:2px}
+.skip{position:absolute;left:-999px}
+.skip:focus{left:8px;top:8px;background:var(--lime);color:var(--lime-ink);padding:8px 12px;z-index:40}
+.icon{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.app-shell{display:flex;min-height:100%}
+.sidebar{width:260px;background:var(--sidebar);color:var(--side-text);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;flex-shrink:0}
+.brand{display:flex;gap:12px;align-items:center;padding:22px 18px 16px;text-decoration:none;color:inherit;border:0;background:none;width:100%;text-align:left}
+.brand-mark{width:36px;height:36px;border-radius:12px;background:var(--lime);color:var(--lime-ink);display:grid;place-items:center;font-weight:800;font-size:18px}
+.brand-mark span{opacity:.55}
+.brand small{display:block;font-size:10px;letter-spacing:.14em;color:#6b8a72;margin-top:2px}
+.nav-caption{padding:10px 20px 6px;font-size:10px;letter-spacing:.16em;color:#6b8a72}
+nav{display:flex;flex-direction:column;padding:0 8px;overflow:auto}
+.nav-link{display:flex;align-items:center;gap:10px;padding:10px 12px;min-height:44px;border-radius:10px;color:var(--ink);text-decoration:none;border:0;background:none;width:100%;text-align:left;font-size:14px;position:relative}
+.nav-link.active{background:#d8efc8;color:#1c241f}
+.nav-dot{width:6px;height:6px;border-radius:50%;background:var(--lime);margin-left:auto}
+.sidebar-bottom{margin-top:auto;padding:16px 18px 20px;border-top:1px solid var(--line)}
+.local-badge{display:flex;align-items:center;gap:8px;font-size:12px;color:#3d6b5c}
+.local-badge span{width:7px;height:7px;border-radius:50%;background:var(--lime)}
+.sidebar-bottom p{margin:8px 0 12px;font-size:12px;color:var(--muted)}
+.profile-button{display:flex;align-items:center;gap:10px;width:100%;padding:8px;min-height:44px;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:inherit;text-align:left}
+.avatar{width:28px;height:28px;border-radius:8px;background:var(--lime);color:var(--lime-ink);display:grid;place-items:center;font-weight:800;font-size:12px}
+.profile-arrow{margin-left:auto;opacity:.5}
+.page-shell{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{height:64px;display:flex;align-items:center;gap:12px;padding:0 20px;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:8}
+.icon-button{width:40px;height:40px;border:1px solid var(--line);border-radius:10px;background:var(--panel);display:grid;place-items:center}
+.mobile-menu{display:none;position:relative}
+.mobile-menu i,.mobile-menu i:before,.mobile-menu i:after{position:absolute;left:12px;width:16px;height:2px;background:var(--ink);content:""}
+.mobile-menu i{top:19px}.mobile-menu i:before{top:-5px}.mobile-menu i:after{top:5px}
+.breadcrumb{font-size:13px;color:var(--muted);white-space:nowrap}
+.breadcrumb strong{color:var(--ink);font-weight:650}
+.search-trigger{margin-left:auto;display:flex;align-items:center;gap:10px;min-width:min(360px,42vw);padding:8px 12px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--muted);font-size:14px}
+.search-trigger kbd{margin-left:auto;font-size:11px;border:1px solid var(--line);border-radius:6px;padding:2px 6px;color:var(--muted)}
+main{padding:28px 28px 48px;max-width:1120px;width:100%;margin:0 auto}
+.page{display:none;scroll-margin-top:72px}.page.on{display:block}
+.page-heading{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:22px}
+.eyebrow{font-size:11px;letter-spacing:.14em;font-weight:700;color:#3d6b5c}
+[data-theme="dark"] .eyebrow{color:var(--mist)}
+h1{font-size:32px;letter-spacing:-.03em;margin:6px 0 8px;line-height:1.2}
+.subtitle{margin:0;color:var(--muted);max-width:52ch}
+.date-pill{display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--muted);font-size:13px;white-space:nowrap}
+.hero-grid{display:grid;grid-template-columns:1.55fr .85fr;gap:16px}
+.study-banner{background:linear-gradient(160deg,#dcefd4,#eef6e8);color:var(--ink);border-radius:20px;padding:24px 24px 20px;display:grid;grid-template-columns:1.2fr .8fr;gap:8px;min-height:220px;overflow:hidden}
+.study-banner h2{margin:8px 0 10px;font-size:28px;line-height:1.25;letter-spacing:-.03em}
+.study-banner p{color:var(--muted);margin:0 0 16px}
+.math-motif{width:100%;max-width:200px;justify-self:end;align-self:end}
+.challenge-card,.panel,.card,.lesson-card,.book-card,.fcard{background:var(--panel);border:1px solid var(--line);border-radius:16px}
+.challenge-card{padding:20px}
+.challenge-top{display:flex;justify-content:space-between;align-items:center}
+.mini-label{font-size:11px;letter-spacing:.12em;font-weight:700;color:#3d6b5c}
+.warm-icon{color:var(--warm)}
+.button{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:12px;padding:10px 14px;font-weight:700;font-size:14px;text-decoration:none}
+.button.lime{background:var(--lime);color:var(--lime-ink)}
+.button.primary{background:var(--forest);color:#fff}
+.button.secondary,.button.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+.text-button{display:inline-flex;align-items:center;gap:6px;border:0;background:none;color:#3d6b5c;font-weight:650;padding:0;font-size:14px}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0 28px}
+.stat-card{display:flex;gap:12px;align-items:center;padding:16px;background:var(--panel);border:1px solid var(--line);border-radius:16px}
+.stat-icon{width:36px;height:36px;border-radius:10px;background:#eef8d8;color:#3d6b5c;display:grid;place-items:center}
+[data-theme="dark"] .stat-icon{background:rgba(196,241,109,.12);color:var(--lime)}
+.stat-value{font-size:22px;font-weight:750;letter-spacing:-.03em}
+.stat-label{font-size:13px;color:var(--muted)}
+.section-heading{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin:8px 0 14px}
+.section-heading h2{margin:0;font-size:22px;letter-spacing:-.02em}
+.section-heading p{margin:4px 0 0;color:var(--muted);font-size:14px}
+.lesson-grid,.book-grid,.f-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.lesson-card,.book-card,.fcard{padding:16px;text-align:left;width:100%;cursor:pointer}
+.lesson-card:hover,.book-card:hover,.fcard:hover{border-color:#8fbc5a}
+.card-top{display:flex;justify-content:space-between;align-items:center}
+.subject-icon{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;font-family:Georgia,serif;font-size:20px}
+.subject-icon.algebra{background:#e8f1ec;color:#3d6b5c}
+.subject-icon.geometry{background:#fbebde;color:#c57a32}
+.subject-icon.analysis{background:#e5f2fc;color:#2783de}
+.subject-icon.logic{background:#f4eef8;color:#6b4e8a}
+.badge{font-size:12px;color:var(--muted)}
+.card-footer{display:flex;justify-content:space-between;align-items:center;margin-top:14px;gap:8px}
+.time-label{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:13px}
+.bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+.panel{padding:18px}
+.goal-row{display:flex;justify-content:space-between;align-items:center}
+.muted{color:var(--muted)}.small{font-size:13px}
+.progress-track{height:8px;background:var(--bg);border-radius:99px;overflow:hidden;margin:12px 0}
+.progress-track span{display:block;height:100%;background:var(--lime)}
+.level-link{display:flex;justify-content:space-between;align-items:center;width:100%;padding:12px 0;border:0;border-bottom:1px solid var(--line);background:none;text-decoration:none;font-size:14px;color:inherit;text-align:left}
+.level-link:last-child{border:0}
+.page-footer{display:flex;justify-content:space-between;gap:12px;padding:18px 28px;color:var(--muted);font-size:13px;border-top:1px solid var(--line)}
+.math{font-family:Georgia,serif;font-style:italic;font-size:20px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}
+.chip{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:7px 12px;font-size:13px}
+.chip.on{background:#eef8d8;border-color:transparent}
+[data-theme="dark"] .chip.on{background:rgba(196,241,109,.15)}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.field label{font-size:12px;font-weight:700;color:var(--muted)}
+input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.note{font-size:13px;color:var(--muted);border:1px dashed var(--line);border-radius:10px;padding:10px;margin:12px 0}
+.chat{display:flex;flex-direction:column;height:min(58vh,500px);border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--panel)}
+.msgs{flex:1;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.bubble{max-width:85%;padding:10px 12px;border-radius:12px;font-size:14px}
+.me{align-self:flex-end;background:var(--lime);color:var(--lime-ink)}
+.bot{align-self:flex-start;background:var(--bg);border:1px solid var(--line)}
+.composer{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line)}
+.roadmap{display:grid;gap:8px}
+.rd{display:grid;grid-template-columns:92px 1fr;gap:10px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.canvas-wrap{border:1px solid var(--line);border-radius:12px;background:#fff;overflow:hidden;margin-top:12px}
+[data-theme="dark"] .canvas-wrap{background:#0f1612}
+.scrim{display:none}
+dialog{border:1px solid var(--line);border-radius:16px;padding:0;background:var(--panel);color:var(--ink);width:min(560px,92vw)}
+dialog::backdrop{background:rgba(16,35,28,.45)}
+.dialog-top{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid var(--line)}
+.dialog-body{padding:16px 18px 20px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.toast{position:fixed;bottom:18px;right:18px;background:var(--forest);color:#fff;padding:10px 14px;border-radius:10px;display:none;z-index:30}
+.explain-grid{display:grid;gap:10px;margin-top:14px}
+@media(max-width:900px){
+  .sidebar{position:fixed;transform:translateX(-100%);z-index:20;transition:.2s}
+  .sidebar.open{transform:none}
+  .mobile-menu{display:grid}
+  .scrim.open{display:block;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:15}
+  .breadcrumb{display:none}
+  .search-trigger{min-width:0;flex:1}
+  .search-trigger span:nth-of-type(2),.search-trigger kbd{display:none}
+  main{padding:16px}
+  .page-heading,.hero-grid,.study-banner,.stats-grid,.lesson-grid,.book-grid,.f-grid,.bottom-grid,.section-heading{grid-template-columns:1fr;display:grid}
+  .section-heading{align-items:start}
+  .study-banner{grid-template-columns:1fr}
+  .math-motif{display:none}
+  .date-pill{display:none}
+  h1{font-size:26px}
+  .page-footer{padding:16px}
+}
+
+.page-shell{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
+.bottom-nav{display:none}
+@media(max-width:900px){
+  .page-shell{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
+  .bottom-nav{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:18;background:var(--panel);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+  .bottom-nav button{min-height:56px;border:0;background:none;font-size:11px;color:var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+  .bottom-nav button.on{color:var(--forest);font-weight:700}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<button class="skip" type="button" data-go="dashboard">Đến nội dung chính</button>
+<div class="app-shell">
+<aside class="sidebar" id="sidebar" aria-label="Điều hướng chính">
+  <button class="brand" type="button" data-go="dashboard">
+    <span class="brand-mark">M<span>·</span></span>
+    <span>MathNexus<small>KHÔNG GIAN HỌC TOÁN</small></span>
+  </button>
+  <div class="nav-caption">HỌC MỖI NGÀY</div>
+  <nav id="navigation"></nav>
+  <div class="sidebar-bottom">
+    <div class="local-badge"><span></span> Không gian cá nhân</div>
+    <p>Tiến độ lưu trên trình duyệt. 5 tháng nữa: bản app cộng đồng.</p>
+    <button class="profile-button" id="openProfile" type="button">
+      <span class="avatar" id="avatar">T</span>
+      <span id="profileName">Bạn học Toán</span>
+      <span class="profile-arrow">↗</span>
+    </button>
+  </div>
+</aside>
+<div class="page-shell">
+  <header class="topbar">
+    <button class="icon-button mobile-menu" id="menuToggle" type="button" aria-label="Mở menu"><i></i></button>
+    <div class="breadcrumb">Không gian học tập <span>/</span> <strong id="pageCrumb">Tổng quan</strong></div>
+    <button class="search-trigger" id="searchOpen" type="button">
+      <svg class="icon" viewBox="0 0 24 24"><path d="m21 21-5-5M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0"/></svg>
+      <span>Tìm bài học, công thức, sách…</span>
+      <kbd>Ctrl K</kbd>
+    </button>
+    <button class="icon-button" id="themeToggle" type="button" aria-label="Đổi giao diện sáng / tối">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M21 13A9 9 0 0 1 11 3 9 9 0 1 0 21 13"/></svg>
+    </button>
+  </header>
+  <main id="main">
+    <section id="dashboard" class="page on">
+      <div class="page-heading">
+        <div>
+          <div class="eyebrow">KHÔNG GIAN CỦA BẠN</div>
+          <h1>Học · Đọc · Tư duy</h1>
+          <p class="subtitle">Bài học ngắn, tủ sách chọn lọc, công thức có lời giải thích, và trợ lý AI trên máy.</p>
+        </div>
+        <span class="date-pill" id="datePill"></span>
+      </div>
+      <div class="hero-grid">
+        <section class="study-banner">
+          <div>
+            <div class="eyebrow">HÀNH TRÌNH TRI THỨC</div>
+            <h2>Từ những con số đầu tiên<br>đến những câu hỏi lớn.</h2>
+            <p>Hiểu công thức trước khi nhớ. Đọc sách trước khi luyện nhiều.</p>
+            <button class="button lime" type="button" data-go="library">Khám phá thư viện <svg class="icon" viewBox="0 0 24 24"><path d="M4 12h16m-6-6 6 6-6 6"/></svg></button>
+          </div>
+          <svg class="math-motif" viewBox="0 0 200 200" aria-hidden="true">
+            <g opacity=".35" stroke="#82b8a6" stroke-width=".6"><path d="M0 40h200M0 80h200M0 120h200M0 160h200M40 0v200M80 0v200M120 0v200M160 0v200"/></g>
+            <path d="M5 166h185M52 185V8" fill="none" stroke="#94baa8" stroke-width="1"/>
+            <path d="M12 144Q83 209 114 90T195 45" fill="none" stroke="#6f9a2e" stroke-width="2.5"/>
+            <circle cx="114" cy="90" fill="#6f9a2e" r="5"/>
+            <text fill="#4d7c5a" font-family="Georgia" font-size="18" font-style="italic" x="105" y="183">y = f(x)</text>
+          </svg>
+        </section>
+        <section class="challenge-card">
+          <div class="challenge-top">
+            <span class="mini-label">THỬ THÁCH HÔM NAY</span>
+            <span class="warm-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M12 2s3 5 2 8c2-1 3-3 3-3s5 5 3 10a8 8 0 0 1-15-1c-1-4 3-7 3-7s-1 4 2 4c-1-5 2-11 2-11Z"/></svg></span>
+          </div>
+          <p id="dailyPrompt">Mọi số nguyên tố đều lẻ. Đúng hay sai?</p>
+          <button class="text-button" data-go="think" type="button">Thử sức ngay <svg class="icon" viewBox="0 0 24 24"><path d="M4 12h16m-6-6 6 6-6 6"/></svg></button>
+        </section>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M12 5c-3-2-7-2-10 0v15c3-2 7-2 10 0 3-2 7-2 10 0V5c-3-2-7-2-10 0Zm0 0v15"/></svg></div><div><div class="stat-value" id="s1">0</div><div class="stat-label">Bài học hoàn thành</div></div></div>
+        <div class="stat-card"><div class="stat-icon"><svg class="icon" viewBox="0 0 24 24"><path d="m9 11 2 2 4-4M8 3h8v4H8zM8 5H5v16h14V5h-3"/></svg></div><div><div class="stat-value" id="s2">0</div><div class="stat-label">Câu hỏi đã làm</div></div></div>
+        <div class="stat-card"><div class="stat-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></svg></div><div><div class="stat-value" id="s3">0</div><div class="stat-label">Sách đã mở</div></div></div>
+        <div class="stat-card"><div class="stat-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M12 2s3 5 2 8c2-1 3-3 3-3s5 5 3 10a8 8 0 0 1-15-1c-1-4 3-7 3-7s-1 4 2 4c-1-5 2-11 2-11Z"/></svg></div><div><div class="stat-value" id="s4">0</div><div class="stat-label">Ngày luyện tập liên tiếp</div></div></div>
+      </div>
+      <div class="section-heading">
+        <div><h2>Hôm nay, bạn muốn khám phá gì?</h2><p>Một vài điểm bắt đầu dành cho bạn.</p></div>
+        <button class="text-button" type="button" data-go="library">Tất cả bài học <svg class="icon" viewBox="0 0 24 24"><path d="M4 12h16m-6-6 6 6-6 6"/></svg></button>
+      </div>
+      <div class="lesson-grid featured" id="feat"></div>
+      <div class="bottom-grid">
+        <section class="panel">
+          <div class="goal-row"><h3>Mục tiêu hôm nay</h3><span class="badge" id="goalBadge">0 / 5 câu</span></div>
+          <p class="muted small">Từng câu hỏi nhỏ tạo nên thói quen học tập bền vững.</p>
+          <div class="progress-track"><span id="goalBar" style="width:0%"></span></div>
+          <button class="text-button" type="button" data-go="practice">Bắt đầu luyện tập <svg class="icon" viewBox="0 0 24 24"><path d="M4 12h16m-6-6 6 6-6 6"/></svg></button>
+        </section>
+        <section class="panel">
+          <h3>Một thư viện, nhiều hành trình</h3>
+          <button class="level-link" type="button" data-go="library"><span>Tiểu học → THPT</span><span>Xây nền tảng ↗</span></button>
+          <button class="level-link" type="button" data-go="books"><span>Tủ sách chọn lọc</span><span>Đọc chậm ↗</span></button>
+          <button class="level-link" type="button" data-go="think"><span>Tư duy &amp; phản ví dụ</span><span>Lập luận ↗</span></button>
+        </section>
+      </div>
+    </section>
+
+    <section id="library" class="page">
+      <div class="page-heading"><div><div class="eyebrow">ĐỌC ĐỂ HIỂU</div><h1>Thư viện kiến thức</h1><p class="subtitle">Bài đọc ngắn: định nghĩa, ý nghĩa, ví dụ. Không phải đề thi.</p></div></div>
+      <div class="chips" id="lchips"></div>
+      <div class="lesson-grid" id="llist"></div>
+    </section>
+    <section id="lesson" class="page">
+      <button class="text-button" data-go="library" type="button">← Thư viện</button>
+      <div id="lbody"></div>
+    </section>
+
+    <section id="books" class="page">
+      <div class="page-heading"><div><div class="eyebrow">ĐỌC SÁCH</div><h1>Tủ sách</h1><p class="subtitle">Sách nên đọc theo cấp — cửa vào tư duy, không phải giáo trình đầy đủ.</p></div></div>
+      <div class="chips" id="bchips"></div>
+      <div class="book-grid" id="blist"></div>
+    </section>
+    <section id="book" class="page">
+      <button class="text-button" data-go="books" type="button">← Tủ sách</button>
+      <div id="bbody"></div>
+    </section>
+
+    <section id="think" class="page">
+      <div class="page-heading"><div><div class="eyebrow">LẬP LUẬN</div><h1>Phát triển tư duy</h1><p class="subtitle">Không cần công thức nặng. Cần chuỗi suy luận và phản ví dụ.</p></div></div>
+      <div id="thinks" class="bottom-grid"></div>
+    </section>
+
+    <section id="practice" class="page">
+      <div class="page-heading"><div><div class="eyebrow">LUYỆN</div><h1>Luyện tập</h1><p class="subtitle">Câu theo chuyên đề: đại số, hình, giải tích, số phức, rời rạc…</p></div></div>
+      <div class="chips" id="qchips"></div>
+      <div class="card" id="pq" style="padding:20px"></div>
+    </section>
+
+    <section id="graph" class="page">
+      <div class="page-heading"><div><div class="eyebrow">HÌNH ẢNH HÓA</div><h1>Đồ thị hàm số</h1><p class="subtitle">Chọn họ hàm, nhập hệ số, đọc ý nghĩa đường cong.</p></div></div>
+      <div class="field"><label>Họ hàm</label>
+        <select id="gtype">
+          <option value="quad">Parabol y = ax² + bx + c</option>
+          <option value="lin">Đường thẳng y = bx + c</option>
+          <option value="sin">Điều hòa y = a sin(bx + c)</option>
+          <option value="exp">Mũ y = a e^{bx} + c</option>
+          <option value="abs">Giá trị tuyệt đối y = a|x| + c</option>
+        </select>
+      </div>
+      <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="field"><label>a</label><input id="ga" type="number" value="1"></div>
+        <div class="field"><label>b</label><input id="gb" type="number" value="-2"></div>
+        <div class="field"><label>c</label><input id="gc" type="number" value="-3"></div>
+      </div>
+      <button class="button lime" id="gdraw" type="button">Vẽ đồ thị</button>
+      <p id="ginfo" class="note"></p>
+      <div class="canvas-wrap"><canvas id="gcan" width="900" height="360" style="width:100%;height:auto"></canvas></div>
+    </section>
+
+    <section id="tools" class="page">
+      <div class="page-heading"><div><div class="eyebrow">TINH TOÁN</div><h1>Công cụ toán học</h1><p class="subtitle">Tính rồi đọc ý nghĩa: số nguyên, tổ hợp, số phức, phương trình.</p></div></div>
+      <div class="bottom-grid">
+        <div class="panel">
+          <h3>UCLN và BCNN</h3>
+          <div class="field"><label>Hai số nguyên</label><input id="tA" value="48"><input id="tB" value="18" style="margin-top:8px"></div>
+          <button class="button lime" id="tGcd" type="button">Tính UCLN &amp; BCNN</button>
+          <p class="note" id="tOut">UCLN dùng rút gọn phân số. BCNN dùng quy đồng.</p>
+        </div>
+        <div class="panel">
+          <h3>Phần trăm</h3>
+          <div class="field"><label>a là bao nhiêu % của b</label><input id="pA" value="15"><input id="pB" value="80" style="margin-top:8px"></div>
+          <button class="button lime" id="tPct" type="button">Tính phần trăm</button>
+          <p class="note" id="pOut">Công thức: (a/b)×100.</p>
+        </div>
+        <div class="panel">
+          <h3>Nghiệm bậc hai</h3>
+          <div class="field"><label>a, b, c của ax²+bx+c=0</label>
+            <input id="qa" value="1"><input id="qb" value="-5" style="margin-top:8px"><input id="qc" value="6" style="margin-top:8px">
+          </div>
+          <button class="button lime" id="tQuad" type="button">Giải phương trình</button>
+          <p class="note" id="qOut">Δ = b²−4ac quyết định số nghiệm thực.</p>
+        </div>
+        <div class="panel">
+          <h3>Tổ hợp C(n,k)</h3>
+          <div class="field"><label>n và k</label><input id="cn" value="5"><input id="ck" value="2" style="margin-top:8px"></div>
+          <button class="button lime" id="tNcr" type="button">Tính C(n,k) và P(n,k)</button>
+          <p class="note" id="cOut">C không kể thứ tự; P kể thứ tự.</p>
+        </div>
+        <div class="panel">
+          <h3>Số phức</h3>
+          <div class="field"><label>z1 = a+bi, z2 = c+di</label>
+            <input id="za" value="3" placeholder="a"><input id="zb" value="4" placeholder="b" style="margin-top:8px">
+            <input id="zc" value="1" placeholder="c" style="margin-top:8px"><input id="zd" value="-2" placeholder="d" style="margin-top:8px">
+          </div>
+          <button class="button lime" id="tCplx" type="button">Modulus, tích, tổng</button>
+          <p class="note" id="zOut">|z|=√(a²+b²). Nhân phức là quay và co.</p>
+        </div>
+        <div class="panel">
+          <h3>Nguyên tố và đồng dư</h3>
+          <div class="field"><label>n và modulus m</label><input id="pn" value="97"><input id="pm" value="5" style="margin-top:8px"></div>
+          <button class="button lime" id="tPrime" type="button">Kiểm tra n, n mod m</button>
+          <p class="note" id="prOut">Nguyên tố chỉ có ước 1 và chính nó.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="latex" class="page">
+      <div class="page-heading"><div><div class="eyebrow">CÔNG THỨC</div><h1>Soạn &amp; hiểu công thức</h1><p class="subtitle">Tìm công thức → đọc nó là gì, dùng khi nào, ứng dụng ra sao.</p></div></div>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <input id="fs" placeholder="Thử “phân số”, “đạo hàm”, “Pythagoras”…">
+        <button class="button lime" id="fbtn" type="button">Tìm</button>
+      </div>
+      <div class="chips" id="fchips"></div>
+      <div id="flist" class="f-grid"></div>
+      <div class="card" style="padding:18px;margin-top:16px">
+        <div class="eyebrow">XEM TRƯỚC BIỂU THỨC</div>
+        <div class="field"><label>Gõ: x^2, sqrt(x), pi, theta, integral</label><input id="fraw" value="x^2 + 2x - 3 = 0"></div>
+        <p class="math" id="fprev"></p>
+      </div>
+    </section>
+    <section id="fdetail" class="page">
+      <button class="text-button" data-go="latex" type="button">← Công thức</button>
+      <div id="fbody"></div>
+    </section>
+
+    <section id="ai" class="page">
+      <div class="page-heading"><div><div class="eyebrow">TRỢ LÝ</div><h1>Trợ lý AI (trên máy)</h1><p class="subtitle">Trả lời từ thư viện, công thức và tủ sách trong app. Cloud nằm ở tháng 4 của lộ trình.</p></div></div>
+      <div class="chips">
+        <button class="chip" data-ask="Số phức là gì" type="button">Số phức</button>
+        <button class="chip" data-ask="Toán rời rạc dùng để làm gì" type="button">Toán rời rạc</button>
+        <button class="chip" data-ask="Công thức Euler" type="button">Euler</button>
+        <button class="chip" data-ask="C(n,k) tổ hợp" type="button">Tổ hợp</button>
+        <button class="chip" data-ask="Gợi ý một bài tư duy" type="button">Tư duy</button>
+        <button class="chip" data-ask="Sách đại số tuyến tính" type="button">Sách tuyến tính</button>
+      </div>
+      <div class="chat">
+        <div class="msgs" id="msgs"></div>
+        <div class="composer"><input id="ain" placeholder="Hỏi công thức, bài học, sách…"><button class="button lime" id="asend" type="button">Gửi</button></div>
+      </div>
+    </section>
+
+    <section id="notebook" class="page">
+      <div class="page-heading"><div><div class="eyebrow">GHI CHÚ</div><h1>Sổ tay của tôi</h1><p class="subtitle">Định lý, lỗi thường gặp, ý tưởng — lưu trên trình duyệt này.</p></div></div>
+      <div class="chips">
+        <button class="chip" type="button" data-note="Định lý: ">Định lý</button>
+        <button class="chip" type="button" data-note="Lỗi thường gặp: ">Lỗi</button>
+        <button class="chip" type="button" data-note="Công thức + ý nghĩa: ">Công thức</button>
+        <button class="chip" type="button" data-note="Phản ví dụ: ">Phản ví dụ</button>
+      </div>
+      <textarea id="notes" rows="14" placeholder="Định lý, lỗi thường gặp, ý tưởng — một ý mỗi dòng."></textarea>
+      <p><button class="button lime" id="nsave" type="button">Lưu sổ tay</button></p>
+    </section>
+
+    <section id="progress" class="page">
+      <div class="page-heading"><div><div class="eyebrow">LỘ TRÌNH</div><h1>Tiến độ học tập</h1><p class="subtitle">Bây giờ: không gian cá nhân. Sau 5 tháng: app cho cộng đồng.</p></div></div>
+      <div class="roadmap" id="road"></div>
+      <p class="note">Xuất JSON tiến độ khi bạn chuyển dữ liệu sang app.</p>
+      <button class="button ghost" id="exp" type="button">Tải tiến độ JSON</button>
+    </section>
+  </main>
+  <footer class="page-footer">
+    <span>MathNexus <span>·</span> Mỗi ngày, hiểu thêm một chút.</span>
+    <button class="text-button" type="button" data-go="progress">Dữ liệu của bạn</button>
+  </footer>
+</div>
+</div>
+
+<nav class="bottom-nav" id="bottomNav" aria-label="Điều hướng nhanh">
+  <button type="button" data-go="dashboard" class="on">Tổng quan</button>
+  <button type="button" data-go="library">Thư viện</button>
+  <button type="button" data-go="practice">Luyện</button>
+  <button type="button" data-go="tools">Công cụ</button>
+  <button type="button" data-go="think">Tư duy</button>
+</nav>
+<div class="scrim" id="scrim"></div>
+<dialog id="searchDialog" class="search-dialog">
+  <div class="dialog-top"><h2 id="searchTitle">Tìm trong thư viện</h2><button class="icon-button" id="searchClose" type="button" aria-label="Đóng">✕</button></div>
+  <div class="dialog-body">
+    <label class="sr-only" for="searchInput">Từ khóa</label>
+    <input id="searchInput" placeholder="Thử “phân số”, “đạo hàm”, “Pólya”…" type="search">
+    <div id="searchResults" style="margin-top:12px"></div>
+  </div>
+</dialog>
+<dialog id="profileDialog">
+  <form id="profileForm">
+    <div class="dialog-top"><h2>Góc học tập của bạn</h2><button class="icon-button" id="profileClose" type="button" aria-label="Đóng">✕</button></div>
+    <div class="dialog-body">
+      <div class="field"><label for="displayName">Tên hiển thị</label><input id="displayName" maxlength="40" required></div>
+      <div class="field"><label for="dailyGoal">Mục tiêu câu hỏi mỗi ngày</label>
+        <select id="dailyGoal">
+          <option value="5">5 câu · Khởi động nhẹ</option>
+          <option value="10">10 câu · Duy trì đều</option>
+          <option value="20">20 câu · Thử thách hơn</option>
+        </select>
+      </div>
+      <button class="button lime" type="submit">Lưu thay đổi</button>
+    </div>
+  </form>
+</dialog>
+<div class="toast" id="toast" role="status"></div>
+<script>
+const NAV=[
+  ["dashboard","Tổng quan","M3 10 12 3l9 7v11h-6v-7H9v7H3z"],
+  ["library","Thư viện kiến thức","M12 5c-3-2-7-2-10 0v15c3-2 7-2 10 0 3-2 7-2 10 0V5c-3-2-7-2-10 0Zm0 0v15"],
+  ["books","Tủ sách","M4 5h7v14H4zM13 5h7v14h-7z"],
+  ["think","Tư duy","M12 2s3 5 2 8c2-1 3-3 3-3s5 5 3 10a8 8 0 0 1-15-1c-1-4 3-7 3-7s-1 4 2 4c-1-5 2-11 2-11Z"],
+  ["practice","Luyện tập","m9 11 2 2 4-4M8 3h8v4H8zM8 5H5v16h14V5h-3"],
+  ["graph","Đồ thị hàm số","M4 3v17h17M6 15c4 0 3-10 7-10s2 11 7 6"],
+  ["tools","Công cụ toán học","M5 3h14v18H5zM8 7h8M8 11h1m6 0h1m-8 4h1m6 0h1m-8 3h1m6 0h1"],
+  ["latex","Soạn công thức","m7 5-5 7 5 7m10-14 5 7-5 7m-6-16-2 18"],
+  ["ai","Trợ lý AI","M12 3a4 4 0 0 1 4 4v2h2v8H6V9h2V7a4 4 0 0 1 4-4z"],
+  ["notebook","Sổ tay của tôi","M6 3h12v18l-6-4-6 4z"],
+  ["progress","Tiến độ học tập","M4 20V10m8 10V4m8 16v-7"]
+];
+const LESSONS=[
+{id:"frac",lv:"THCS",cat:"Đại số",icon:"algebra",sym:"ƒ",t:"Phân số",m:"8 phút",txt:`<p>Phân số a/b là a phần của đơn vị chia thành b phần bằng nhau (b≠0).</p><p><b>Để làm gì?</b> So sánh phần, tỷ lệ, xác suất sơ cấp.</p><p><b>Ví dụ:</b> 3/4 + 1/2 = 5/4.</p>`},
+{id:"quad",lv:"THPT",cat:"Đại số",icon:"algebra",sym:"ƒ",t:"Phương trình bậc hai",m:"12 phút",txt:`<p>ax²+bx+c=0 (a≠0). Biệt thức Δ=b²−4ac quyết định số nghiệm thực.</p><p><b>Tư duy:</b> Δ đo việc parabol cắt trục Ox, không chỉ “công thức nhớ”.</p>`},
+{id:"pyth",lv:"THCS",cat:"Hình học",icon:"geometry",sym:"△",t:"Định lý Pythagoras",m:"10 phút",txt:`<p>Tam giác vuông: a²+b²=c² với c là cạnh huyền.</p><p><b>Ứng dụng:</b> khoảng cách, vector, GPS, đồ họa.</p>`},
+{id:"trig",lv:"THPT",cat:"Lượng giác",icon:"geometry",sym:"∠",t:"Đường tròn lượng giác",m:"14 phút",txt:`<p>sin, cos, tan gắn với điểm trên đường tròn đơn vị. Góc tính bằng radian khi làm giải tích.</p><p><b>Hệ thức:</b> sin²x+cos²x=1. Dời pha và chu kỳ 2π.</p>`},
+{id:"log",lv:"THPT",cat:"Đại số",icon:"algebra",sym:"ƒ",t:"Hàm mũ và logarit",m:"14 phút",txt:`<p>log_b a là số mũ cần để b mũ lên ra a. log và mũ là hai phép ngược.</p><p><b>Ứng dụng:</b> pH, Richter, lãi kép, bán rã.</p>`},
+{id:"seq",lv:"THPT",cat:"Đại số",icon:"algebra",sym:"…",t:"Cấp số cộng và nhân",m:"12 phút",txt:`<p>Cấp số cộng: u_{n+1}=u_n+d. Cấp số nhân: u_{n+1}=u_n·q.</p><p><b>Tổng:</b> CSC: n(u1+un)/2. CSN (q≠1): u1(q^n−1)/(q−1).</p>`},
+{id:"binom",lv:"THPT",cat:"Tổ hợp",icon:"algebra",sym:"C",t:"Nhị thức Newton",m:"12 phút",txt:`<p>(x+y)^n = Σ C(n,k) x^{n−k} y^k. C(n,k)=n!/(k!(n−k)!).</p><p><b>Ý nghĩa:</b> hệ số là số cách chọn k phần tử từ n.</p>`},
+{id:"comb",lv:"THPT",cat:"Tổ hợp",icon:"logic",sym:"C",t:"Chỉnh hợp, tổ hợp, hoán vị",m:"12 phút",txt:`<p>P(n,k)=n!/(n−k)! — sắp thứ tự. C(n,k) — không thứ tự. n! — hoán vị.</p><p><b>Lỗi thường gặp:</b> nhầm “có thứ tự” với “không thứ tự”.</p>`},
+{id:"lim",lv:"THPT",cat:"Giải tích",icon:"analysis",sym:"∫",t:"Giới hạn",m:"14 phút",txt:`<p>lim x→a f(x)=L nghĩa là f tiến sát L khi x tiến sát a, không bắt buộc f(a)=L.</p><p><b>Để làm gì?</b> Đạo hàm, tiệm cận, liên tục.</p>`},
+{id:"der",lv:"THPT",cat:"Giải tích",icon:"analysis",sym:"∫",t:"Đạo hàm",m:"15 phút",txt:`<p>f'(x)=lim h→0 [f(x+h)−f(x)]/h — tốc độ thay đổi tức thời.</p><p><b>Để làm gì?</b> Tiếp tuyến, cực trị, tối ưu.</p>`},
+{id:"intg",lv:"THPT",cat:"Giải tích",icon:"analysis",sym:"∫",t:"Tích phân",m:"15 phút",txt:`<p>Tích phân xác định là diện tích có dấu. Nguyên hàm F'=f.</p><p><b>Ứng dụng:</b> diện tích, công, xác suất liên tục.</p>`},
+{id:"vec",lv:"THPT",cat:"Hình học",icon:"geometry",sym:"→",t:"Vectơ",m:"12 phút",txt:`<p>Vectơ có hướng và độ lớn. Cộng theo hình bình hành; tích vô hướng a·b=|a||b|cosθ.</p><p><b>Ứng dụng:</b> lực, vận tốc, hình học tọa độ.</p>`},
+{id:"prob",lv:"THPT",cat:"Xác suất",icon:"logic",sym:"P",t:"Xác suất cổ điển",m:"12 phút",txt:`<p>P(A)=|A|/|Ω| khi các kết quả đồng khả năng. 0≤P≤1, P(Ω)=1.</p><p><b>Công thức:</b> P(A∪B)=P(A)+P(B)−P(A∩B).</p>`},
+{id:"stat",lv:"THPT",cat:"Thống kê",icon:"analysis",sym:"μ",t:"Trung bình, phương sai",m:"12 phút",txt:`<p>Trung bình mô tả tâm. Phương sai/độ lệch chuẩn mô tả độ phân tán.</p><p><b>Ý nghĩa:</b> hai mẫu cùng trung bình có thể khác hẳn về độ lệch.</p>`},
+{id:"amgm",lv:"THPT",cat:"Bất đẳng thức",icon:"algebra",sym:"≥",t:"Bất đẳng thức AM–GM",m:"10 phút",txt:`<p>Với số thực dương, trung bình cộng ≥ trung bình nhân. Dấu bằng khi các số bằng nhau.</p><p><b>Dùng:</b> cực tiểu tích khi tổng cố định.</p>`},
+{id:"proof",lv:"Tư duy",cat:"Logic",icon:"logic",sym:"∴",t:"Chứng minh là gì",m:"10 phút",txt:`<p>Chứng minh: chuỗi suy luận từ giả thiết đến kết luận. Phản ví dụ đủ để bác bỏ mệnh đề “mọi”.</p>`},
+{id:"set",lv:"ĐH",cat:"Cơ sở",icon:"logic",sym:"∈",t:"Tập hợp và ánh xạ",m:"14 phút",txt:`<p>Tập hợp, phần tử, hàm như quy tắc gán. Đây là ngôn ngữ của toán hiện đại.</p>`},
+{id:"cplx",lv:"ĐH",cat:"Số phức",icon:"algebra",sym:"ℂ",t:"Số phức",m:"16 phút",txt:`<p>z=a+bi, i²=−1. Mặt phẳng phức: modulus |z|, argument arg z.</p><p><b>Dạng cực:</b> z=r(cosθ+i sinθ). Công thức Euler: e^{iθ}=cosθ+i sinθ.</p><p><b>Ứng dụng:</b> mạch điện xoay chiều, biến đổi Fourier, hình học quay.</p>`},
+{id:"demoivre",lv:"ĐH",cat:"Số phức",icon:"algebra",sym:"ℂ",t:"Công thức De Moivre",m:"10 phút",txt:`<p>[r(cosθ+i sinθ)]^n = r^n (cos nθ + i sin nθ). Dùng để khai căn và lũy thừa số phức.</p>`},
+{id:"disc",lv:"ĐH",cat:"Toán rời rạc",icon:"logic",sym:"Σ",t:"Toán rời rạc — bản đồ",m:"14 phút",txt:`<p>Toán rời rạc làm việc với đối tượng đếm được: logic, tập, quan hệ, đồ thị, tổ hợp, độ quy.</p><p><b>Để làm gì?</b> Khoa học máy tính, thuật toán, mật mã sơ cấp.</p>`},
+{id:"graphth",lv:"ĐH",cat:"Toán rời rạc",icon:"logic",sym:"Σ",t:"Đồ thị (lý thuyết đồ thị)",m:"14 phút",txt:`<p>Đồ thị G=(V,E): đỉnh và cạnh. Bậc, đường đi, chu trình, liên thông, Euler, Hamilton.</p><p><b>Ứng dụng:</b> mạng, lịch, luồng, định tuyến.</p>`},
+{id:"ntheory",lv:"ĐH",cat:"Lý thuyết số",icon:"algebra",sym:"ℤ",t:"Số nguyên tố và đồng dư",m:"14 phút",txt:`<p>p nguyên tố khi chỉ chia hết cho 1 và p. Đồng dư a≡b (mod m) khi m | (a−b).</p><p><b>Định lý:</b> Fermat nhỏ, Euclid (vô hạn nguyên tố), thuật toán Euclid cho UCLN.</p>`},
+{id:"matrix",lv:"ĐH",cat:"Đại số tuyến tính",icon:"algebra",sym:"A",t:"Ma trận và hệ phương trình",m:"16 phút",txt:`<p>Ma trận mã hóa biến đổi tuyến tính. Giải Ax=b bằng khử Gauss. det A≠0 ⇔ khả nghịch ⇔ nghiệm duy nhất.</p><p><b>Ứng dụng:</b> đồ họa 3D, mạng, thống kê đa biến.</p>`},
+{id:"eigen",lv:"ĐH",cat:"Đại số tuyến tính",icon:"algebra",sym:"λ",t:"Trị riêng và vectơ riêng",m:"14 phút",txt:`<p>Av=λv, v≠0. λ là hệ số giãn trên phương v. Chéo hóa giúp lũy thừa ma trận.</p><p><b>Ứng dụng:</b> PCA, ổn định hệ động lực, PageRank.</p>`},
+{id:"de",lv:"ĐH",cat:"Phương trình vi phân",icon:"analysis",sym:"∫",t:"PTVP cấp một",m:"14 phút",txt:`<p>y'=ky có nghiệm y=Ce^{kx}. Tách biến, hệ số bất định, nhân tử tích phân.</p><p><b>Mô hình:</b> tăng trưởng, phóng xạ, mạch RC, dịch tễ SIR sơ cấp.</p>`},
+{id:"series",lv:"ĐH",cat:"Giải tích",icon:"analysis",sym:"Σ",t:"Chuỗi số và chuỗi Taylor",m:"16 phút",txt:`<p>Chuỗi Σa_n hội tụ khi tổng riêng tiến tới hữu hạn. Taylor khai triển hàm quanh một điểm.</p><p><b>Ví dụ:</b> e^x = Σ x^n/n!.</p>`},
+{id:"bayes",lv:"ĐH",cat:"Xác suất",icon:"logic",sym:"P",t:"Công thức Bayes",m:"12 phút",txt:`<p>P(H|D)=P(D|H)P(H)/P(D). Cập nhật niềm tin khi có dữ liệu.</p><p><b>Ứng dụng:</b> y học chẩn đoán, lọc thư rác, học máy.</p>`},
+{id:"finance",lv:"THPT",cat:"Toán ứng dụng",icon:"algebra",sym:"%",t:"Lãi suất và giá trị hiện tại",m:"10 phút",txt:`<p>Lãi kép: A=P(1+r)^n. Giá trị hiện tại chiết khấu dòng tiền tương lai.</p>`}
+];
+const BOOKS=[
+{id:"polya",lv:"Tư duy",t:"How to Solve It — G. Pólya",why:"Bốn bước: hiểu bài, lập kế hoạch, thực hiện, nhìn lại.",ideas:"Biến bài lạ thành bài đã biết."},
+{id:"velleman",lv:"Tư duy",t:"How to Prove It — D. Velleman",why:"Vào chứng minh: logic, lượng từ, quy nạp.",ideas:"Viết giả thiết–kết luận trước khi viết chứng minh."},
+{id:"euclid",lv:"Hình học",t:"Cơ sở — Euclid (tuyển)",why:"Toán xây từ tiên đề, không từ nhớ hình.",ideas:"Định nghĩa → tiên đề → mệnh đề."},
+{id:"thcs",lv:"THCS",t:"Toán 8–9 (hình + đại số)",why:"Nền Pythagoras, phương trình, y=ax+b.",ideas:"Vẽ hình trước khi tính."},
+{id:"thpt",lv:"THPT",t:"Giải tích 12 + Đại số 10",why:"Đạo hàm, mũ log, lượng giác.",ideas:"Mỗi công thức gắn một đồ thị."},
+{id:"aops",lv:"THPT",t:"Art of Problem Solving — Introduction",why:"Tổ hợp và bất đẳng thức theo kiểu giải bài.",ideas:"Đếm hai cách; bất đẳng thức từ bình phương."},
+{id:"hardy",lv:"ĐH",t:"A Mathematician's Apology — Hardy",why:"Vẻ đẹp toán, không chỉ thi.",ideas:"Toán thuần túy như nghệ thuật."},
+{id:"courant",lv:"ĐH",t:"What is Mathematics? — Courant & Robbins",why:"Toàn cảnh: số, hình, giải tích, ý tưởng.",ideas:"Đọc chậm từng chương, làm bài trong sách."},
+{id:"axler",lv:"ĐH",t:"Linear Algebra Done Right — Axler",why:"Không vội định thức; hiểu ánh xạ tuyến tính.",ideas:"Không gian vector trước ma trận."},
+{id:"needham",lv:"ĐH",t:"Visual Complex Analysis — Needham",why:"Số phức bằng hình: quay và co giãn.",ideas:"Nhân i là quay 90°."},
+{id:"rosen",lv:"ĐH",t:"Discrete Mathematics — K. Rosen",why:"Giáo trình rời rạc: logic, đồ thị, tổ hợp.",ideas:"Làm bài chứng minh ngắn mỗi ngày."},
+{id:"concrete",lv:"ĐH",t:"Concrete Mathematics — Graham, Knuth, Patashnik",why:"Tổng, hệ thức truy hồi, hàm sinh.",ideas:"Ký hiệu rõ; kiểm tra bằng số nhỏ."},
+{id:"proofsbook",lv:"ĐH",t:"Proofs from THE BOOK — Aigner & Ziegler",why:"Chứng minh đẹp: vô hạn nguyên tố, hội tụ…",ideas:"Một chứng minh tinh, không nhiều trang."},
+{id:"feynman",lv:"Đa ngành",t:"The Character of Physical Law — Feynman",why:"Toán như ngôn ngữ tự nhiên.",ideas:"Đối xứng, bảo toàn, cực trị."},
+{id:"tao",lv:"ĐH",t:"Analysis I — Terence Tao",why:"Giải tích từ số thực, ε–δ có kiểm soát.",ideas:"Đọc định nghĩa hai lần trước ví dụ."}
+];
+const FORMS=[
+{id:"delta",cat:"Đại số",q:["bậc hai","delta","nghiệm"],name:"Nghiệm phương trình bậc hai",expr:"x = (−b ± √Δ) / (2a),  Δ = b² − 4ac",what:"Nghiệm của ax²+bx+c=0 khi a≠0.",why:"Biết parabol cắt Ox bao nhiêu lần.",use:"Quỹ đạo, tối ưu bậc hai, hình học tọa độ.",ex:"x²−5x+6=0 → Δ=1 → x=2 hoặc 3."},
+{id:"py",cat:"Hình học",q:["pythagoras","huyền"],name:"Định lý Pythagoras",expr:"a² + b² = c²",what:"Hệ thức ba cạnh tam giác vuông.",why:"Tính cạnh, kiểm tra vuông.",use:"Xây dựng, GPS, đồ họa.",ex:"3-4-5: 9+16=25."},
+{id:"cos",cat:"Hình học",q:["cosine","cosin"],name:"Định lý cosine",expr:"c² = a² + b² − 2ab cos C",what:"Pythagoras cho mọi tam giác.",why:"Hai cạnh và góc xen → cạnh thứ ba.",use:"Trắc địa, lực hợp.",ex:"C=90° thì cosC=0, về Pythagoras."},
+{id:"sina",cat:"Lượng giác",q:["sin","cộng góc"],name:"sin(a+b)",expr:"sin(a+b)=sin a cos b + cos a sin b",what:"Khai triển sin tổng hai góc.",why:"Hạ bậc, phương trình lượng giác.",use:"Sóng, pha, điều hòa.",ex:"sin(π/2+x)=cos x."},
+{id:"loglaw",cat:"Đại số",q:["log","logarit"],name:"Phép tính logarit",expr:"log(xy)=log x+log y,  log(x^k)=k log x",what:"Log đưa tích thành tổng.",why:"Giải mũ, tuyến tính hóa.",use:"pH, decibel, lãi kép.",ex:"log 100=2 (cơ số 10)."},
+{id:"ncr",cat:"Tổ hợp",q:["tổ hợp","nck","chỉnh hợp"],name:"Tổ hợp",expr:"C(n,k)= n! / (k!(n−k)!)",what:"Số tập con k phần tử từ n.",why:"Đếm không kể thứ tự.",use:"Xác suất, nhị thức, thiết kế thí nghiệm.",ex:"C(5,2)=10."},
+{id:"derp",cat:"Giải tích",q:["đạo hàm","lũy thừa"],name:"Đạo hàm lũy thừa",expr:"(xⁿ)' = n xⁿ⁻¹",what:"Tốc độ thay đổi hàm lũy thừa.",why:"Tiếp tuyến, cực trị đa thức.",use:"Vận tốc–gia tốc.",ex:"(x³)'=3x²."},
+{id:"chain",cat:"Giải tích",q:["hàm hợp","chain"],name:"Quy tắc hàm hợp",expr:"(f(g(x)))' = f'(g(x))·g'(x)",what:"Đạo hàm hàm lồng nhau.",why:"Hầu hết hàm thực tế là hàm hợp.",use:"e^{kx}, sin(ωt).",ex:"(sin x²)'=2x cos x²."},
+{id:"intp",cat:"Giải tích",q:["tích phân","nguyên hàm"],name:"Nguyên hàm lũy thừa",expr:"∫ xⁿ dx = xⁿ⁺¹/(n+1)+C  (n≠−1)",what:"Phép ngược đạo hàm lũy thừa.",why:"Diện tích, tổng liên tục.",use:"Công, xác suất mật độ.",ex:"∫x² dx = x³/3+C."},
+{id:"parts",cat:"Giải tích",q:["từng phần","parts"],name:"Tích phân từng phần",expr:"∫ u dv = uv − ∫ v du",what:"Đổi tích phân khi có tích hai hàm.",why:"∫ x e^x, ∫ ln x.",use:"Vật lý, xác suất (kỳ vọng).",ex:"∫ x e^x dx = e^x(x−1)+C."},
+{id:"exp",cat:"Giải tích",q:["e","mũ"],name:"Đạo hàm hàm mũ tự nhiên",expr:"(eˣ)' = eˣ",what:"Hàm trùng đạo hàm của chính nó.",why:"Tăng trưởng, phóng xạ.",use:"PTVP, tài chính.",ex:"y'=ky ⇒ y=Ce^{kx}."},
+{id:"euler",cat:"Số phức",q:["euler","e^{i}","số phức"],name:"Công thức Euler",expr:"e^{iθ} = cos θ + i sin θ",what:"Nối mũ phức với lượng giác.",why:"Quay trên mặt phẳng phức.",use:"Fourier, mạch AC.",ex:"e^{iπ}+1=0."},
+{id:"deMoivre",cat:"Số phức",q:["de moivre","căn phức"],name:"De Moivre",expr:"[r(cosθ+i sinθ)]^n = r^n(cos nθ+i sin nθ)",what:"Lũy thừa dạng cực.",why:"Khai căn n của số phức.",use:"Đa thức, tín hiệu.",ex:"i = cis(π/2) ⇒ i²=cis π=−1."},
+{id:"det2",cat:"Đại số tuyến tính",q:["định thức","det","ma trận"],name:"Định thức 2×2",expr:"det[[a,b],[c,d]] = ad−bc",what:"Độ co giãn có hướng của biến đổi.",why:"Khả nghịch khi det≠0.",use:"Diện tích song song lực, Cramer.",ex:"[[1,2],[3,4]] → −2."},
+{id:"mod",cat:"Lý thuyết số",q:["mod","đồng dư","chia"],name:"Đồng dư",expr:"a ≡ b (mod m)  ⇔  m | (a−b)",what:"Hai số cùng dư khi chia m.",why:"Lịch, mật mã, checksum.",use:"RSA sơ cấp, ISBN.",ex:"17≡2 (mod 5)."},
+{id:"indep",cat:"Xác suất",q:["độc lập","xác suất"],name:"Xác suất độc lập",expr:"P(A∩B)=P(A)P(B)",what:"Hai biến cố không ảnh hưởng nhau.",why:"Tính đồng thời.",use:"Tung đồng xu, kiểm thử.",ex:"Hai mặt ngửa: 1/4."},
+{id:"bayesf",cat:"Xác suất",q:["bayes","hậu nghiệm"],name:"Bayes",expr:"P(H|D)=P(D|H)P(H)/P(D)",what:"Cập nhật xác suất giả thuyết.",why:"Suy diễn khi có bằng chứng.",use:"Chẩn đoán, spam.",ex:"False positive làm P(bệnh|dương tính) thấp nếu bệnh hiếm."},
+{id:"amgmf",cat:"Bất đẳng thức",q:["am-gm","trung bình"],name:"AM–GM",expr:"(x1+…+xn)/n ≥ (x1…xn)^{1/n}",what:"Trung bình cộng ≥ trung bình nhân (số dương).",why:"Cực trị có ràng buộc tích/tổng.",use:"Tối ưu sơ cấp, bất đẳng thức thi.",ex:"x+y≥2√(xy)."},
+{id:"geo",cat:"Đại số",q:["cấp số nhân","tổng vô hạn"],name:"Tổng cấp số nhân vô hạn",expr:"Σ_{k=0}^∞ ar^k = a/(1−r)  (|r|<1)",what:"Tổng vô hạn hội tụ khi |công bội|<1.",why:"Chuỗi, lãi, fractal.",use:"Kinh tế chiết khấu, xác suất hình học.",ex:"1+1/2+1/4+…=2."}
+];
+const THINK=[
+{t:"Bình đong nước",q:"Hai bình 3 lít và 5 lít, không vạch. Làm sao đong đúng 4 lít?",h:"Đầy 5 → sang 3 (còn 2) → đổ 3 → 2 sang 3 → đầy 5 → đổ vào 3 (còn 1 chỗ) → còn 4 trong bình 5."},
+{t:"Chẵn lẻ",q:"Tổng 3 số lẻ liên tiếp có luôn chia hết cho 3?",h:"(2k−1)+(2k+1)+(2k+3)=6k+3=3(2k+1). Luôn chia hết cho 3."},
+{t:"Phản ví dụ",q:"Mọi số nguyên tố đều lẻ. Đúng hay sai?",h:"Sai. 2 là nguyên tố chẵn."},
+{t:"Cầu và đèn",q:"Bốn người cần 1,2,5,10 phút qua cầu; tối đa hai người, phải mang đèn. Tối thiểu bao lâu?",h:"17 phút: 1&2 sang, 1 về, 5&10 sang, 2 về, 1&2 sang."},
+{t:"Hàm sinh tư duy",q:"Có 10 cái bắt tay trong một phòng, mỗi người bắt tay ít nhất một lần. Có thể có đúng 3 người không?",h:"Đếm chẵn: mỗi bắt tay tăng tổng bậc 2. Tổng bậc=20. Có thể; cần mô hình đồ thị đơn."},
+{t:"Mod 9",q:"Tại sao “tổng chữ số chia hết 9 thì số chia hết 9”?",h:"10≡1 (mod 9) nên 10^k≡1, số ≡ tổng chữ số (mod 9)."},
+{t:"Vô hạn khách sạn",q:"Khách sạn Hilbert đầy. Làm sao nhận thêm 1 khách?",h:"Chuyển phòng n → n+1. Phòng 1 trống. Vô hạn đếm được vẫn “còn chỗ”."},
+{t:"Xác suất hai con",q:"Một gia đình có hai con, ít nhất một trai. Xác suất cả hai trai?",h:"Không gian {TT,TG,GT} đồng khả năng nếu “ít nhất một trai” — 1/3, không phải 1/2."},
+{t:"Bất biến",q:"Bàn cờ 8×8 mất hai góc đối. Phủ được bằng quân 1×2 không?",h:"Hai góc cùng màu. Còn 30 đen 32 trắng (hoặc ngược). Mỗi quân phủ 1–1. Không phủ được."},
+{t:"Quy nạp sai",q:"“Mọi ngựa cùng màu” — lỗ hổng ở đâu?",h:"Bước n=1→2: giao hai nhóm rỗng khi n=1. Quy nạp gãy ở bước đầu."}
+];
+const QUIZ=[
+{cat:"Đại số",q:"Δ của x²−5x+6 bằng?",a:["1","0","25","−1"],i:0,ex:"25−24=1."},
+{cat:"Hình học",q:"Cạnh huyền tam giác 6 và 8?",a:["9","10","12","14"],i:1,ex:"36+64=100."},
+{cat:"Giải tích",q:"(x³)' bằng?",a:["x²","3x²","3x","x³/3"],i:1,ex:"n x^{n−1}."},
+{cat:"Giải tích",q:"∫ 2x dx?",a:["x²+C","2x²+C","x+C","2+C"],i:0,ex:"Nguyên hàm x²."},
+{cat:"Tổ hợp",q:"C(5,2) bằng?",a:["10","20","5","25"],i:0,ex:"5!/(2!3!)=10."},
+{cat:"Số phức",q:"i² bằng?",a:["1","0","−1","i"],i:2,ex:"Định nghĩa i."},
+{cat:"Số phức",q:"|3+4i| bằng?",a:["5","7","12","25"],i:0,ex:"√(9+16)=5."},
+{cat:"Lượng giác",q:"sin²x+cos²x bằng?",a:["0","x","1","2"],i:2,ex:"Hệ thức cơ bản."},
+{cat:"Xác suất",q:"Hai đồng xu độc lập, P(hai ngửa)?",a:["1/2","1/3","1/4","1"],i:2,ex:"(1/2)·(1/2)."},
+{cat:"Lý thuyết số",q:"UCLN(48,18)?",a:["6","8","9","12"],i:0,ex:"Euclid: 48=2·18+12; 18=1·12+6; 12=2·6."},
+{cat:"Đại số tuyến tính",q:"det[[1,2],[3,4]]?",a:["−2","2","−1","8"],i:0,ex:"4−6=−2."},
+{cat:"Toán rời rạc",q:"Số cạnh đồ thị đầy đủ K4?",a:["4","5","6","8"],i:2,ex:"C(4,2)=6."},
+{cat:"Bất đẳng thức",q:"x+y≥2√(xy) với x,y>0 là dạng nào?",a:["Cauchy","AM–GM","Chebyshev","Jensen"],i:1,ex:"AM–GM hai số."},
+{cat:"Giải tích",q:"lim x→0 (sin x)/x ?",a:["0","1","∞","không tồn tại"],i:1,ex:"Giới hạn chuẩn."},
+{cat:"Đại số",q:"log10 1000?",a:["2","3","10","100"],i:1,ex:"10³=1000."},
+{cat:"Xác suất",q:"Bayes dùng khi nào?",a:["Đếm tổ hợp","Cập nhật P(giả thuyết|dữ liệu)","Tính trung bình","Vẽ parabol"],i:1,ex:"Hậu nghiệm từ tiên nghiệm và likelihood."}
+];
+const ROAD=[
+["Tháng 1","Cá nhân","Thư viện đa chuyên đề, tủ sách, công thức có lời, AI trên máy."],
+["Tháng 2","Nội dung","THPT + ĐH: số phức, rời rạc, tuyến tính, xác suất."],
+["Tháng 3","Luyện","Ngân hàng câu theo chuyên đề, thống kê lỗi, streak."],
+["Tháng 4","AI cloud","Mô hình ngoài máy, giải từng bước có kiểm tra."],
+["Tháng 5","App cộng đồng","Tài khoản, lớp học, chia sẻ sổ tay."]
+];
+const $=id=>document.getElementById(id);
+const store={get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set(k,v){localStorage.setItem(k,JSON.stringify(v))}};
+const S=()=>store.get("mn",{read:[],quiz:0,books:[],streak:1,notes:"",qi:0,name:"Bạn học Toán",goal:5});
+function save(p){store.set("mn",Object.assign(S(),p));stats()}
+function toast(m){const t=$("toast");t.textContent=m;t.style.display="block";setTimeout(()=>t.style.display="none",1800)}
+function stats(){
+  const s=S();$("s1").textContent=s.read.length;$("s2").textContent=s.quiz;$("s3").textContent=s.books.length;$("s4").textContent=s.streak;
+  const g=s.goal||5; const pct=Math.min(100, Math.round((s.quiz%g||s.quiz===0?s.quiz%g:g)/g*100));
+  $("goalBadge").textContent=`${Math.min(s.quiz,g)} / ${g} câu`;
+  $("goalBar").style.width=(Math.min(s.quiz,g)/g*100)+"%";
+  $("profileName").textContent=s.name;$("avatar").textContent=(s.name||"B").trim().charAt(0).toUpperCase();
+  $("displayName").value=s.name;$("dailyGoal").value=String(s.goal||5);
+}
+const titles={dashboard:"Tổng quan",library:"Thư viện kiến thức",lesson:"Bài học",books:"Tủ sách",book:"Tủ sách",think:"Tư duy",practice:"Luyện tập",graph:"Đồ thị hàm số",tools:"Công cụ toán học",latex:"Soạn công thức",fdetail:"Công thức",ai:"Trợ lý AI",notebook:"Sổ tay của tôi",progress:"Tiến độ học tập"};
+function go(p){
+  document.querySelectorAll("#bottomNav [data-go]").forEach(b=>b.classList.toggle("on", b.dataset.go===p || (p==="lesson"&&b.dataset.go==="library")));
+  document.querySelectorAll(".page").forEach(x=>x.classList.toggle("on",x.id===p));
+  document.querySelectorAll(".nav-link").forEach(b=>{
+    const on=b.dataset.go===p||(p==="lesson"&&b.dataset.go==="library")||(p==="book"&&b.dataset.go==="books")||(p==="fdetail"&&b.dataset.go==="latex");
+    b.classList.toggle("active",on);
+    if(on) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current");
+  });
+  $("pageCrumb").textContent=titles[p]||p;
+  $("sidebar").classList.remove("open");$("scrim").classList.remove("open");
+  window.scrollTo(0,0);
+}
+function pretty(s){return s.replaceAll("sqrt(","√(").replaceAll("pi","π").replaceAll("theta","θ").replaceAll("integral","∫")}
+function lessonCard(l){
+  return `<article class="lesson-card" data-l="${l.id}">
+    <div class="card-top"><span class="subject-icon ${l.icon}">${l.sym}</span><span class="badge">${l.lv} · ${l.cat}</span></div>
+    <h3 style="margin:10px 0 6px">${l.t}</h3>
+    <div class="card-footer"><span class="time-label"><svg class="icon" viewBox="0 0 24 24"><path d="M12 7v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0"/></svg> ${l.m}</span><span class="text-button">Khám phá bài học →</span></div>
+  </article>`;
+}
+function renderLessons(cat="all"){
+  const list=cat==="all"?LESSONS:LESSONS.filter(x=>x.cat===cat||x.lv===cat);
+  $("llist").innerHTML=list.map(lessonCard).join("");
+}
+function openL(id){
+  const l=LESSONS.find(x=>x.id===id); if(!l)return;
+  const s=S(); if(!s.read.includes(id)) {s.read.push(id);save({read:s.read})}
+  $("lbody").innerHTML=`<div class="eyebrow">${l.lv} · ${l.cat}</div><h1>${l.t}</h1><div class="card" style="padding:20px;margin-top:12px">${l.txt}</div><p class="note">Ghi vào sổ tay nếu muốn giữ ý.</p>`;
+  go("lesson");
+}
+function renderBooks(lv="all"){
+  const list=lv==="all"?BOOKS:BOOKS.filter(x=>x.lv===lv);
+  $("blist").innerHTML=list.map(b=>`<button class="book-card" data-b="${b.id}" type="button"><span class="badge">${b.lv}</span><h3 style="margin:8px 0">${b.t}</h3><p class="muted small" style="margin:0">${b.why}</p></button>`).join("");
+}
+function openB(id){
+  const b=BOOKS.find(x=>x.id===id); if(!b)return;
+  const s=S(); if(!s.books.includes(id)){s.books.push(id);save({books:s.books})}
+  $("bbody").innerHTML=`<div class="eyebrow">${b.lv}</div><h1>${b.t}</h1>
+    <div class="explain-grid">
+      <div class="card" style="padding:16px"><h3>Vì sao đọc</h3><p>${b.why}</p></div>
+      <div class="card" style="padding:16px"><h3>Ý chính</h3><p>${b.ideas}</p></div>
+    </div>
+    <p class="note">Tủ sách là cửa vào, không thay giáo viên. Đọc chậm một chương, làm một bài.</p>`;
+  go("book");
+}
+function renderF(q=""){
+  const qq=q.trim().toLowerCase();
+  const list=FORMS.filter(f=>!qq||f.name.toLowerCase().includes(qq)||f.q.some(k=>k.includes(qq))||f.expr.toLowerCase().includes(qq)||f.cat.toLowerCase().includes(qq));
+  $("flist").innerHTML=list.map(f=>`<button class="fcard" data-f="${f.id}" type="button"><span class="badge">${f.cat}</span><h3 style="margin:8px 0">${f.name}</h3><p class="math">${f.expr}</p><p class="muted small">${f.what}</p></button>`).join("")||`<p class="note">Không có công thức khớp.</p>`;
+}
+function openF(id){
+  const f=FORMS.find(x=>x.id===id); if(!f)return;
+  $("fbody").innerHTML=`<div class="eyebrow">${f.cat}</div><h1>${f.name}</h1><p class="math">${f.expr}</p>
+    <div class="explain-grid">
+      <div class="card" style="padding:16px"><h3>Công thức này là gì?</h3><p>${f.what}</p></div>
+      <div class="card" style="padding:16px"><h3>Để làm gì?</h3><p>${f.why}</p></div>
+      <div class="card" style="padding:16px"><h3>Ứng dụng</h3><p>${f.use}</p></div>
+      <div class="card" style="padding:16px"><h3>Ví dụ</h3><p>${f.ex}</p></div>
+    </div>`;
+  go("fdetail");
+}
+function yOf(type,a,b,c,x){
+  if(type==="lin") return b*x+c;
+  if(type==="sin") return a*Math.sin(b*x+c);
+  if(type==="exp") return a*Math.exp(Math.max(-8,Math.min(8,b*x)))+c;
+  if(type==="abs") return a*Math.abs(x)+c;
+  return a*x*x+b*x+c;
+}
+function drawG(){
+  const a=+$("ga").value||0,b=+$("gb").value||0,c=+$("gc").value||0,type=$("gtype")?$("gtype").value:"quad";
+  const cv=$("gcan"),ctx=cv.getContext("2d"),W=cv.width,H=cv.height;
+  ctx.fillStyle=getComputedStyle(document.body).getPropertyValue("--panel").trim()||"#fff";
+  ctx.fillRect(0,0,W,H);
+  const ox=W/2,oy=H/2,s=28;
+  ctx.strokeStyle="#94baa8";ctx.beginPath();ctx.moveTo(20,oy);ctx.lineTo(W-20,oy);ctx.moveTo(ox,20);ctx.lineTo(ox,H-20);ctx.stroke();
+  ctx.strokeStyle="#6f9a2e";ctx.lineWidth=2.5;ctx.beginPath();
+  for(let px=0;px<W;px++){const x=(px-ox)/s,y=yOf(type,a,b,c,x),py=oy-y*s; if(px===0)ctx.moveTo(px,py); else ctx.lineTo(px,py);}
+  ctx.stroke();
+  const msg={quad:`Parabol y=ax²+bx+c. Δ=${b*b-4*a*c}.`,lin:`Đường thẳng y=${b}x+${c}.`,sin:`Sóng y=a sin(bx+c): biên độ |a|, tần số liên quan b.`,exp:`Tăng/giảm mũ y=a e^{bx}+c (b>0 tăng).`,abs:`Chữ V: y=a|x|+c.`};
+  $("ginfo").textContent=msg[type]||msg.quad;
+}
+function gcd(a,b){a=Math.abs(a);b=Math.abs(b);while(b){[a,b]=[b,a%b]}return a}
+let qcat="all";
+function quiz(){
+  const pool=qcat==="all"?QUIZ:QUIZ.filter(x=>x.cat===qcat);
+  const list=pool.length?pool:QUIZ;
+  const s=S(); const item=list[s.qi%list.length];
+  $("pq").innerHTML=`<p><b>${item.q}</b></p>`+item.a.map((x,i)=>`<p><button class="button ghost" data-i="${i}" type="button">${x}</button></p>`).join("")+`<p id="ex"></p>`;
+  $("pq").onclick=e=>{
+    const b=e.target.closest("[data-i]"); if(!b)return;
+    const ok=+b.dataset.i===item.i;
+    $("ex").textContent=(ok?"Đúng. ":"Chưa đúng. ")+item.ex;
+    if(ok){save({quiz:s.quiz+1,qi:s.qi+1}); setTimeout(quiz,700)}
+  };
+}
+function ask(q){
+  const t=q.toLowerCase();
+  const hit=s=>(s||"").toLowerCase().includes(t) || t.split(/\s+/).filter(w=>w.length>2).some(w=>(s||"").toLowerCase().includes(w));
+  let a="Mình trả lời từ nội dung trong MathNexus. ";
+  const f=FORMS.find(x=>hit(x.name)||hit(x.expr)||hit(x.cat)||x.q.some(k=>t.includes(k)));
+  const l=LESSONS.find(x=>hit(x.t)||hit(x.cat)||hit(x.txt.replace(/<[^>]+>/g," ")));
+  const b=BOOKS.find(x=>hit(x.t)||hit(x.why)||(t.includes("sách")&&hit(x.lv)));
+  const th=THINK.find(x=>hit(x.t)||hit(x.q));
+  if(f) a=`${f.name}: ${f.what} Để làm gì: ${f.why} Ứng dụng: ${f.use} Ví dụ: ${f.ex}`;
+  else if(l) a=l.t+" ("+l.lv+" · "+l.cat+"): "+l.txt.replace(/<[^>]+>/g," ");
+  else if(th || t.includes("tư duy")) {const u=th||THINK[Math.floor(Math.random()*THINK.length)]; a=u.t+": "+u.q+" Gợi ý: "+u.h;}
+  else if(b) a=b.t+" — "+b.why+" Ý chính: "+b.ideas;
+  else if(t.includes("sách")) a=BOOKS.slice(0,4).map(x=>x.t).join("; ");
+  else a+="Thử hỏi: số phức, đồ thị rời rạc, C(n,k), Bayes, ma trận, AM–GM.";
+  const box=$("msgs");
+  box.insertAdjacentHTML("beforeend",`<div class="bubble me"></div>`);
+  box.lastChild.textContent=q;
+  box.insertAdjacentHTML("beforeend",`<div class="bubble bot"></div>`);
+  box.lastChild.textContent=a;
+  box.scrollTop=box.scrollHeight;
+}
+function searchAll(q){
+  const qq=q.trim().toLowerCase(); if(!qq){ $("searchResults").innerHTML=""; return;}
+  const hits=[];
+  LESSONS.forEach(l=>{if((l.t+l.cat+l.lv).toLowerCase().includes(qq)) hits.push(["Bài học",l.t,()=>openL(l.id)])});
+  FORMS.forEach(f=>{if((f.name+f.cat+f.expr).toLowerCase().includes(qq)||f.q.some(k=>k.includes(qq))) hits.push(["Công thức",f.name,()=>openF(f.id)])});
+  BOOKS.forEach(b=>{if((b.t+b.lv+b.why).toLowerCase().includes(qq)) hits.push(["Sách",b.t,()=>openB(b.id)])});
+  $("searchResults").innerHTML=hits.slice(0,12).map((h,i)=>`<button class="lesson-card" data-h="${i}" type="button" style="margin-bottom:8px"><span class="badge">${h[0]}</span><h3 style="margin:6px 0 0">${h[1]}</h3></button>`).join("")||`<p class="note">Không có kết quả.</p>`;
+  $("searchResults").onclick=e=>{const b=e.target.closest("[data-h]"); if(!b)return; $("searchDialog").close(); hits[+b.dataset.h][2]();};
+}
+function boot(){
+  $("navigation").innerHTML=NAV.map(([id,label,d])=>`<button class="nav-link${id==="dashboard"?" active":""}" type="button" data-go="${id}"><svg class="icon" viewBox="0 0 24 24"><path d="${d}"/></svg><span>${label}</span></button>`).join("");
+  const months=["tháng 1","tháng 2","tháng 3","tháng 4","tháng 5","tháng 6","tháng 7","tháng 8","tháng 9","tháng 10","tháng 11","tháng 12"];
+  const now=new Date(); $("datePill").innerHTML=`<svg class="icon" viewBox="0 0 24 24"><path d="M5 5h14v16H5zM8 2v6m8-6v6M5 11h14"/></svg> ${now.getDate()} ${months[now.getMonth()]}`;
+  $("feat").innerHTML=["cplx","disc","matrix","bayes"].map(id=>LESSONS.find(x=>x.id===id)).filter(Boolean).map(lessonCard).join("");
+  $("lchips").innerHTML=["all","THCS","THPT","ĐH","Đại số","Hình học","Giải tích","Lượng giác","Tổ hợp","Số phức","Toán rời rạc","Đại số tuyến tính","Xác suất","Lý thuyết số","Tư duy"].map((c,i)=>`<button class="chip${i?"":" on"}" data-c="${c}" type="button">${c==="all"?"Tất cả":c}</button>`).join("");
+  $("bchips").innerHTML=["all","THCS","THPT","ĐH","Tư duy","Hình học","Đa ngành"].map((c,i)=>`<button class="chip${i?"":" on"}" data-bchip="${c}" type="button">${c==="all"?"Tất cả":c}</button>`).join("");
+  $("fchips").innerHTML=["Đại số","Hình học","Lượng giác","Giải tích","Tổ hợp","Số phức","Đại số tuyến tính","Xác suất","Lý thuyết số","Bất đẳng thức"].map(c=>`<button class="chip" data-fc="${c}" type="button">${c}</button>`).join("");
+  $("thinks").innerHTML=THINK.map(t=>`<section class="panel"><h3>${t.t}</h3><p>${t.q}</p><details><summary>Gợi ý</summary><p class="muted">${t.h}</p></details></section>`).join("");
+  $("qchips").innerHTML=["all",...Array.from(new Set(QUIZ.map(x=>x.cat)))].map((c,i)=>`<button class="chip${i?"":" on"}" data-qc="${c}" type="button">${c==="all"?"Tất cả":c}</button>`).join("");
+  $("road").innerHTML=ROAD.map(r=>`<div class="rd"><b>${r[0]}</b><div><div class="badge">${r[1]}</div><div>${r[2]}</div></div></div>`).join("");
+  renderLessons(); renderBooks(); renderF(); quiz(); stats(); drawG(); $("fprev").textContent=pretty($("fraw").value);
+  $("notes").value=S().notes||"";
+  if(!$("msgs").childElementCount) ask("Bạn có thể giúp gì?");
+  go("dashboard");
+}
+boot();
+document.addEventListener("click",e=>{
+  const g=e.target.closest("[data-go]"); if(g){e.preventDefault(); go(g.dataset.go);}
+  const l=e.target.closest("[data-l]"); if(l) openL(l.dataset.l);
+  const bk=e.target.closest("[data-b]"); if(bk && !bk.dataset.bchip) openB(bk.dataset.b);
+  const f=e.target.closest("[data-f]"); if(f) openF(f.dataset.f);
+  const c=e.target.closest("[data-c]"); if(c){document.querySelectorAll("[data-c]").forEach(x=>x.classList.toggle("on",x===c)); renderLessons(c.dataset.c)}
+  const bc=e.target.closest("[data-bchip]"); if(bc){document.querySelectorAll("[data-bchip]").forEach(x=>x.classList.toggle("on",x===bc)); renderBooks(bc.dataset.bchip)}
+  const fc=e.target.closest("[data-fc]"); if(fc) renderF(fc.dataset.fc);
+  const askb=e.target.closest("[data-ask]"); if(askb) ask(askb.dataset.ask);
+  const qc=e.target.closest("[data-qc]"); if(qc){qcat=qc.dataset.qc; document.querySelectorAll("[data-qc]").forEach(x=>x.classList.toggle("on",x===qc)); quiz();}
+  const nt=e.target.closest("[data-note]"); if(nt){const ta=$("notes"); ta.value=(ta.value?ta.value+String.fromCharCode(10):"")+nt.dataset.note; ta.focus();}
+});
+$("menuToggle").onclick=()=>{$("sidebar").classList.toggle("open");$("scrim").classList.toggle("open")};
+$("scrim").onclick=()=>{$("sidebar").classList.remove("open");$("scrim").classList.remove("open")};
+$("themeToggle").onclick=()=>{const d=document.documentElement.getAttribute("data-theme")==="dark"; document.documentElement.setAttribute("data-theme",d?"":"dark"); localStorage.setItem("mn-theme", d?"":"dark")};
+  const savedTheme=localStorage.getItem("mn-theme"); if(savedTheme==="dark") document.documentElement.setAttribute("data-theme","dark");
+$("gdraw").onclick=drawG;
+$("fbtn").onclick=()=>renderF($("fs").value);
+$("fs").oninput=()=>renderF($("fs").value);
+$("fraw").oninput=()=>$("fprev").textContent=pretty($("fraw").value);
+$("asend").onclick=()=>{const v=$("ain").value.trim(); if(!v)return; $("ain").value=""; ask(v)};
+$("ain").onkeydown=e=>{if(e.key==="Enter")$("asend").click()};
+$("nsave").onclick=()=>{save({notes:$("notes").value}); toast("Đã lưu sổ tay")};
+$("exp").onclick=()=>{const blob=new Blob([JSON.stringify(S(),null,2)],{type:"application/json"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="mathnexus-progress.json"; a.click()};
+$("tGcd").onclick=()=>{const a=+$("tA").value,b=+$("tB").value,g=gcd(a,b); $("tOut").textContent=`UCLN(${a},${b})=${g}. BCNN=${a&&b?Math.abs(a*b)/g:0}. Ý nghĩa: rút gọn phân số a/b.`};
+$("tPct").onclick=()=>{const a=+$("pA").value,b=+$("pB").value; $("pOut").textContent=b?`${a} là ${(a/b*100).toFixed(2)}% của ${b}. Công thức: (a/b)×100.`:`b phải khác 0.`};
+function fact(n){n=Math.floor(n); if(n<0||n>170) return NaN; let r=1; for(let i=2;i<=n;i++) r*=i; return r;}
+function isPrime(n){n=Math.floor(n); if(n<2) return false; for(let i=2;i*i<=n;i++) if(n%i===0) return false; return true;}
+$("tQuad").onclick=()=>{const a=+$("qa").value,b=+$("qb").value,c=+$("qc").value; if(!a){$("qOut").textContent="a=0: đây là phương trình bậc nhất.";return;} const d=b*b-4*a*c; if(d<0)$("qOut").textContent=`Δ=${d}<0: không nghiệm thực. Trên số phức: x=(-b±i√${-d})/(2a).`; else if(d===0)$("qOut").textContent=`Δ=0: nghiệm kép x=${(-b/(2*a))}.`; else {const s=Math.sqrt(d); $("qOut").textContent=`Δ=${d}. x1=${((-b+s)/(2*a)).toFixed(4)}, x2=${((-b-s)/(2*a)).toFixed(4)}.`;}};
+$("tNcr").onclick=()=>{const n=+$("cn").value,k=+$("ck").value; if(k<0||n<k){$("cOut").textContent="Cần 0≤k≤n.";return;} const C=fact(n)/(fact(k)*fact(n-k)), P=fact(n)/fact(n-k); $("cOut").textContent=`C(${n},${k})=${C}. P(${n},${k})=${P}. C không kể thứ tự; P kể thứ tự.`;};
+$("tCplx").onclick=()=>{const a=+$("za").value,b=+$("zb").value,c=+$("zc").value,d=+$("zd").value; const m1=Math.hypot(a,b), m2=Math.hypot(c,d); const s=`(${a+c})+(${b+d})i`, p=`(${a*c-b*d})+(${a*d+b*c})i`; $("zOut").textContent=`|z1|=${m1.toFixed(3)}, |z2|=${m2.toFixed(3)}. Tổng ${s}. Tích ${p} (quay + co).`;};
+$("tPrime").onclick=()=>{const n=+$("pn").value,m=+$("pm").value; const r=((n%m)+m)%m; $("prOut").textContent=`${n} ${isPrime(n)?"là":"không phải"} nguyên tố. ${n} ≡ ${r} (mod ${m}).`;};
+if($("gtype")) $("gtype").onchange=drawG;
+function openSearch(){$("searchDialog").showModal(); $("searchInput").focus();}
+$("searchOpen").onclick=openSearch;
+$("searchClose").onclick=()=>$("searchDialog").close();
+$("searchInput").oninput=()=>searchAll($("searchInput").value);
+document.addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="k"){e.preventDefault(); openSearch()}});
+$("openProfile").onclick=()=>$("profileDialog").showModal();
+$("profileClose").onclick=()=>$("profileDialog").close();
+$("profileForm").onsubmit=e=>{e.preventDefault(); save({name:$("displayName").value.trim()||"Bạn học Toán",goal:+$("dailyGoal").value}); $("profileDialog").close(); toast("Đã lưu hồ sơ")};
+</script>
+</body>
+</html>
