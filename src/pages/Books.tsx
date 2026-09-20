@@ -11,13 +11,13 @@ export function Books() {
   return (
     <section>
       <div className="mb-5">
-        <div className="text-[11px] tracking-[.14em] font-bold text-[#3d6b5c]">ĐỌC SÁCH</div>
+        <div className="text-[11px] tracking-[.14em] font-bold text-accent">ĐỌC SÁCH</div>
         <h1 className="text-3xl tracking-tight mt-1 mb-2 font-bold">Tủ sách</h1>
         <p className="text-muted max-w-lg">Sách nên đọc theo cấp — cửa vào tư duy, không phải giáo trình đầy đủ.</p>
       </div>
       <div className="flex flex-wrap gap-2 mb-4">
         {LVS.map(v => (
-          <button key={v} onClick={() => setLv(v)} className={`px-3 py-1.5 rounded-full border text-[13px] ${lv === v ? 'bg-[#eef8d8] border-transparent font-semibold' : 'bg-panel border-line'}`}>{v}</button>
+          <button key={v} onClick={() => setLv(v)} className="filter-chip" aria-pressed={lv === v}>{v}</button>
         ))}
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">

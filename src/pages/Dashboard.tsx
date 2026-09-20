@@ -1,98 +1,47 @@
 import { Link } from 'react-router-dom';
+import { ArrowRight, ArrowUpRight, BookOpen, CalendarDays, ChartSpline, Check, Flame, Lightbulb, PenTool, Sigma, Sparkles, Target } from 'lucide-react';
 import { LESSONS } from '../data/lessons';
-import { getProgress } from '../utils/storage';
-import { BookOpen, PenTool, Library as LibIcon, Flame, ArrowRight } from 'lucide-react';
+import { THINK } from '../data/think';
+import { useProgress } from '../hooks/useProgress';
+import { emptyActivity, localDate } from '../utils/storage';
+import { LessonCard } from '../components/ui/LessonCard';
+import { MathArtwork } from '../components/ui/MathArtwork';
 
-const DAILY_PROMPTS = [
-  "Mọi số nguyên tố đều lẻ. Đúng hay sai?",
-  "Tổng 3 số lẻ liên tiếp luôn chia hết cho 3?",
-  "Tại sao log₂8 = 3?",
-  "C(5,2) = ? Vì sao?",
-  "i² = −1 có nghĩa gì?",
-];
+export default function Dashboard() {
+  const p = useProgress();
+  const now = new Date();
+  const today = now.toLocaleDateString('vi-VI', { weekday: 'long', day: 'numeric', month: 'long' });
+  const challengeIndex = Number(localDate().replaceAll('-', '')) % THINK.length;
+  const challenge = THINK[challengeIndex];
+  const featured = ['quad', 'pyth', 'der'].map(id => LESSONS.find(l => l.id === id)!);
+  const nextLesson = LESSONS.find(l => l.id === p.lastLesson && !p.lessonsRead.includes(l.id)) || LESSONS.find(l => !p.lessonsRead.includes(l.id)) || LESSONS[0];
+  const day = p.activity[localDate()] || emptyActivity();
+  const goalProgress = Math.min(100, Math.round(day.questions / p.dailyGoal * 100));
 
-export function Dashboard() {
-  const p = getProgress();
-  const today = new Date().toLocaleDateString('vi-VI', { weekday: 'long', day: 'numeric', month: 'long' });
-  const prompt = DAILY_PROMPTS[new Date().getDate() % DAILY_PROMPTS.length];
-  const featured = LESSONS.filter(l => ['pyth', 'quad', 'der', 'euler', 'cplx', 'prob'].includes(l.id));
+  return <section className="dashboard page-enter">
+    <div className="dashboard-heading"><div><p className="eyebrow">GÓC HỌC TẬP CỦA BẠN</p><h1>Một ngày mới, một ý tưởng mới<span className="heading-dot">.</span></h1><p>Chào {p.displayName === 'Bạn học Toán' ? 'bạn' : p.displayName}, cùng khám phá vẻ đẹp của toán học nhé.</p></div><span className="date-pill"><CalendarDays size={15} />{today}</span></div>
 
-  return (
-    <section>
-      <div className="flex flex-col md:flex-row justify-between gap-4 mb-5">
-        <div>
-          <div className="text-[11px] tracking-[.14em] font-bold text-[#3d6b5c]">KHÔNG GIAN CỦA BẠN</div>
-          <h1 className="text-3xl tracking-tight mt-1 mb-2 font-bold">Học · Đọc · Tư duy</h1>
-          <p className="text-muted max-w-lg">Bài học ngắn, tủ sách chọn lọc, công thức có lời giải thích, và trợ lý AI trên máy.</p>
-        </div>
-        <span className="flex items-center gap-2 px-3 py-2 border border-line rounded-full bg-panel text-muted text-[13px] whitespace-nowrap h-fit">
-          📅 {today}
-        </span>
-      </div>
+    <div className="hero-grid">
+      <div className="hero-card"><div className="hero-copy"><span className="hero-label"><span /> HỌC ĐỂ HIỂU, KHÔNG CHỈ ĐỂ NHỚ</span><h2>Những ý tưởng lớn<br />bắt đầu từ <em>sự tò mò.</em></h2><p>Từ một công thức quen thuộc đến cả một thế giới đáng khám phá. Đi theo nhịp học của riêng bạn.</p><Link to={`/lesson/${nextLesson.id}`} className="button button-dark">{p.lessonsRead.length ? 'Tiếp tục hành trình' : 'Bắt đầu khám phá'}<ArrowRight size={17} /></Link><div className="hero-caption"><BookOpen size={14} /> {LESSONS.length} bài học · Từ THCS đến đại học</div></div><MathArtwork /></div>
+      <div className="challenge-card"><div className="card-eyebrow"><span className="small-icon peach"><Lightbulb size={18} /></span><span>THỬ THÁCH HÔM NAY</span></div><span className="challenge-tag">Một chút tư duy</span><h2>{challenge.t}</h2><p>{challenge.q}</p><Link to={`/think?item=${challengeIndex}`} className="text-link">Bạn có lời giải chứ?<ArrowRight size={16} /></Link><span className="challenge-decoration" aria-hidden="true">?</span></div>
+    </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-[1.55fr_.85fr] gap-4 mb-5">
-        <section className="bg-gradient-to-br from-[#dcefd4] to-[#eef6e8] text-ink rounded-2xl p-6 grid grid-cols-1 md:grid-cols-[1.2fr_.8fr] gap-2 min-h-[220px] overflow-hidden">
-          <div>
-            <div className="text-[11px] tracking-[.14em] font-bold text-[#3d6b5c]">HÀNH TRÌNH TRI THỨC</div>
-            <h2 className="text-2xl mt-2 mb-2 font-bold leading-tight">Từ những con số đầu tiên<br/>đến những câu hỏi lớn.</h2>
-            <p className="text-muted mb-4">Hiểu công thức trước khi nhớ. Đọc sách trước khi luyện nhiều.</p>
-            <Link to="/library" className="inline-flex items-center gap-2 bg-lime text-lime-ink px-4 py-2.5 rounded-xl font-bold text-sm no-underline hover:opacity-90 transition">
-              Khám phá thư viện <ArrowRight size={16} />
-            </Link>
-          </div>
-        </section>
-        <section className="bg-panel border border-line rounded-2xl p-5">
-          <div className="flex justify-between items-center mb-3">
-            <span className="text-[11px] tracking-[.12em] font-bold text-[#3d6b5c]">THỬ THÁCH HÔM NAY</span>
-            <span className="text-warm">🔥</span>
-          </div>
-          <p className="text-sm mb-3">{prompt}</p>
-          <Link to="/think" className="inline-flex items-center gap-1.5 text-[#3d6b5c] font-semibold text-sm no-underline">
-            Thử sức ngay <ArrowRight size={14} />
-          </Link>
-        </section>
-      </div>
+    <div className="stats-grid">{[
+      { Icon: BookOpen, value: p.lessonsRead.length, label: 'Bài học hoàn thành', tone: 'green', detail: `trong ${LESSONS.length} bài học` },
+      { Icon: PenTool, value: p.questionsDone, label: 'Câu hỏi đã luyện', tone: 'blue', detail: p.questionsDone ? `${p.questionsCorrect} câu trả lời đúng` : 'Sẵn sàng thử sức?' },
+      { Icon: Target, value: `${day.questions}/${p.dailyGoal}`, label: 'Mục tiêu hôm nay', tone: 'lilac', detail: goalProgress === 100 ? 'Tuyệt vời, bạn đã làm được!' : 'Mỗi câu hỏi, một bước tiến' },
+      { Icon: Flame, value: p.streak, label: 'Ngày học liên tiếp', tone: 'peach', detail: p.streak ? 'Giữ ngọn lửa tò mò nhé' : 'Bắt đầu từ hôm nay' },
+    ].map(({ Icon, value, label, tone, detail }) => <Link to="/progress" key={label} className="stat-card"><div className="stat-top"><span className={`small-icon ${tone}`}><Icon size={20} /></span><strong>{value}</strong></div><h3>{label}</h3><p>{detail}</p></Link>)}</div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-7">
-        {[
-          { icon: <LibIcon size={18} />, value: p.lessonsRead.length, label: 'Bài học hoàn thành' },
-          { icon: <PenTool size={18} />, value: p.questionsDone, label: 'Câu hỏi đã làm' },
-          { icon: <BookOpen size={18} />, value: p.booksOpened.length, label: 'Sách đã mở' },
-          { icon: <Flame size={18} />, value: p.streak, label: 'Ngày liên tiếp' },
-        ].map(({ icon, value, label }) => (
-          <div key={label} className="flex gap-3 items-center p-4 bg-panel border border-line rounded-2xl">
-            <div className="w-9 h-9 rounded-xl bg-[#eef8d8] text-[#3d6b5c] grid place-items-center">{icon}</div>
-            <div>
-              <div className="text-xl font-bold">{value}</div>
-              <div className="text-[13px] text-muted">{label}</div>
-            </div>
-          </div>
-        ))}
-      </div>
+    <div className="section-heading"><div><span className="eyebrow">MỖI BÀI HỌC, MỘT GÓC NHÌN</span><h2>Hôm nay, bạn muốn khám phá gì?</h2></div><Link to="/library" className="text-link">Tất cả bài học<ArrowRight size={16} /></Link></div>
+    <div className="lesson-grid">{featured.map(lesson => <LessonCard key={lesson.id} lesson={lesson} done={p.lessonsRead.includes(lesson.id)} />)}</div>
 
-      <div className="flex justify-between items-end gap-3 mb-3">
-        <div><h2 className="text-xl font-bold m-0">Hôm nay, bạn muốn khám phá gì?</h2><p className="text-muted text-sm mt-1">Một vài điểm bắt đầu dành cho bạn.</p></div>
-        <Link to="/library" className="inline-flex items-center gap-1.5 text-[#3d6b5c] font-semibold text-sm no-underline shrink-0">
-          Tất cả bài học <ArrowRight size={14} />
-        </Link>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        {featured.map(l => (
-          <Link key={l.id} to={`/lesson/${l.id}`} className="bg-panel border border-line rounded-2xl p-4 no-underline text-ink hover:border-sage transition-colors">
-            <div className="flex justify-between items-center mb-2">
-              <span className={`w-9 h-9 rounded-xl grid place-items-center font-[Georgia] text-xl ${l.icon === 'algebra' ? 'bg-[#e8f1ec] text-[#3d6b5c]' : l.icon === 'geometry' ? 'bg-[#fbebde] text-warm' : l.icon === 'analysis' ? 'bg-[#e5f2fc] text-[#2783de]' : 'bg-[#f4eef8] text-[#6b4e8a]'}`}>
-                {l.sym}
-              </span>
-              <span className="text-[12px] text-muted">{l.lv}</span>
-            </div>
-            <div className="font-semibold text-sm mb-1">{l.t}</div>
-            <div className="text-muted text-[13px]">{l.cat} · {l.m}</div>
-          </Link>
-        ))}
-      </div>
-    </section>
-  );
+    <div className="dashboard-bottom"><div><div className="section-heading"><div><span className="eyebrow">THỬ NGHIỆM ĐỂ HIỂU SÂU HƠN</span><h2>Bàn làm việc toán học</h2></div></div><div className="quick-tools">{[
+      { to: '/graph', Icon: ChartSpline, title: 'Chạm vào đồ thị', text: 'Thay hệ số, thấy sự khác biệt.', tone: 'green' },
+      { to: '/formulas', Icon: Sigma, title: 'Hiểu một công thức', text: 'Ý nghĩa đằng sau ký hiệu.', tone: 'blue' },
+      { to: '/ai', Icon: Sparkles, title: 'Hỏi trợ lý AI', text: 'Gỡ rối từng bước suy luận.', tone: 'lilac' },
+    ].map(({ to, Icon, title, text, tone }) => <Link key={to} to={to} className="quick-tool"><span className={`small-icon ${tone}`}><Icon size={21} /></span><div><h3>{title}</h3><p>{text}</p></div><ArrowUpRight size={18} /></Link>)}</div></div>
+      <div className="daily-goal"><div className="goal-heading"><span className="small-icon green">{goalProgress === 100 ? <Check size={20} /> : <Target size={20} />}</span><span>THÓI QUEN NHỎ, TIẾN BỘ LỚN</span></div><h3>{goalProgress === 100 ? 'Bạn đã hoàn thành mục tiêu!' : `Dành ít phút cho ${p.dailyGoal} câu hỏi`}</h3><p>Không cần nhanh hơn ai. Chỉ cần tiến xa hơn chính mình ngày hôm qua.</p><div className="goal-label"><span>Mục tiêu hôm nay</span><strong>{day.questions}/{p.dailyGoal} câu</strong></div><div className="progress-track" role="progressbar" aria-label="Mục tiêu hôm nay" aria-valuenow={goalProgress} aria-valuemin={0} aria-valuemax={100}><span style={{ width: `${goalProgress}%` }} /></div><Link to="/practice" className="text-link">Luyện tập ngay<ArrowRight size={16} /></Link></div>
+    </div>
+  </section>;
 }
-
-export default Dashboard;

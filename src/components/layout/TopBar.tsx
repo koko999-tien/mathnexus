@@ -1,64 +1,40 @@
-import { Moon, Sun, Menu } from 'lucide-react';
-import { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { Moon, Sun, Menu, Search, ChevronRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { Navigation } from './Sidebar';
+import { NAVIGATION } from '../../data/navigation';
+import { SearchDialog } from '../ui/SearchDialog';
+import { Modal } from '../ui/Modal';
+import { useProgress } from '../../hooks/useProgress';
 
-interface TopBarProps {
-  dark: boolean;
-  toggleTheme: () => void;
-}
-
-const NAV = [
-  { to: '/', label: 'Tổng quan' },
-  { to: '/library', label: 'Thư viện' },
-  { to: '/practice', label: 'Luyện tập' },
-  { to: '/tools', label: 'Công cụ' },
-  { to: '/think', label: 'Tư duy' },
-];
-
-export function TopBar({ dark, toggleTheme }: TopBarProps) {
+export function TopBar({ dark, toggleTheme }: { dark: boolean; toggleTheme: () => void }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const { pathname } = useLocation();
+  const p = useProgress();
+  const title = NAVIGATION.find(n => n.to === pathname)?.label || 'Khám phá kiến thức';
 
-  return (
-    <>
-      <header className="h-16 flex items-center gap-3 px-5 border-b border-line bg-panel sticky top-0 z-10">
-        <button
-          className="md:hidden w-10 h-10 border border-line rounded-xl bg-panel grid place-items-center shrink-0"
-          onClick={() => setMenuOpen(!menuOpen)}
-          aria-label="Mở menu"
-        >
-          <Menu size={18} />
-        </button>
-        <div className="hidden md:block text-[13px] text-muted">
-          Không gian học tập <span className="mx-1">/</span> <strong className="text-ink font-semibold">MathNexus</strong>
-        </div>
-        <button
-          onClick={toggleTheme}
-          className="ml-auto w-10 h-10 border border-line rounded-xl bg-panel grid place-items-center"
-          aria-label="Đổi giao diện"
-        >
-          {dark ? <Sun size={18} /> : <Moon size={18} />}
-        </button>
-      </header>
-      {menuOpen && (
-        <div className="md:hidden fixed inset-0 bg-black/40 z-20" onClick={() => setMenuOpen(false)}>
-          <div className="w-64 h-full bg-sidebar p-4 flex flex-col gap-1" onClick={e => e.stopPropagation()}>
-            <div className="font-bold text-lg mb-4 px-3">MathNexus</div>
-            {NAV.map(({ to, label }) => (
-              <NavLink
-                key={to}
-                to={to}
-                end={to === '/'}
-                onClick={() => setMenuOpen(false)}
-                className={({ isActive }) =>
-                  `px-3 py-2.5 rounded-xl text-sm no-underline text-ink ${isActive ? 'bg-[#d8efc8] font-semibold' : ''}`
-                }
-              >
-                {label}
-              </NavLink>
-            ))}
-          </div>
-        </div>
-      )}
-    </>
-  );
+  useEffect(() => {
+    const handleKey = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault(); setSearchOpen(open => !open);
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, []);
+
+  return <>
+    <header className="topbar">
+      <button className="icon-button mobile-menu-button" onClick={() => setMenuOpen(true)} aria-label="Mở menu" aria-expanded={menuOpen}><Menu size={22} /></button>
+      <Link to="/" className="mobile-brand">MathNexus<span>·</span></Link>
+      <div className="breadcrumb"><span>Không gian học tập</span><ChevronRight size={14} /><strong>{title}</strong></div>
+      <button className="topbar-search" onClick={() => setSearchOpen(true)} aria-label="Tìm kiếm"><Search size={18} /><span>Tìm kiếm kiến thức…</span><kbd>Ctrl K</kbd></button>
+      <button onClick={toggleTheme} className="icon-button" aria-label={dark ? 'Bật giao diện sáng' : 'Bật giao diện tối'}>{dark ? <Sun size={19} /> : <Moon size={19} />}</button>
+      <span className="topbar-divider" />
+      <Link to="/progress" className="avatar topbar-avatar" aria-label="Tiến độ cá nhân">{p.displayName.charAt(0).toUpperCase()}</Link>
+    </header>
+    {menuOpen && <Modal title="MathNexus" className="drawer" onClose={() => setMenuOpen(false)}><Navigation onNavigate={() => setMenuOpen(false)} /></Modal>}
+    {searchOpen && <SearchDialog onClose={() => setSearchOpen(false)} />}
+  </>;
 }

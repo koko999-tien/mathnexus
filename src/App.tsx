@@ -1,9 +1,13 @@
-import { lazy, Suspense } from 'react';
-import { BrowserRouter, Link, Routes, Route } from 'react-router-dom';
+import { lazy, Suspense, useEffect } from 'react';
+import { BrowserRouter, Link, Routes, Route, useLocation } from 'react-router-dom';
 import { useTheme } from './hooks/useTheme';
 import { Sidebar } from './components/layout/Sidebar';
 import { TopBar } from './components/layout/TopBar';
 import { BottomNav } from './components/layout/BottomNav';
+import { AppStatus } from './components/layout/AppStatus';
+import { ErrorBoundary } from './components/ui/ErrorBoundary';
+import { NAVIGATION } from './data/navigation';
+import NotFound from './pages/NotFound';
 
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Library = lazy(() => import('./pages/Library'));
@@ -22,10 +26,21 @@ const Progress = lazy(() => import('./pages/Progress'));
 
 function Loader() {
   return (
-    <div className="flex items-center justify-center h-64">
+    <div className="flex items-center justify-center gap-3 h-64" role="status">
       <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+      <span className="text-muted text-sm">Đang mở góc học tập…</span>
     </div>
   );
+}
+
+function RouteEffects() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    document.getElementById('main-content')?.focus({ preventScroll: true });
+    document.title = `${NAVIGATION.find(item => item.to === pathname)?.label || 'Khám phá'} · MathNexus`;
+  }, [pathname]);
+  return null;
 }
 
 export default function App() {
@@ -34,11 +49,14 @@ export default function App() {
 
   return (
     <BrowserRouter basename={routerBase || '/'}>
-      <div className="flex min-h-screen bg-bg text-ink">
+      <RouteEffects />
+      <a href="#main-content" className="skip-link">Đi đến nội dung chính</a>
+      <div className="app-shell">
         <Sidebar />
-        <div className="flex-1 min-w-0 flex flex-col">
+        <div className="app-content">
           <TopBar dark={theme.dark} toggleTheme={theme.toggle} />
-          <main className="flex-1 p-5 md:p-7 max-w-[1120px] w-full mx-auto pb-24 md:pb-12">
+          <main id="main-content" tabIndex={-1} className="main-content">
+            <ErrorBoundary>
             <Suspense fallback={<Loader />}>
               <Routes>
                 <Route path="/" element={<Dashboard />} />
@@ -55,14 +73,14 @@ export default function App() {
                 <Route path="/ai" element={<AI />} />
                 <Route path="/notebook" element={<Notebook />} />
                 <Route path="/progress" element={<Progress />} />
+                <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
+            </ErrorBoundary>
           </main>
-          <footer className="flex justify-between gap-3 py-4 px-5 text-muted text-[13px] border-t border-line">
-            <span>MathNexus · Mỗi ngày, hiểu thêm một chút.</span>
-            <Link to="/progress" className="hover:text-ink transition-colors">
-              Dữ liệu của bạn
-            </Link>
+          <footer className="app-footer">
+            <div><span className="footer-brand">MathNexus<span>·</span></span><span>Mỗi ngày, hiểu thêm một chút.</span><Link to="/progress">Dữ liệu của bạn</Link></div>
+            <AppStatus />
           </footer>
         </div>
         <BottomNav />

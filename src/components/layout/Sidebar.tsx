@@ -1,49 +1,31 @@
-import { NavLink } from 'react-router-dom';
-import { Home, BookOpen, Library as LibraryIcon, Brain, PenTool, BarChart3, Calculator, Hash, Bot, StickyNote, TrendingUp } from 'lucide-react';
+import { Fragment } from 'react';
+import { NavLink, Link } from 'react-router-dom';
+import { ArrowUpRight, Sprout } from 'lucide-react';
+import { NAVIGATION } from '../../data/navigation';
+import { useProgress } from '../../hooks/useProgress';
 
-const NAV = [
-  { to: '/', icon: Home, label: 'Tổng quan' },
-  { to: '/library', icon: BookOpen, label: 'Thư viện' },
-  { to: '/books', icon: LibraryIcon, label: 'Tủ sách' },
-  { to: '/think', icon: Brain, label: 'Tư duy' },
-  { to: '/practice', icon: PenTool, label: 'Luyện tập' },
-  { to: '/graph', icon: BarChart3, label: 'Đồ thị' },
-  { to: '/tools', icon: Calculator, label: 'Công cụ' },
-  { to: '/formulas', icon: Hash, label: 'Công thức' },
-  { to: '/ai', icon: Bot, label: 'Trợ lý AI' },
-  { to: '/notebook', icon: StickyNote, label: 'Sổ tay' },
-  { to: '/progress', icon: TrendingUp, label: 'Tiến độ' },
-];
+export function Brand() {
+  return <Link to="/" className="brand" aria-label="MathNexus - Trang chủ"><span className="brand-mark">m<span>·</span></span><span>MathNexus<small>MỖI NGÀY, HIỂU THÊM MỘT CHÚT.</small></span></Link>;
+}
+
+export function Navigation({ onNavigate }: { onNavigate?: () => void }) {
+  return <nav className="sidebar-nav" aria-label="Điều hướng chính">{NAVIGATION.map(({ to, icon: Icon, label, group }, index) => (
+    <Fragment key={to}>
+      {(index === 0 || NAVIGATION[index - 1].group !== group) && <p className="nav-group">{group}</p>}
+      <NavLink to={to} end={to === '/'} onClick={onNavigate} className={({ isActive }) => `nav-link ${isActive ? 'is-active' : ''}`}><Icon size={19} strokeWidth={1.7} /><span>{label}</span>{to === '/ai' && <span className="ai-tag">AI</span>}</NavLink>
+    </Fragment>
+  ))}</nav>;
+}
 
 export function Sidebar() {
+  const p = useProgress();
   return (
-    <aside className="hidden md:flex w-[260px] bg-sidebar text-side-text flex-col sticky top-0 h-screen shrink-0">
-      <NavLink to="/" className="flex gap-3 items-center px-5 pt-6 pb-4 no-underline text-inherit">
-        <span className="w-9 h-9 rounded-xl bg-lime text-lime-ink grid place-items-center font-extrabold text-lg">M<span className="opacity-55">·</span></span>
-        <span className="font-semibold text-sm">MathNexus<small className="block text-[10px] tracking-[.14em] text-[#6b8a72] mt-0.5">KHÔNG GIAN HỌC TOÁN</small></span>
-      </NavLink>
-      <div className="px-5 py-2 text-[10px] tracking-[.16em] text-[#6b8a72]">HỌC MỖI NGÀY</div>
-      <nav className="flex flex-col gap-0.5 px-2 overflow-auto flex-1">
-        {NAV.map(({ to, icon: Icon, label }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={to === '/'}
-            className={({ isActive }) =>
-              `flex items-center gap-2.5 px-3 py-2.5 min-h-[44px] rounded-xl no-underline text-ink text-[14px] transition-colors ${isActive ? 'bg-[#d8efc8] font-semibold' : 'hover:bg-[#d8efc8]/50'}`
-            }
-          >
-            <Icon size={18} />
-            {label}
-          </NavLink>
-        ))}
-      </nav>
-      <div className="mt-auto px-5 py-4 border-t border-line">
-        <div className="flex items-center gap-2 text-xs text-[#3d6b5c]">
-          <span className="w-[7px] h-[7px] rounded-full bg-lime" />
-          Không gian cá nhân
-        </div>
-        <p className="text-xs text-muted mt-2">Tiến độ lưu trên trình duyệt.</p>
+    <aside className="desktop-sidebar">
+      <Brand />
+      <Navigation />
+      <div className="sidebar-bottom">
+        <div className="grow-card"><Sprout size={24} /><strong>Một chút mỗi ngày.<br />Một bước tiến xa.</strong><p>Dành vài phút hôm nay cho một ý tưởng mới.</p><Link to="/practice">Bắt đầu luyện tập <ArrowUpRight size={16} /></Link></div>
+        <Link to="/progress" className="profile-link"><span className="avatar">{p.displayName.charAt(0).toUpperCase()}</span><span><strong>{p.displayName}</strong><small>Góc học tập cá nhân</small></span><ArrowUpRight size={16} /></Link>
       </div>
     </aside>
   );

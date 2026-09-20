@@ -10,10 +10,10 @@ export function FormulaDetail() {
 
   return (
     <section>
-      <Link to="/formulas" className="inline-flex items-center gap-1 text-[#3d6b5c] font-semibold text-sm no-underline mb-4">
+      <Link to="/formulas" className="inline-flex items-center gap-1 text-accent font-semibold text-sm no-underline mb-4">
         <ArrowLeft size={14} /> Công thức
       </Link>
-      <div className="text-[11px] tracking-[.14em] font-bold text-[#3d6b5c] mb-1">{formula.cat}</div>
+      <div className="text-[11px] tracking-[.14em] font-bold text-accent mb-1">{formula.cat}</div>
       <h1 className="text-3xl tracking-tight font-bold mb-4">{formula.name}</h1>
       <div className="bg-panel border border-line rounded-2xl p-6 mb-4">
         <div className="font-[Georgia] italic text-2xl mb-4"><MathText expr={formula.expr} display /></div>

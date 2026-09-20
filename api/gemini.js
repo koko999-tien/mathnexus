@@ -46,10 +46,11 @@ function normalizeHistory(history) {
     }));
 }
 
-async function callGemini({ apiKey, model, contents }) {
+async function callGemini({ apiKey, model, contents, signal }) {
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
 
   const geminiResponse = await fetch(endpoint, {
+    signal,
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -98,6 +99,7 @@ async function callGemini({ apiKey, model, contents }) {
   }
 
   const text = payload?.candidates?.[0]?.content?.parts
+    ?.filter(part => !part.thought)
     ?.map(part => (typeof part?.text === 'string' ? part.text : ''))
     .join('')
     .trim();
@@ -125,6 +127,7 @@ async function callGemini({ apiKey, model, contents }) {
 }
 
 export default async function handler(request, response) {
+  response.setHeader('Cache-Control', 'no-store');
   if (request.method !== 'POST') {
     response.setHeader('Allow', 'POST');
     return response.status(405).json({ error: 'Method not allowed' });
@@ -143,6 +146,10 @@ export default async function handler(request, response) {
     body = typeof request.body === 'string' ? JSON.parse(request.body || '{}') : request.body || {};
   } catch {
     return response.status(400).json({ error: 'Invalid JSON body', code: 'INVALID_JSON' });
+  }
+
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return response.status(400).json({ error: 'Expected a JSON object', code: 'INVALID_JSON' });
   }
 
   const message = typeof body.message === 'string' ? body.message.trim() : '';
@@ -177,9 +184,10 @@ export default async function handler(request, response) {
 
   try {
     let lastError = null;
+    const signal = AbortSignal.timeout(25000);
 
     for (const model of modelsToTry) {
-      let result = await callGemini({ apiKey, model, contents });
+      let result = await callGemini({ apiKey, model, contents, signal });
 
       if (result.ok) {
         return response.status(200).json({
@@ -193,7 +201,7 @@ export default async function handler(request, response) {
       if (isTransientGeminiError(result)) {
         for (const delayMs of RETRY_DELAYS_MS) {
           await sleep(delayMs);
-          result = await callGemini({ apiKey, model, contents });
+          result = await callGemini({ apiKey, model, contents, signal });
 
           if (result.ok) {
             return response.status(200).json({
@@ -236,6 +244,9 @@ export default async function handler(request, response) {
       model: lastError?.model || configuredModel,
     });
   } catch (error) {
+    if (error?.name === 'TimeoutError' || error?.name === 'AbortError') {
+      return response.status(504).json({ error: 'Gemini took too long to respond', code: 'TIMEOUT' });
+    }
     const detail = error instanceof Error ? error.message : 'Unknown server error';
 
     console.error(

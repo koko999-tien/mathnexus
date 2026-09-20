@@ -1,30 +1,14 @@
 import { NavLink } from 'react-router-dom';
-import { Home, BookOpen, PenTool, Calculator, Brain } from 'lucide-react';
+import { LayoutDashboard, BookOpen, PenTool, ChartSpline, NotebookPen } from 'lucide-react';
 
 const NAV = [
-  { to: '/', icon: Home, label: 'Tổng quan' },
+  { to: '/', icon: LayoutDashboard, label: 'Trang chủ' },
   { to: '/library', icon: BookOpen, label: 'Thư viện' },
-  { to: '/practice', icon: PenTool, label: 'Luyện' },
-  { to: '/tools', icon: Calculator, label: 'Công cụ' },
-  { to: '/think', icon: Brain, label: 'Tư duy' },
+  { to: '/practice', icon: PenTool, label: 'Luyện tập' },
+  { to: '/graph', icon: ChartSpline, label: 'Đồ thị' },
+  { to: '/notebook', icon: NotebookPen, label: 'Sổ tay' },
 ];
 
 export function BottomNav() {
-  return (
-    <nav className="md:hidden fixed left-0 right-0 bottom-0 z-10 bg-panel border-t border-line grid grid-cols-5 pb-[env(safe-area-inset-bottom)]">
-      {NAV.map(({ to, icon: Icon, label }) => (
-        <NavLink
-          key={to}
-          to={to}
-          end={to === '/'}
-          className={({ isActive }) =>
-            `min-h-[56px] flex flex-col items-center justify-center gap-0.5 text-[11px] no-underline transition-colors ${isActive ? 'text-forest font-bold' : 'text-muted'}`
-          }
-        >
-          <Icon size={20} />
-          {label}
-        </NavLink>
-      ))}
-    </nav>
-  );
+  return <nav className="bottom-nav" aria-label="Điều hướng nhanh">{NAV.map(({ to, icon: Icon, label }) => <NavLink key={to} to={to} end={to === '/'} className={({ isActive }) => isActive ? 'is-active' : ''}><Icon size={21} strokeWidth={1.7} /><span>{label}</span></NavLink>)}</nav>;
 }

@@ -9,7 +9,7 @@ export const THINK: ThinkItem[] = [
   { t:"Chẵn lẻ", q:"Tổng 3 số lẻ liên tiếp có luôn chia hết cho 3?", h:"(2k−1)+(2k+1)+(2k+3)=6k+3=3(2k+1). Luôn chia hết cho 3." },
   { t:"Phản ví dụ", q:"Mọi số nguyên tố đều lẻ. Đúng hay sai?", h:"Sai. 2 là nguyên tố chẵn." },
   { t:"Cầu và đèn", q:"Bốn người cần 1,2,5,10 phút qua cầu; tối đa hai người, phải mang đèn. Tối thiểu bao lâu?", h:"17 phút: 1&2 sang, 1 về, 5&10 sang, 2 về, 1&2 sang." },
-  { t:"Hàm sinh tư duy", q:"Có 10 cái bắt tay trong một phòng, mỗi người bắt tay ít nhất một lần. Có thể có đúng 3 người không?", h:"Đếm chẵn: mỗi bắt tay tăng tổng bậc 2. Tổng bậc=20. Có thể; cần mô hình đồ thị đơn." },
+  { t:"Đếm những cái bắt tay", q:"Có 10 cái bắt tay trong một phòng. Mỗi cặp người chỉ bắt tay tối đa một lần. Có thể có đúng 3 người không?", h:"Không. Với 3 người, số cặp tối đa là C(3,2)=3, nên chỉ có tối đa 3 cái bắt tay. Để có 10 cái bắt tay cần ít nhất 5 người vì C(5,2)=10." },
   { t:"Mod 9", q:"Tại sao 'tổng chữ số chia hết 9 thì số chia hết 9'?", h:"10≡1 (mod 9) nên 10^k≡1, số ≡ tổng chữ số (mod 9)." },
   { t:"Vô hạn khách sạn", q:"Khách sạn Hilbert đầy. Làm sao nhận thêm 1 khách?", h:"Chuyển phòng n → n+1. Phòng 1 trống. Vô hạn đếm được vẫn 'còn chỗ'." },
   { t:"Xác suất hai con", q:"Một gia đình có hai con, ít nhất một trai. Xác suất cả hai trai?", h:"Không gian {TT,TG,GT} đồng khả năng nếu 'ít nhất một trai' — 1/3, không phải 1/2." },

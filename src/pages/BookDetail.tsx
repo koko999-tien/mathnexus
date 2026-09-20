@@ -1,25 +1,20 @@
 import { useParams, Link } from 'react-router-dom';
 import { BOOKS } from '../data/books';
-import { getProgress, saveProgress } from '../utils/storage';
+import { recordActivity } from '../utils/storage';
 import { ArrowLeft } from 'lucide-react';
 
 export function BookDetail() {
   const { id } = useParams();
   const book = BOOKS.find(b => b.id === id);
+  useEffect(() => { if (book) recordActivity('book', book.id); }, [book]);
   if (!book) return <p className="text-muted">Sách không tồn tại.</p>;
-
-  const p = getProgress();
-  if (!p.booksOpened.includes(book.id)) {
-    p.booksOpened.push(book.id);
-    saveProgress(p);
-  }
 
   return (
     <section>
-      <Link to="/books" className="inline-flex items-center gap-1 text-[#3d6b5c] font-semibold text-sm no-underline mb-4">
+      <Link to="/books" className="inline-flex items-center gap-1 text-accent font-semibold text-sm no-underline mb-4">
         <ArrowLeft size={14} /> Tủ sách
       </Link>
-      <div className="text-[11px] tracking-[.14em] font-bold text-[#3d6b5c] mb-1">{book.lv}</div>
+      <div className="text-[11px] tracking-[.14em] font-bold text-accent mb-1">{book.lv}</div>
       <h1 className="text-3xl tracking-tight font-bold mb-4">{book.t}</h1>
       <div className="bg-panel border border-line rounded-2xl p-6 space-y-4">
         <div>
@@ -36,3 +31,4 @@ export function BookDetail() {
 }
 
 export default BookDetail;
+import { useEffect } from 'react';
