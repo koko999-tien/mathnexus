@@ -14,6 +14,14 @@ interface ApiHistoryItem {
   text: string;
 }
 
+interface GeminiResponse {
+  text?: unknown;
+  error?: unknown;
+  code?: unknown;
+  model?: unknown;
+  upstreamStatus?: unknown;
+}
+
 const QUICK = [
   'Số phức là gì',
   'Toán rời rạc dùng để làm gì',
@@ -57,7 +65,21 @@ function localFallback(query: string): string {
   const context = getLocalContext(query);
   if (context) return context;
 
-  return `Mình chưa tìm thấy nội dung phù hợp cho "${query}" trong dữ liệu cục bộ. Khi Gemini được kết nối trên bản deploy có backend, mình sẽ có thể giải và giải thích câu hỏi này trực tiếp.`;
+  return `Mình chưa tìm thấy nội dung phù hợp cho "${query}" trong dữ liệu cục bộ.`;
+}
+
+function errorLabel(payload: GeminiResponse, status: number): string {
+  const message =
+    typeof payload.error === 'string' && payload.error.trim()
+      ? payload.error.trim()
+      : `Gemini API trả HTTP ${status}`;
+
+  const code =
+    typeof payload.code === 'string' && payload.code.trim()
+      ? ` [${payload.code.trim()}]`
+      : '';
+
+  return `${message}${code}`.slice(0, 700);
 }
 
 export function AI() {
@@ -99,22 +121,25 @@ export function AI() {
         }),
       });
 
+      const data = (await response.json().catch(() => ({}))) as GeminiResponse;
+
       if (!response.ok) {
-        throw new Error(`Gemini API returned ${response.status}`);
+        throw new Error(errorLabel(data, response.status));
       }
 
-      const data = (await response.json()) as { text?: unknown };
       if (typeof data.text !== 'string' || !data.text.trim()) {
-        throw new Error('Gemini returned an empty response');
+        throw new Error('Gemini trả về phản hồi rỗng.');
       }
 
       setMsgs(current => [...current, { role: 'bot', text: data.text as string }]);
-    } catch {
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : 'Lỗi không xác định';
+
       setMsgs(current => [
         ...current,
         {
           role: 'bot',
-          text: `${localFallback(text)}\n\n(Gemini hiện chưa khả dụng trên bản deploy này, nên mình đang dùng dữ liệu cục bộ của MathNexus.)`,
+          text: `${localFallback(text)}\n\nGemini chưa trả lời được. Chi tiết: ${detail}`,
         },
       ]);
     } finally {
