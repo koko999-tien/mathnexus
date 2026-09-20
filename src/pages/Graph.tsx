@@ -95,3 +95,5 @@ export function Graph() {
     </section>
   );
 }
+
+export default Graph;

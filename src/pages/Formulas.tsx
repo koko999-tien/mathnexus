@@ -50,3 +50,5 @@ export function Formulas() {
     </section>
   );
 }
+
+export default Formulas;

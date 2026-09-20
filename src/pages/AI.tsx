@@ -68,3 +68,5 @@ export function AI() {
     </section>
   );
 }
+
+export default AI;

@@ -1,4 +1,4 @@
-import { getProgress, saveProgress, DEFAULT_PROGRESS, type Progress } from '../utils/storage';
+import { getProgress, saveProgress, DEFAULT_PROGRESS } from '../utils/storage';
 import { LESSONS } from '../data/lessons';
 import { Download, RotateCcw } from 'lucide-react';
 
@@ -82,3 +82,5 @@ export function Progress() {
     </section>
   );
 }
+
+export default Progress;

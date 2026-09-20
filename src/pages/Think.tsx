@@ -36,3 +36,5 @@ export function Think() {
     </section>
   );
 }
+
+export default Think;

@@ -32,3 +32,5 @@ export function Books() {
     </section>
   );
 }
+
+export default Books;

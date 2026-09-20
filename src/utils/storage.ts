@@ -15,7 +15,7 @@ export function save(key: string, value: unknown): void {
   } catch { /* quota exceeded */ }
 }
 
-export interface Progress {
+export interface ProgressData {
   lessonsRead: string[];
   questionsDone: number;
   booksOpened: string[];
@@ -25,7 +25,7 @@ export interface Progress {
   displayName: string;
 }
 
-export const DEFAULT_PROGRESS: Progress = {
+export const DEFAULT_PROGRESS: ProgressData = {
   lessonsRead: [],
   questionsDone: 0,
   booksOpened: [],
@@ -35,10 +35,10 @@ export const DEFAULT_PROGRESS: Progress = {
   displayName: 'Bạn học Toán',
 };
 
-export function getProgress(): Progress {
-  return load<Progress>('progress', DEFAULT_PROGRESS);
+export function getProgress(): ProgressData {
+  return load<ProgressData>('progress', DEFAULT_PROGRESS);
 }
 
-export function saveProgress(p: Progress): void {
+export function saveProgress(p: ProgressData): void {
   save('progress', p);
 }

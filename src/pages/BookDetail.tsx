@@ -34,3 +34,5 @@ export function BookDetail() {
     </section>
   );
 }
+
+export default BookDetail;

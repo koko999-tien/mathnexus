@@ -36,3 +36,5 @@ function Row({ label, text }: { label: string; text: string }) {
     </div>
   );
 }
+
+export default FormulaDetail;

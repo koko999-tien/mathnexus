@@ -65,3 +65,5 @@ export function Practice() {
     </section>
   );
 }
+
+export default Practice;

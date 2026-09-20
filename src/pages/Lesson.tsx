@@ -39,3 +39,5 @@ export function Lesson() {
     </section>
   );
 }
+
+export default Lesson;

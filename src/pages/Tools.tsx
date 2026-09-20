@@ -90,3 +90,5 @@ function Input({ label, value, onChange }: { label: string; value: number; onCha
 function Result({ text }: { text: string }) {
   return <p className="text-[13px] text-muted border border-dashed border-line rounded-xl p-2.5 mt-2 m-0">{text}</p>;
 }
+
+export default Tools;

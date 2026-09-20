@@ -33,3 +33,5 @@ export function Notebook() {
     </section>
   );
 }
+
+export default Notebook;
