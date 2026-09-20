@@ -1,0 +1,34 @@
+@import "tailwindcss";
+@import "katex/dist/katex.min.css";
+
+@theme {
+  --color-ink: #1c241f;
+  --color-muted: #5e7268;
+  --color-bg: #f3f7f1;
+  --color-panel: #ffffff;
+  --color-line: #d7e4d6;
+  --color-sidebar: #e7f2e4;
+  --color-lime: #c5e8a0;
+  --color-lime-ink: #1c241f;
+  --color-forest: #4d7c5a;
+  --color-sage: #8fbc5a;
+  --color-warm: #c57a32;
+  --color-mist: #cfe3c4;
+  --color-cream: #fdf8f0;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-math: Georgia, "Times New Roman", serif;
+}
+
+.dark {
+  --color-ink: #f3f6f3;
+  --color-muted: #a8b5ae;
+  --color-bg: #121814;
+  --color-panel: #1a221d;
+  --color-line: rgba(255,255,255,0.14);
+  --color-sidebar: #0b1410;
+  --color-lime-ink: #1c241f;
+}
+
+* { box-sizing: border-box; }
+html { scroll-padding-top: 72px; }
+body { margin: 0; font-family: var(--font-sans); background: var(--color-bg); color: var(--color-ink); }
