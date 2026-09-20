@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Link, Routes, Route } from 'react-router-dom';
 import { useTheme } from './hooks/useTheme';
 import { Sidebar } from './components/layout/Sidebar';
 import { TopBar } from './components/layout/TopBar';
@@ -30,9 +30,10 @@ function Loader() {
 
 export default function App() {
   const theme = useTheme();
+  const routerBase = import.meta.env.BASE_URL.replace(/\/$/, '');
 
   return (
-    <BrowserRouter basename="/mathnexus">
+    <BrowserRouter basename={routerBase || '/'}>
       <div className="flex min-h-screen bg-bg text-ink">
         <Sidebar />
         <div className="flex-1 min-w-0 flex flex-col">
@@ -59,7 +60,9 @@ export default function App() {
           </main>
           <footer className="flex justify-between gap-3 py-4 px-5 text-muted text-[13px] border-t border-line">
             <span>MathNexus · Mỗi ngày, hiểu thêm một chút.</span>
-            <a href="/mathnexus/progress" className="hover:text-ink transition-colors">Dữ liệu của bạn</a>
+            <Link to="/progress" className="hover:text-ink transition-colors">
+              Dữ liệu của bạn
+            </Link>
           </footer>
         </div>
         <BottomNav />
