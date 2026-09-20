@@ -1,4 +1,6 @@
 const DEFAULT_MODEL = 'gemini-3.8-flash';
+const STABLE_FALLBACK_MODELS = ['gemini-3.7-flash', 'gemini-3.6-flash'];
+const RETRY_DELAYS_MS = [800, 1800];
 
 const SYSTEM_PROMPT = `
 Bạn là MathNexus AI, trợ lý học toán cho người Việt.
@@ -16,6 +18,20 @@ Nguyên tắc:
 function cleanEnv(value) {
   if (typeof value !== 'string') return '';
   return value.trim().replace(/^["']|["']$/g, '').trim();
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function isTransientGeminiError(result) {
+  return (
+    result.status === 408 ||
+    result.status === 429 ||
+    result.status >= 500 ||
+    result.code === 'UNAVAILABLE' ||
+    result.code === 'RESOURCE_EXHAUSTED'
+  );
 }
 
 function normalizeHistory(history) {
@@ -153,15 +169,17 @@ export default async function handler(request, response) {
   ];
 
   const configuredModel = cleanEnv(process.env.GEMINI_MODEL) || DEFAULT_MODEL;
-  const modelsToTry = configuredModel === DEFAULT_MODEL
-    ? [DEFAULT_MODEL]
-    : [configuredModel, DEFAULT_MODEL];
+  const modelsToTry = [...new Set([
+    configuredModel,
+    DEFAULT_MODEL,
+    ...STABLE_FALLBACK_MODELS,
+  ])];
 
   try {
     let lastError = null;
 
     for (const model of modelsToTry) {
-      const result = await callGemini({ apiKey, model, contents });
+      let result = await callGemini({ apiKey, model, contents });
 
       if (result.ok) {
         return response.status(200).json({
@@ -172,13 +190,43 @@ export default async function handler(request, response) {
 
       lastError = result;
 
+      if (isTransientGeminiError(result)) {
+        for (const delayMs of RETRY_DELAYS_MS) {
+          await sleep(delayMs);
+          result = await callGemini({ apiKey, model, contents });
+
+          if (result.ok) {
+            return response.status(200).json({
+              text: result.text,
+              model: result.model,
+            });
+          }
+
+          lastError = result;
+
+          if (!isTransientGeminiError(result)) {
+            break;
+          }
+        }
+      }
+
       const modelLooksInvalid =
         result.status === 404 ||
         /model.*(not found|not supported|invalid)|not found.*model/i.test(String(result.detail));
 
-      if (!modelLooksInvalid || model === DEFAULT_MODEL) {
+      const shouldTryNextModel = modelLooksInvalid || isTransientGeminiError(result);
+
+      if (!shouldTryNextModel) {
         break;
       }
+
+      console.warn(
+        '[MathNexus Gemini fallback]',
+        JSON.stringify({
+          fromModel: model,
+          reason: String(result.code || result.status),
+        }),
+      );
     }
 
     return response.status(502).json({
