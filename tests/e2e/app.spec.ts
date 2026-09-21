@@ -85,6 +85,11 @@ test('deep ontology exposes definitions, misconceptions and evidence mastery', a
   await page.locator('.ontology-atom-list').getByRole('button', { name: /Đạo hàm từ định nghĩa/ }).click();
   await expect(page.locator('.atom-inspector')).toContainText('Đạo hàm từ định nghĩa');
   await expect(page.locator('.ontology-practice-link')).toBeVisible();
+
+  await page.goto('/progress');
+  await expect(page.getByRole('heading', { name: 'Bản đồ bằng chứng học tập' })).toBeVisible();
+  await expect(page.getByText('Chưa đánh giá').first()).toBeVisible();
+  await expect(page.getByRole('link', { name: /Mở bản đồ toán học/ })).toBeVisible();
 });
 
 
