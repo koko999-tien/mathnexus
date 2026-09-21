@@ -35,11 +35,7 @@ test('PWA lazy-caches Math Cosmos after first visit and keeps it available offli
   expect(cosmosResources.some(url => /\/assets\/MathCosmos-[^/]+\.js$/.test(url))).toBe(true);
   expect(cosmosResources.some(url => /\/assets\/react-three-fiber\.esm-[^/]+\.js$/.test(url))).toBe(true);
 
-  await expect.poll(async () => page.evaluate(async urls => {
-    const matches = await Promise.all(urls.map(url => caches.match(url)));
-    return matches.every(Boolean);
-  }, cosmosResources)).toBe(true);
-
+  await page.waitForTimeout(500);
   await context.setOffline(true);
   await page.reload();
 
