@@ -18,9 +18,16 @@ export function numericalDerivative(fn: (x: number) => number, x: number): numbe
   const h = Math.max(1, Math.abs(x)) * 1e-5;
   const fm2 = finiteValue(fn, x - 2 * h);
   const fm1 = finiteValue(fn, x - h);
+  const f0 = finiteValue(fn, x);
   const fp1 = finiteValue(fn, x + h);
   const fp2 = finiteValue(fn, x + 2 * h);
-  if ([fm2, fm1, fp1, fp2].some(value => value === null)) return null;
+  if ([fm2, fm1, f0, fp1, fp2].some(value => value === null)) return null;
+
+  const leftSlope = ((f0 as number) - (fm1 as number)) / h;
+  const rightSlope = ((fp1 as number) - (f0 as number)) / h;
+  const oneSidedScale = Math.max(1, Math.abs(leftSlope), Math.abs(rightSlope));
+  if (Math.abs(leftSlope - rightSlope) > 1e-3 * oneSidedScale) return null;
+
   return ((fm2 as number) - 8 * (fm1 as number) + 8 * (fp1 as number) - (fp2 as number)) / (12 * h);
 }
 
