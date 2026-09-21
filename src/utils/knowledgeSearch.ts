@@ -1,7 +1,7 @@
 import { LESSONS } from '../data/lessons.ts';
 import { BOOKS } from '../data/books.ts';
 import { FORMS } from '../data/formulas.ts';
-import { MATH_CONCEPTS, MATH_DOMAINS } from '../data/mathKnowledge.ts';
+import { MATH_CONCEPTS, MATH_DOMAINS, type MathDomainId } from '../data/mathKnowledge.ts';
 import { MATH_ATOMS, ONTOLOGY_KIND_META } from '../data/mathOntology.ts';
 import { rankRetrieval, type RetrievalDocument } from './retrievalEngine.ts';
 import { normalizeSearch } from './search.ts';
@@ -26,7 +26,7 @@ interface KnowledgeSource {
   to: string;
   context: string;
   conceptId?: string;
-  domainId?: string;
+  domainId?: MathDomainId;
 }
 
 function stripHtml(text: string) {
@@ -212,7 +212,7 @@ function retrievalContext(query: string) {
   const domains = new Set(
     anchorIds
       .map(id => MATH_CONCEPTS.find(concept => concept.id === id)?.domain)
-      .filter((domain): domain is string => Boolean(domain)),
+      .filter((domain): domain is MathDomainId => Boolean(domain)),
   );
 
   return { distances, prerequisiteDistances: prerequisiteDistances(anchorIds), domains };
