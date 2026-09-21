@@ -10,14 +10,14 @@ Mục tiêu: ưu tiên độ đúng, an toàn dữ liệu và khả năng vận 
 | --- | --- | --- | --- |
 | Kiến trúc | Tốt, cần siết | Route đã lazy-load; Knowledge Graph, mastery, exploration, canvas tách module. TypeScript trước baseline chưa bật `strict`. | Bật strict và giữ build gate. |
 | Tính đúng | Tốt | Có unit test + E2E đa trình duyệt; Numerical Trust Layer tách visual/standard/high precision. | Tăng test cho dữ liệu nhập/xuất và content math. |
-| Dữ liệu | Cần xử lý sớm | Progress có normalize/migration an toàn. Backup hiện chỉ gồm progress + notes, chưa mang Learning Goal, Exploration và Math Canvas. | Backup schema v2 + restore transaction/best-effort rollback. |
+| Dữ liệu | Tốt | Backup v2 bao phủ durable learning data; Progress có explicit schema version + downgrade guard; subsystem khác dùng versioned key/object. | Duy trì migration fixtures khi đổi schema/ID. |
 | Bảo mật | Khá, còn lỗ vận hành | Gemini key chỉ ở server; message/context có giới hạn; AI text không render HTML; Canvas lọc URL http/https. Vercel trước baseline chưa khai báo security headers. | Headers/CSP; rate-limit API; dependency audit. |
-| Hiệu năng | Khá | Route splitting hoạt động. Build gần nhất: entry ~105 KiB gzip; Math Cosmos ~35 KiB gzip; chunk Stars ~241 KiB gzip. PWA precache ~2.2 MiB. | Bundle budget; sau đó xem lại Three/Drei và font payload. |
+| Hiệu năng | Tốt | Bundle budget hoạt động; Math Cosmos page chunk ~12.4 KiB gzip sau khi bỏ Drei/GSAP runtime; tổng JS ~522.7 KiB gzip. | Theo dõi react-three-fiber route chunk nhưng không rewrite nếu chưa có evidence. |
 | UX / mobile | Tốt | E2E desktop Chrome, Android Chrome, iPhone WebKit; có skip link, dialog native, responsive checks. | Thêm automated accessibility audit và reduced-motion coverage rộng hơn. |
-| PWA / offline | Tốt | Service worker prompt update, offline state, offline E2E, cache cleanup. | Kiểm tra cache strategy khi dữ liệu/content tăng mạnh. |
-| CI / release | Tốt, cần gate rõ | CI chạy lint → unit → build → Playwright. | Dependency audit, bundle budget, timeout/concurrency, production checklist. |
+| PWA / offline | Tốt | Core offline-first; Cosmos runtime lazy-cache sau lần mở đầu, precache giảm từ ~2174.5 KiB xuống ~1263.6 KiB; offline E2E khóa contract. | Theo dõi cache khi content tăng và bump cache name khi semantics đổi. |
+| CI / release | Tốt | CI có dependency audit → lint → unit → strict build → bundle budget → E2E/accessibility, concurrency/timeout; release/rollback checklist nằm trong repo. | Thực thi checklist và smoke test trên production deployment. |
 | Observability | Baseline đã có | Error Boundary + privacy-safe client error/performance telemetry vào structured Function logs; không thu nội dung học/chat. | Sau deploy xác minh log và đặt alert/retention phù hợp ở provider. |
-| Backend/API | Cần siết | Validation, timeout, retry/fallback đã có; chưa có rate limiting/app-level abuse protection. | Rate limit + request correlation + health/diagnostic endpoint. |
+| Backend/API | Khá | Validation, timeout, retry/fallback, request-size/origin guard, request correlation và warm-instance throttle đã có. | Bật Vercel WAF rate limit ở release; edge rule mới là distributed limiter chính. |
 
 ## Các phát hiện ưu tiên
 
@@ -86,6 +86,6 @@ UI đã có nhiều nền tốt: skip link, native `dialog`, aria-label/progress
 - [ ] Bật Vercel WAF rate limiting cho `/api/gemini` khi release; code-level guards + warm-instance throttle đã có.
 - [x] Client/API structured observability tối thiểu.
 - [x] Accessibility CI.
-- [ ] Kiểm tra và tối ưu Three/Drei chunk nếu ảnh hưởng thiết bị thấp.
-- [ ] Cache/version migration policy cho content và ontology.
-- [ ] Release checklist + rollback notes cho lần deploy production tiếp theo.
+- [x] Kiểm tra và tối ưu Three/Drei chunk nếu ảnh hưởng thiết bị thấp.
+- [x] Cache/version migration policy cho content và ontology.
+- [x] Release checklist + rollback notes cho lần deploy production tiếp theo.
