@@ -1,6 +1,6 @@
 import test, { beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { createEmptyCanvasState, loadCanvasState } from '../../src/canvas/canvasStorage.ts';
+import { createEmptyCanvasState, loadCanvasState, saveCanvasState } from '../../src/canvas/canvasStorage.ts';
 import { createEmptyExplorationSummary, getExplorationSummary } from '../../src/exploration/explorationState.ts';
 import { getLearningGoal, setLearningGoal } from '../../src/learning/learningGoal.ts';
 import { createBackupSnapshot, parseBackupSnapshot, restoreBackupSnapshot } from '../../src/utils/backup.ts';
@@ -50,7 +50,6 @@ test('backup v2 round-trips every durable learning subsystem', () => {
       updatedAt: '2026-09-22T00:00:00.000Z',
     }],
   };
-  const { saveCanvasState } = await import('../../src/canvas/canvasStorage.ts');
   saveCanvasState(canvas);
 
   const snapshot = createBackupSnapshot();
