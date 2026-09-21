@@ -16,6 +16,8 @@ export interface KnowledgeHit {
   to: string;
   context: string;
   score: number;
+  conceptId?: string;
+  domainId?: MathDomainId;
 }
 
 interface KnowledgeSource {
@@ -259,6 +261,8 @@ export function searchKnowledge(query: string, limit = 12): KnowledgeHit[] {
     to: hit.document.payload.to,
     context: hit.document.payload.context,
     score: hit.score,
+    conceptId: hit.document.payload.conceptId,
+    domainId: hit.document.payload.domainId,
   }));
 }
 
