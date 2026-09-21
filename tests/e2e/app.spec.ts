@@ -149,20 +149,17 @@ test('notes, personal goals and exported backup are usable', async ({ page }) =>
   await expect(page.locator('.stat-card').filter({ hasText: 'Mục tiêu hôm nay' })).toContainText('0/3');
 });
 
-test('AI distinguishes server responses from local fallback', async ({ page }) => {
-  await page.route('**/api/gemini', async route => {
-    const requestBody = route.request().postDataJSON() as { message?: string };
-    if (requestBody.message === '2+2 bằng mấy?') {
-      return route.fulfill({ status: 200, json: { text: 'Đáp án là $2+2=4$.' } });
-    }
-    return route.fulfill({ status: 503, json: { code: 'MISSING_API_KEY' } });
-  });
-
+test('AI shows local fallback when the server is unavailable', async ({ page }) => {
+  await page.route('**/api/gemini', route => route.fulfill({ status: 503, json: { code: 'MISSING_API_KEY' } }));
   await page.goto('/ai');
   await page.getByRole('button', { name: 'Số phức là gì?' }).click();
   await expect(page.getByText('Tra cứu cục bộ · Không phải câu trả lời từ Gemini')).toBeVisible();
   await expect(page.locator('.chat-links').getByRole('link', { name: 'Số phức', exact: true })).toBeVisible();
+});
 
+test('AI renders a successful Gemini math response', async ({ page }) => {
+  await page.route('**/api/gemini', route => route.fulfill({ status: 200, json: { text: 'Đáp án là $2+2=4$.' } }));
+  await page.goto('/ai');
   await page.getByRole('textbox', { name: 'Câu hỏi cho trợ lý' }).fill('2+2 bằng mấy?');
   await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
   await expect(page.locator('.chat-message').last()).toContainText('Đáp án là');
