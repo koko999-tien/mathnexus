@@ -1,6 +1,7 @@
 import { MATH_CONCEPTS, MATH_DOMAINS, type MathDomainId } from '../data/mathKnowledge.ts';
 import { MATH_ATOMS, ONTOLOGY_KIND_META } from '../data/mathOntology.ts';
 import { rankRetrieval, type RetrievalDocument } from '../utils/retrievalEngine.ts';
+import { normalizeSearch, tokenizeSearch } from '../utils/search.ts';
 import { applyLayoutPositions, layoutCosmosPositions, type PositionMap } from './cosmosLayout.ts';
 
 export type CosmosNodeKind = 'domain' | 'concept' | 'atom';
@@ -194,12 +195,28 @@ export function cosmosSearch(data: CosmosGraphData, query: string, limit = 8) {
     payload: node,
   }));
 
+  const normalizedQuery = normalizeSearch(query);
+  const queryTokens = tokenizeSearch(query);
+
   return rankRetrieval(documents, query, {
     limit,
     kindWeights: {
       domain: 0.96,
       concept: 1.08,
       atom: 1.04,
+    },
+    scoreAdjust(document) {
+      if (document.kind !== 'concept' || !normalizedQuery) return 0;
+
+      const normalizedTitle = normalizeSearch(document.title);
+      if (normalizedTitle === normalizedQuery) return 120;
+
+      // Short entity-like queries such as "N-body", "Bayes" or "Taylor"
+      // should land on the canonical concept before a micro-atom that merely
+      // repeats the same phrase. Longer explanatory queries still favor atoms.
+      if (queryTokens.length <= 3 && normalizedTitle.includes(normalizedQuery)) return 76;
+      if (queryTokens.length <= 3 && normalizedQuery.includes(normalizedTitle)) return 54;
+      return 0;
     },
   }).map(hit => hit.document.payload);
 }
