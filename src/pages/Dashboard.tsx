@@ -1,13 +1,15 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, ArrowUpRight, BookOpen, Brain, CalendarDays, ChartSpline, Check, Circle, Flame, Lightbulb, PenTool, Sigma, Sparkles, Target } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, BookOpen, Brain, CalendarDays, ChartSpline, Check, Circle, Flag, Flame, Lightbulb, PenTool, Sigma, Sparkles, Target } from 'lucide-react';
 import { LESSONS } from '../data/lessons';
 import { THINK } from '../data/think';
 import { QUIZ } from '../data/quiz';
 import { useProgress } from '../hooks/useProgress';
 import { useExplorationSummary } from '../hooks/useExplorationSummary';
+import { useLearningGoal } from '../hooks/useLearningGoal';
 import { emptyActivity, localDate } from '../utils/storage';
 import { recommendLessons, todayPlan } from '../utils/learningInsights';
 import { buildLearningCompass } from '../utils/learningCompass';
+import { buildLearningGoalState } from '../learning/learningGoal';
 import { practiceOverview } from '../utils/practiceInsights';
 import { LessonCard } from '../components/ui/LessonCard';
 import { MathArtwork } from '../components/ui/MathArtwork';
@@ -15,6 +17,7 @@ import { MathArtwork } from '../components/ui/MathArtwork';
 export default function Dashboard() {
   const p = useProgress();
   const exploration = useExplorationSummary();
+  const learningGoal = useLearningGoal();
   const now = new Date();
   const today = now.toLocaleDateString('vi-VI', { weekday: 'long', day: 'numeric', month: 'long' });
   const challengeIndex = Number(localDate().replaceAll('-', '')) % THINK.length;
@@ -27,6 +30,7 @@ export default function Dashboard() {
   const goalProgress = Math.min(100, Math.round(day.questions / p.dailyGoal * 100));
   const practice = practiceOverview(QUIZ, p);
   const compass = buildLearningCompass(p, exploration, 3);
+  const focusGoal = buildLearningGoalState(p, learningGoal.goal);
 
   return <section className="dashboard page-enter">
     <div className="dashboard-heading"><div><p className="eyebrow">GÓC HỌC TẬP CỦA BẠN</p><h1>Một ngày mới, một ý tưởng mới<span className="heading-dot">.</span></h1><p>Chào {p.displayName === 'Bạn học Toán' ? 'bạn' : p.displayName}, cùng khám phá vẻ đẹp của toán học nhé.</p></div><span className="date-pill"><CalendarDays size={15} />{today}</span></div>
@@ -51,6 +55,23 @@ export default function Dashboard() {
         <span className="plan-progress">{item.progressLabel}<ArrowRight size={15} /></span>
       </Link>)}</div>
     </div>
+
+    {focusGoal && <div className={'learning-goal-focus panel ' + focusGoal.status}>
+      <div className="learning-goal-focus-head">
+        <span className="small-icon lilac"><Flag size={20} /></span>
+        <div><span className="eyebrow">MỤC TIÊU DÀI HƠI ĐANG THEO ĐUỔI</span><h2>{focusGoal.target.title}</h2><p>{focusGoal.status === 'complete' ? 'Đã có đủ bằng chứng trực tiếp để coi mục tiêu này hoàn thành.' : focusGoal.status === 'blocked' ? 'Lộ trình đang chạm một khoảng trống nội dung; MathNexus chỉ rõ nút chặn thay vì bỏ qua.' : focusGoal.remainingCount + ' nút trong lộ trình vẫn cần thêm bằng chứng.'}</p></div>
+        <strong>{focusGoal.progressPercent}%</strong>
+      </div>
+      <div className="progress-track" role="progressbar" aria-label={'Tiến độ mục tiêu ' + focusGoal.target.title} aria-valuenow={focusGoal.progressPercent} aria-valuemin={0} aria-valuemax={100}><span style={{ width: focusGoal.progressPercent + '%' }} /></div>
+      <div className="learning-goal-focus-actions">
+        <span>{focusGoal.satisfiedCount}/{focusGoal.totalCount} nút có bằng chứng</span>
+        <div>
+          <Link to={'/map?concept=' + encodeURIComponent(focusGoal.target.id)} className="button button-light">Xem toàn bộ lộ trình</Link>
+          {focusGoal.nextAction && <Link to={focusGoal.nextAction.to} className="button button-dark">{focusGoal.nextAction.title}<ArrowRight size={15} /></Link>}
+          {focusGoal.status === 'complete' && <button type="button" className="button button-light" onClick={learningGoal.clearGoal}>Kết thúc mục tiêu</button>}
+        </div>
+      </div>
+    </div>}
 
     <div className="section-heading"><div><span className="eyebrow">LEARNING COMPASS · DỰA TRÊN BẰNG CHỨNG</span><h2>Bước tiếp theo có lý do</h2></div><Link to="/map" className="text-link">Mở Knowledge Graph<ArrowRight size={16} /></Link></div>
     <div className="quick-tools">{compass.map(item => {
