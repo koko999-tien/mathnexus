@@ -4,11 +4,12 @@ export interface SpatialPoint3D {
 
 export class SpatialHash3D<T extends SpatialPoint3D> {
   private readonly buckets = new Map<string, number[]>();
+  private readonly items: readonly T[];
+  readonly cellSize: number;
 
-  constructor(
-    private readonly items: readonly T[],
-    readonly cellSize = 10,
-  ) {
+  constructor(items: readonly T[], cellSize = 10) {
+    this.items = items;
+    this.cellSize = cellSize;
     this.rebuild();
   }
 
