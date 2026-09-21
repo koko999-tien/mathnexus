@@ -983,6 +983,143 @@ svg { flex-shrink: 0; }
 }
 
 
+/* Infinite Math Canvas */
+.math-canvas-page { min-width:0; }
+.canvas-page-head { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; margin-bottom:14px; }
+.canvas-page-head h1 { margin:4px 0 7px; font-size:clamp(28px,4vw,46px); letter-spacing:-1.2px; }
+.canvas-page-head p { margin:0; max-width:760px; color:var(--color-muted); font-size:11px; line-height:1.65; }
+.canvas-save-state { display:inline-flex; align-items:center; gap:6px; min-height:32px; padding:6px 9px; border:1px solid var(--color-line); border-radius:999px; background:var(--color-panel); color:var(--color-muted); font-size:8px; white-space:nowrap; }
+
+.math-canvas-shell { display:grid; grid-template-columns:minmax(0,1fr) 300px; grid-template-rows:auto minmax(620px,72vh); gap:10px; min-width:0; }
+.canvas-toolbar { grid-column:1 / -1; display:flex; align-items:center; gap:7px; min-width:0; padding:8px; overflow-x:auto; }
+.canvas-tool-group { display:flex; align-items:center; gap:5px; flex-shrink:0; }
+.canvas-toolbar-divider { width:1px; height:24px; background:var(--color-line); flex-shrink:0; }
+.canvas-toolbar-spacer { flex:1; min-width:10px; }
+.canvas-icon-button { width:34px; height:34px; display:grid; place-items:center; flex-shrink:0; border:1px solid var(--color-line); border-radius:8px; background:var(--color-bg); color:var(--color-muted); cursor:pointer; transition:border-color .18s,background .18s,color .18s,transform .18s; }
+.canvas-icon-button:hover:not(:disabled) { border-color:var(--color-sage); color:var(--color-ink); transform:translateY(-1px); }
+.canvas-icon-button.active { background:var(--color-ink); border-color:var(--color-ink); color:var(--color-panel); }
+.canvas-icon-button.danger:hover:not(:disabled) { color:#a44b47; border-color:#d7aaa6; }
+.canvas-icon-button:disabled { opacity:.36; cursor:not-allowed; }
+.canvas-zoom-readout { width:44px; color:var(--color-muted); font-size:8px; text-align:center; }
+
+.math-canvas-stage { position:relative; min-width:0; min-height:620px; overflow:hidden; border:1px solid var(--color-line); border-radius:14px; background-color:var(--color-panel); background-image:
+  linear-gradient(to right, color-mix(in srgb,var(--color-line) 58%,transparent) 1px, transparent 1px),
+  linear-gradient(to bottom, color-mix(in srgb,var(--color-line) 58%,transparent) 1px, transparent 1px),
+  linear-gradient(to right, color-mix(in srgb,var(--color-line) 88%,transparent) 1px, transparent 1px),
+  linear-gradient(to bottom, color-mix(in srgb,var(--color-line) 88%,transparent) 1px, transparent 1px);
+  background-size:
+    var(--canvas-grid-size) var(--canvas-grid-size),
+    var(--canvas-grid-size) var(--canvas-grid-size),
+    var(--canvas-grid-major) var(--canvas-grid-major),
+    var(--canvas-grid-major) var(--canvas-grid-major);
+  background-position:
+    var(--canvas-grid-x) var(--canvas-grid-y),
+    var(--canvas-grid-x) var(--canvas-grid-y),
+    var(--canvas-grid-x) var(--canvas-grid-y),
+    var(--canvas-grid-x) var(--canvas-grid-y);
+  touch-action:none;
+  user-select:none;
+}
+.math-canvas-stage.tool-pan { cursor:grab; }
+.math-canvas-stage.tool-pan:active { cursor:grabbing; }
+.math-canvas-stage.tool-draw { cursor:crosshair; }
+.math-canvas-stage.tool-arrow { cursor:crosshair; }
+
+.math-canvas-world { position:absolute; left:0; top:0; width:1px; height:1px; transform-origin:0 0; overflow:visible; will-change:transform; }
+.canvas-vector-layer { position:absolute; left:-50000px; top:-50000px; width:100000px; height:100000px; overflow:visible; pointer-events:none; }
+.canvas-vector-layer marker path { fill:var(--color-accent); }
+.canvas-stroke { fill:none; stroke:var(--color-ink); stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; pointer-events:none; }
+.canvas-stroke-group.selected .canvas-stroke { stroke:var(--color-accent); stroke-width:3; }
+.canvas-arrow line:not(.canvas-vector-hit) { stroke:var(--color-accent); stroke-width:2; }
+.canvas-arrow.selected line:not(.canvas-vector-hit) { stroke-width:3; }
+.canvas-arrow text { fill:var(--color-muted); font-size:11px; text-anchor:middle; pointer-events:none; }
+.canvas-vector-hit { fill:none; stroke:transparent; stroke-width:16; pointer-events:stroke; cursor:move; }
+.canvas-arrow-start { fill:var(--color-accent); opacity:.8; }
+
+.canvas-object { position:absolute; z-index:2; overflow:hidden; border:1px solid var(--color-line); border-radius:11px; background:var(--color-bg); box-shadow:0 9px 24px rgba(20,26,20,.08); color:var(--color-ink); cursor:move; }
+.canvas-object.selected { border-color:var(--color-accent); box-shadow:0 0 0 2px color-mix(in srgb,var(--color-accent) 28%,transparent),0 12px 30px rgba(20,26,20,.12); }
+.canvas-object a { cursor:pointer; }
+.canvas-text-card { display:flex; align-items:flex-start; gap:8px; padding:14px; }
+.canvas-text-card svg { flex-shrink:0; color:var(--color-accent); }
+.canvas-text-card p { margin:0; white-space:pre-wrap; font-size:10px; line-height:1.65; }
+
+.canvas-latex-card { padding:13px; }
+.canvas-latex-card > span,.canvas-concept-card > span,.canvas-formula-card > span,.canvas-simulation-card span,.canvas-link-card span { display:block; margin-bottom:7px; color:var(--color-muted); font-size:7px; font-weight:700; letter-spacing:.75px; }
+.canvas-latex-card .katex-display { margin:7px 0; overflow-x:auto; overflow-y:hidden; }
+
+.canvas-concept-card,.canvas-formula-card { padding:13px; }
+.canvas-concept-card h3,.canvas-formula-card h3,.canvas-simulation-card h3 { margin:0 0 6px; font-size:12px; letter-spacing:-.2px; }
+.canvas-concept-card p,.canvas-simulation-card p { margin:0; color:var(--color-muted); font-size:8.5px; line-height:1.55; }
+.canvas-concept-card a,.canvas-formula-card a,.canvas-simulation-card a,.canvas-link-card a { display:inline-flex; align-items:center; gap:4px; margin-top:9px; color:var(--color-accent); font-size:8px; font-weight:650; }
+.canvas-formula-card .katex-display { margin:7px 0; overflow-x:auto; overflow-y:hidden; }
+
+.canvas-simulation-card { display:grid; grid-template-columns:auto minmax(0,1fr); gap:9px; padding:13px; }
+.canvas-simulation-card > svg { color:var(--color-accent); }
+.canvas-simulation-card a { grid-column:1 / -1; }
+
+.canvas-link-card { display:grid; grid-template-columns:auto minmax(0,1fr); gap:9px; align-items:start; padding:13px; }
+.canvas-link-card > svg { color:var(--color-accent); }
+.canvas-link-card strong { display:block; font-size:10px; word-break:break-word; }
+.canvas-link-card small { display:block; margin-top:3px; color:var(--color-muted); font-size:7px; word-break:break-all; }
+.canvas-link-card a { grid-column:1 / -1; }
+
+.canvas-empty-state { position:absolute; inset:0; display:grid; place-items:center; align-content:center; gap:8px; padding:30px; text-align:center; pointer-events:none; }
+.canvas-empty-state > * { pointer-events:auto; }
+.canvas-empty-icon { width:52px; height:52px; display:grid; place-items:center; border:1px solid var(--color-line); border-radius:50%; background:var(--color-bg); color:var(--color-accent); }
+.canvas-empty-state h2 { margin:0; font-size:16px; }
+.canvas-empty-state p { max-width:470px; margin:0; color:var(--color-muted); font-size:9px; line-height:1.6; }
+
+.canvas-coordinate-hud { position:absolute; left:9px; bottom:9px; z-index:4; display:flex; flex-wrap:wrap; gap:5px; pointer-events:none; }
+.canvas-coordinate-hud span { padding:4px 6px; border:1px solid var(--color-line); border-radius:999px; background:color-mix(in srgb,var(--color-bg) 88%,transparent); color:var(--color-muted); backdrop-filter:blur(8px); font-size:7px; }
+
+.canvas-inspector { min-width:0; overflow:auto; }
+.canvas-inspector-head { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+.canvas-inspector-head .eyebrow { margin:0 0 3px; }
+.canvas-inspector-head h2 { margin:0; font-size:15px; }
+.canvas-inspector-empty,.canvas-multi-inspector { margin-top:14px; padding:11px; border:1px dashed var(--color-line); border-radius:9px; background:var(--color-bg); }
+.canvas-inspector-empty p,.canvas-multi-inspector p { margin:0; color:var(--color-muted); font-size:8.5px; line-height:1.55; }
+.canvas-multi-inspector { display:flex; flex-wrap:wrap; gap:7px; align-items:center; }
+.canvas-multi-inspector p { flex-basis:100%; }
+
+.canvas-object-inspector { margin-top:14px; }
+.canvas-inspector-kind { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; }
+.canvas-inspector-kind span { padding:4px 6px; border:1px solid var(--color-line); border-radius:999px; color:var(--color-accent); font-size:7px; font-weight:700; letter-spacing:.7px; }
+.canvas-inspector-kind small { color:var(--color-muted); font-size:7px; }
+.canvas-object-inspector .field { margin-top:9px; }
+.canvas-object-inspector textarea { resize:vertical; min-height:78px; }
+.canvas-size-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.canvas-group-badge { display:flex; align-items:center; gap:6px; margin-top:10px; padding:7px 8px; border:1px solid var(--color-line); border-radius:8px; background:var(--color-bg); color:var(--color-muted); font-size:7.5px; }
+
+.canvas-footer-actions { display:flex; align-items:flex-end; justify-content:space-between; gap:12px; margin-top:12px; }
+.canvas-title-field { display:flex; flex-direction:column; gap:5px; min-width:min(430px,55vw); color:var(--color-muted); font-size:8px; }
+.canvas-title-field input { min-height:36px; border:1px solid var(--color-line); border-radius:8px; background:var(--color-panel); color:var(--color-ink); padding:7px 9px; font:inherit; }
+.canvas-footer-actions > div { display:flex; align-items:center; justify-content:flex-end; gap:10px; color:var(--color-muted); font-size:8px; }
+
+.dark .canvas-object { box-shadow:0 9px 25px rgba(0,0,0,.2); }
+.dark .math-canvas-stage { background-color:#111810; }
+
+@media (max-width:1080px){
+  .math-canvas-shell{grid-template-columns:1fr;grid-template-rows:auto minmax(600px,70vh) auto;}
+  .canvas-inspector{max-height:none;}
+}
+@media (max-width:720px){
+  .canvas-page-head{flex-direction:column;}
+  .math-canvas-shell{grid-template-rows:auto minmax(620px,68vh) auto;}
+  .canvas-toolbar{padding:7px;}
+  .canvas-icon-button{width:38px;height:38px;}
+  .canvas-toolbar-divider{height:28px;}
+  .canvas-toolbar-spacer{display:none;}
+  .canvas-footer-actions{align-items:stretch;flex-direction:column;}
+  .canvas-title-field{min-width:0;width:100%;}
+  .canvas-footer-actions > div{justify-content:space-between;}
+}
+@media (max-width:520px){
+  .math-canvas-stage{min-height:650px;border-radius:12px;}
+  .canvas-size-grid{grid-template-columns:1fr;}
+  .canvas-footer-actions > div{align-items:flex-start;flex-direction:column;}
+}
+
+
 /* Socratic Tutor */
 .tutor-mode-bar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:0 0 13px; padding:10px 12px; border:1px solid var(--color-line); border-radius:10px; background:var(--color-panel); }
 .tutor-mode-bar > label { display:flex; align-items:center; gap:8px; min-width:0; color:var(--color-ink); }
