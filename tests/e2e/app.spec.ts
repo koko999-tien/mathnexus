@@ -181,7 +181,7 @@ test('interactive graph draws immediately and validates math inputs', async ({ p
   const initial = await path.getAttribute('d');
   await page.getByLabel('Hệ số a', { exact: true }).fill('2');
   await expect(path).not.toHaveAttribute('d', initial!);
-  await expect(page.locator('.graph-probe output')).toContainText('1');
+  await expect(page.locator('.graph-probe output').first()).toContainText('1');
   await page.screenshot({ path: info.outputPath('graph.png'), fullPage: true });
   await page.goto('/tools');
   const equation = page.getByRole('region', { name: 'Giải phương trình' });
