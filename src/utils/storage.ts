@@ -1,5 +1,7 @@
 const PREFIX = 'mathnexus_';
 export const STORAGE_EVENT = 'mathnexus:storage';
+export const STORAGE_ERROR_EVENT = 'mathnexus:storage-error';
+export const PROGRESS_SCHEMA_VERSION = 1 as const;
 
 export function load<T>(key: string, fallback: T): T {
   try {
@@ -16,7 +18,7 @@ export function save(key: string, value: unknown): boolean {
     window.dispatchEvent(new Event(STORAGE_EVENT));
     return true;
   } catch {
-    window.dispatchEvent(new Event('mathnexus:storage-error'));
+    window.dispatchEvent(new Event(STORAGE_ERROR_EVENT));
     return false;
   }
 }
@@ -37,6 +39,7 @@ export interface QuestionPracticeStat {
 }
 
 export interface ProgressData {
+  version: typeof PROGRESS_SCHEMA_VERSION;
   lessonsRead: string[];
   questionsDone: number;
   booksOpened: string[];
@@ -51,6 +54,7 @@ export interface ProgressData {
 }
 
 export const DEFAULT_PROGRESS: ProgressData = {
+  version: PROGRESS_SCHEMA_VERSION,
   lessonsRead: [],
   questionsDone: 0,
   booksOpened: [],
@@ -104,6 +108,7 @@ export function normalizeProgress(value: unknown): ProgressData {
     }
   }
   return {
+    version: PROGRESS_SCHEMA_VERSION,
     lessonsRead: ids(raw.lessonsRead), booksOpened: ids(raw.booksOpened),
     questionsDone: count(raw.questionsDone), questionsCorrect: Math.min(count(raw.questionsCorrect), count(raw.questionsDone)),
     dailyGoal: Math.min(50, Math.max(1, count(raw.dailyGoal) || 5)),
@@ -136,6 +141,18 @@ export function getProgress(): ProgressData {
 }
 
 export function saveProgress(p: ProgressData): boolean {
+  const current = load<unknown>('progress', null);
+  if (
+    current
+    && typeof current === 'object'
+    && 'version' in current
+    && typeof current.version === 'number'
+    && current.version > PROGRESS_SCHEMA_VERSION
+  ) {
+    if (typeof window !== 'undefined') window.dispatchEvent(new Event(STORAGE_ERROR_EVENT));
+    return false;
+  }
+
   return save('progress', normalizeProgress(p));
 }
 
