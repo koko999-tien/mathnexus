@@ -162,6 +162,37 @@ test('N-body gravity lab runs a real CPU simulation with deterministic controls'
   await expect(page.getByText('Gravity Lab của MathNexus')).toBeVisible();
 });
 
+
+test('exploration state tracks intentional discovery without inventing mastery or raw telemetry', async ({ page }) => {
+  await page.goto('/map?concept=derivative-definition&atom=derivative-limit');
+  await expect(page.getByRole('heading', { name: 'Định nghĩa đạo hàm', exact: true })).toBeVisible();
+  await expect(page.locator('.atom-inspector')).toContainText('Đạo hàm từ tỷ số sai phân');
+
+  await page.goto('/simulations/gravity');
+  await expect(page.getByRole('heading', { name: 'Phòng mô phỏng hấp dẫn N-body' })).toBeVisible();
+  await page.getByLabel('Tốc độ mô phỏng').selectOption('2');
+
+  const stored = await page.evaluate(() => ({
+    exploration: JSON.parse(localStorage.getItem('mathnexus_exploration_state_v1') || '{}'),
+    progress: localStorage.getItem('mathnexus_progress'),
+  }));
+
+  expect(stored.progress).toBeNull();
+  expect(stored.exploration.discoveredConceptIds).toContain('derivative-definition');
+  expect(stored.exploration.discoveredAtomIds).toContain('derivative-limit');
+  expect(stored.exploration.simulationSessions.gravity).toBeGreaterThanOrEqual(1);
+  expect(stored.exploration.simulationAdjustments.gravity).toBeGreaterThanOrEqual(1);
+  expect(JSON.stringify(stored.exploration)).not.toMatch(/pointerPath|cameraVelocity|emotion|diagnosis/i);
+
+  await page.goto('/progress');
+  await expect(page.getByRole('heading', { name: 'Khám phá tự chủ' })).toBeVisible();
+  await expect(page.getByTestId('exploration-concepts')).toContainText('1');
+  await expect(page.getByTestId('exploration-atoms')).toContainText('1');
+  await expect(page.getByTestId('exploration-simulations')).toContainText('1');
+  await expect(page.getByText('không đánh giá trí thông minh')).toBeVisible();
+});
+
+
 test('search without accents opens lessons and completion survives reload', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Tìm kiếm', exact: true }).click();
