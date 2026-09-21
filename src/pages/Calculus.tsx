@@ -3,6 +3,7 @@ import { Activity, ArrowRight, Calculator, CheckCircle2, Gauge, Sigma, Target } 
 import { compileExpression, expressionErrorMessage } from '../utils/expressionMath';
 import { findRootNear, localBehavior, numericalSecondDerivative, simpsonIntegral, tangentLine } from '../utils/calculusMath';
 import { formatNumber } from '../utils/math';
+import { PrecisionBadge } from '../components/ui/PrecisionBadge';
 
 const EXAMPLES = [
   'sin(x) + x^2/3',
@@ -59,6 +60,11 @@ export default function Calculus() {
       <p className="eyebrow">CALCULUS LAB</p>
       <h1>Phòng thí nghiệm giải tích</h1>
       <p>Nhập một biểu thức theo biến x rồi khảo sát giá trị, đạo hàm, tiếp tuyến, tích phân và nghiệm gần điểm bạn chọn.</p>
+    </div>
+
+    <div className="precision-page-disclosure">
+      <PrecisionBadge mode="standard" suffix="đạo hàm / tích phân / tìm nghiệm số" />
+      <span>Đây là giải tích số trên Float64; kết quả có sai số xấp xỉ và không thay thế chứng minh ký hiệu.</span>
     </div>
 
     <div className="calculus-layout">
