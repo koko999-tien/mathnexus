@@ -697,7 +697,7 @@ svg { flex-shrink: 0; }
 
 
 /* Deep mathematics knowledge graph */
-.knowledge-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:18px; }
+.knowledge-summary { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:18px; }
 .knowledge-summary-card { display:flex; align-items:center; gap:10px; padding:13px 14px; border:1px solid var(--color-line); border-radius:11px; background:var(--color-panel); }
 .knowledge-summary-card strong { display:block; font-size:19px; line-height:1; }
 .knowledge-summary-card small { display:block; margin-top:4px; color:var(--color-muted); font-size:9px; text-transform:uppercase; letter-spacing:.55px; }
@@ -760,3 +760,72 @@ svg { flex-shrink: 0; }
 @media (max-width:1100px){ .knowledge-layout{grid-template-columns:1fr;} .knowledge-inspector{position:static;} }
 @media (max-width:760px){ .knowledge-summary{grid-template-columns:repeat(2,minmax(0,1fr));} .concept-list{grid-template-columns:1fr;} }
 @media (max-width:520px){ .knowledge-summary{grid-template-columns:1fr;} .concept-state-label{display:none;} .concept-node{grid-template-columns:auto minmax(0,1fr);} .concept-meta-grid{grid-template-columns:1fr 1fr;} }
+
+
+/* Deep ontology & evidence-based mastery */
+.mastery-evidence-card { margin:16px 0; padding:13px; border:1px solid var(--color-line); border-radius:11px; background:var(--color-bg); }
+.mastery-evidence-head { display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:center; gap:9px; }
+.mastery-evidence-head strong { display:block; font-size:10px; }
+.mastery-evidence-head small { display:block; margin-top:2px; color:var(--color-muted); font-size:8px; }
+.mastery-state { padding:5px 7px; border-radius:999px; border:1px solid var(--color-line); color:var(--color-muted); font-size:8px; white-space:nowrap; }
+.mastery-state.strong { background:#edf4e4; color:#557146; border-color:#dbe8ce; }
+.mastery-state.solid { background:#eaf1f8; color:#4d6f92; border-color:#d7e3ef; }
+.mastery-state.developing { background:#f5eedf; color:#8b6d3f; border-color:#eadbbf; }
+.mastery-evidence-metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; margin-top:11px; }
+.mastery-evidence-metrics > div { padding:8px; border:1px solid var(--color-line); border-radius:8px; background:var(--color-panel); }
+.mastery-evidence-metrics span { display:block; color:var(--color-muted); font-size:7px; text-transform:uppercase; letter-spacing:.45px; }
+.mastery-evidence-metrics strong { display:block; margin-top:3px; font-size:13px; }
+.mastery-evidence-list { display:flex; flex-direction:column; gap:5px; margin-top:9px; }
+.mastery-evidence-list span { display:flex; align-items:flex-start; gap:6px; color:var(--color-muted); font-size:8px; line-height:1.45; }
+.mastery-evidence-list svg { flex-shrink:0; margin-top:1px; color:var(--color-accent); }
+
+.ontology-card { min-width:0; }
+.ontology-title { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:12px; }
+.ontology-title .eyebrow { margin:0 0 3px; }
+.ontology-title h2 { margin:0; font-size:17px; letter-spacing:-.35px; }
+.ontology-title > span { padding:5px 7px; border:1px solid var(--color-line); border-radius:999px; color:var(--color-muted); font-size:8px; white-space:nowrap; }
+.ontology-kind-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:6px; margin-bottom:11px; }
+.ontology-kind-grid > div { min-width:0; padding:7px 5px; border:1px solid var(--color-line); border-radius:8px; background:var(--color-bg); text-align:center; }
+.ontology-kind-grid strong { display:block; font-size:12px; }
+.ontology-kind-grid span { display:block; margin-top:2px; color:var(--color-muted); font-size:6.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ontology-atom-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; max-height:300px; overflow:auto; padding-right:2px; }
+.ontology-atom-list button { min-width:0; display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; gap:7px; padding:8px; border:1px solid var(--color-line); border-radius:8px; background:var(--color-bg); color:var(--color-ink); text-align:left; cursor:pointer; }
+.ontology-atom-list button:hover,.ontology-atom-list button.is-selected { border-color:var(--color-sage); background:var(--color-panel); }
+.ontology-atom-list button > span:last-child { min-width:0; }
+.ontology-atom-list strong { display:block; font-size:8.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ontology-atom-list small { display:block; margin-top:2px; color:var(--color-muted); font-size:7px; }
+.atom-kind { display:inline-grid; place-items:center; min-width:28px; min-height:24px; padding:3px 6px; border:1px solid var(--color-line); border-radius:7px; background:var(--color-panel); color:var(--color-muted); font-size:7px; font-weight:700; letter-spacing:.35px; }
+.atom-kind.definition { background:#eaf1f8; color:#4d6f92; border-color:#d7e3ef; }
+.atom-kind.theorem,.atom-kind.lemma { background:#edf4e4; color:#557146; border-color:#dbe8ce; }
+.atom-kind.proof { background:#eee9f5; color:#6f5a8b; border-color:#ded4ea; }
+.atom-kind.misconception,.atom-kind.counterexample { background:#f4e6e5; color:#945c57; border-color:#e6cecb; }
+.atom-kind.exercise { background:#f5eedf; color:#8b6d3f; border-color:#eadbbf; }
+.atom-inspector { margin-top:12px; padding-top:12px; border-top:1px solid var(--color-line); }
+.atom-inspector-head { display:flex; align-items:center; justify-content:space-between; gap:8px; color:var(--color-muted); font-size:8px; }
+.atom-inspector h3 { margin:9px 0 5px; font-size:14px; }
+.atom-inspector > p { margin:0; color:var(--color-muted); font-size:9.5px; line-height:1.6; }
+.atom-body { margin-top:7px !important; }
+.atom-formula { margin:9px 0; padding:10px; border:1px solid var(--color-line); border-radius:8px; background:var(--color-bg); color:var(--color-accent); overflow-x:auto; font-size:11px; }
+.atom-dependencies { display:flex; flex-wrap:wrap; align-items:center; gap:5px; margin-top:9px; }
+.atom-dependencies strong { color:var(--color-muted); font-size:7px; text-transform:uppercase; letter-spacing:.5px; }
+.atom-dependencies span { padding:4px 6px; border-radius:999px; background:var(--color-bg); border:1px solid var(--color-line); font-size:7px; }
+.misconception-note { display:flex; align-items:flex-start; gap:7px; margin-top:9px; padding:8px; border-radius:8px; background:#f4e6e5; color:#945c57; font-size:8px; line-height:1.45; }
+.ontology-practice-link { display:inline-flex; align-items:center; gap:5px; margin-top:9px; }
+.ontology-empty { display:grid; grid-template-columns:auto minmax(0,1fr); gap:9px; align-items:start; padding:12px; border:1px dashed var(--color-line); border-radius:9px; background:var(--color-bg); }
+.ontology-empty svg { color:var(--color-warm); }
+.ontology-empty strong { font-size:9px; }
+.ontology-empty p { margin:4px 0 0; color:var(--color-muted); font-size:8px; line-height:1.5; }
+.dark .mastery-state.strong,.dark .atom-kind.theorem,.dark .atom-kind.lemma { background:#2c402a; color:#bdd7a6; border-color:#3f583a; }
+.dark .mastery-state.solid,.dark .atom-kind.definition { background:#293a4a; color:#b4cee7; border-color:#3d5367; }
+.dark .mastery-state.developing,.dark .atom-kind.exercise { background:#433927; color:#e2c58f; border-color:#5b4c31; }
+.dark .atom-kind.misconception,.dark .atom-kind.counterexample,.dark .misconception-note { background:#472f2e; color:#e0aaa6; border-color:#65403e; }
+
+@media (max-width:760px){
+  .ontology-kind-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
+  .ontology-atom-list{grid-template-columns:1fr;}
+}
+@media (max-width:520px){
+  .mastery-evidence-head{grid-template-columns:auto minmax(0,1fr);}
+  .mastery-state{grid-column:1 / -1; justify-self:start;}
+  .mastery-evidence-metrics{grid-template-columns:1fr 1fr 1fr;}
+}
