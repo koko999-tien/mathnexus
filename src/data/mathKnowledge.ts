@@ -8,7 +8,8 @@ export type MathDomainId =
   | 'probability-statistics'
   | 'discrete'
   | 'number-theory'
-  | 'differential-equations';
+  | 'differential-equations'
+  | 'mathematical-physics';
 
 export interface MathDomain {
   id: MathDomainId;
@@ -44,6 +45,7 @@ export const MATH_DOMAINS: MathDomain[] = [
   { id: 'discrete', name: 'Toán rời rạc', short: 'Rời rạc', order: 8, description: 'Tổ hợp, quan hệ, đồ thị, đệ quy và các cấu trúc hữu hạn/đếm được.' },
   { id: 'number-theory', name: 'Lý thuyết số', short: 'Số học', order: 9, description: 'Số nguyên, chia hết, nguyên tố, đồng dư và cấu trúc số học.' },
   { id: 'differential-equations', name: 'Phương trình vi phân', short: 'PT vi phân', order: 10, description: 'Mô hình động lực bằng đạo hàm, nghiệm ODE và hành vi hệ theo thời gian.' },
+  { id: 'mathematical-physics', name: 'Vật lý toán học', short: 'Vật lý toán', order: 11, description: 'Dùng cấu trúc toán học để mô tả chuyển động, trường lực, hệ động lực và các định luật vật lý.' },
 ];
 
 export const MATH_CONCEPTS: MathConcept[] = [
@@ -105,6 +107,11 @@ export const MATH_CONCEPTS: MathConcept[] = [
 
   { id:'first-order-ode', title:'ODE cấp một', domain:'differential-equations', level:'Đại học', description:'Phương trình y′=f(x,y), tách biến và nghiệm theo điều kiện đầu.', prerequisites:['derivative-rules','antiderivatives','exponential-logarithmic'], lessonIds:['de'], formulaIds:['exp'], tags:['ode','phương trình vi phân'] },
   { id:'exponential-growth-models', title:'Mô hình tăng trưởng & suy giảm', domain:'differential-equations', level:'Đại học', description:'Mô hình y′=ky cho tăng trưởng, phân rã và lãi liên tục.', prerequisites:['first-order-ode'], lessonIds:['de','finance'], formulaIds:['exp'], tags:['tăng trưởng','phân rã'] },
+
+  { id:'classical-mechanics', title:'Cơ học cổ điển', domain:'mathematical-physics', level:'Đại học', description:'Mô tả chuyển động bằng vị trí, vận tốc, gia tốc, lực và các định luật Newton trong không gian trạng thái.', prerequisites:['vectors','derivative-definition'], toolPaths:['/simulations/gravity'], tags:['cơ học','newton','chuyển động','lực'] },
+  { id:'newtonian-gravity', title:'Hấp dẫn Newton', domain:'mathematical-physics', level:'Đại học', description:'Lực hấp dẫn nghịch đảo bình phương và phương trình chuyển động của các khối lượng tương tác.', prerequisites:['classical-mechanics','first-order-ode'], toolPaths:['/simulations/gravity'], tags:['hấp dẫn','newton','inverse square','quỹ đạo'] },
+  { id:'nbody-problem', title:'Bài toán N-body', domain:'mathematical-physics', level:'Đại học', description:'Hệ nhiều vật thể hấp dẫn tương tác tạo thành hệ ODE ghép, thường phải giải bằng phương pháp số.', prerequisites:['newtonian-gravity','first-order-ode'], toolPaths:['/simulations/gravity'], tags:['n-body','mô phỏng','hấp dẫn','hệ động lực'] },
+  { id:'hamiltonian-mechanics', title:'Cơ học Hamilton', domain:'mathematical-physics', level:'Đại học', description:'Mô tả động lực học trên không gian pha bằng tọa độ, động lượng và Hamiltonian; là nền cho các integrator symplectic.', prerequisites:['classical-mechanics','vector-spaces','derivative-rules'], toolPaths:['/simulations/gravity'], tags:['hamilton','không gian pha','symplectic','năng lượng'] },
 ];
 
 export const CONCEPT_BY_ID = new Map(MATH_CONCEPTS.map(concept => [concept.id, concept]));
