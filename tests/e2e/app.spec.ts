@@ -4,7 +4,8 @@ test('dashboard, theme and complete navigation work at every screen size', async
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Một ngày mới');\n  await expect(page.getByRole('heading', { name: 'Kế hoạch hôm nay' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Một ngày mới');
+  await expect(page.getByRole('heading', { name: 'Kế hoạch hôm nay' })).toBeVisible();
   await page.screenshot({ path: info.outputPath('dashboard.png'), fullPage: true });
   await page.getByRole('button', { name: 'Bật giao diện tối' }).click();
   await expect(page.locator('html')).toHaveClass('dark');
