@@ -137,7 +137,7 @@ export default function MathCosmos() {
       <article className="panel">
         <span className="small-icon blue"><Sparkles size={19} /></span>
         <h2>Camera có chủ đích</h2>
-        <p>GSAP đưa camera bay đến node được chọn thay vì teleport. Nếu hệ điều hành bật giảm chuyển động, thời lượng animation tự hạ gần về 0.</p>
+        <p>Camera nội suy trực tiếp theo quỹ đạo ngắn đến node được chọn thay vì teleport. Nếu hệ điều hành bật giảm chuyển động, camera chuyển ngay không chạy animation.</p>
       </article>
       <article className="panel">
         <span className="small-icon lilac"><Cpu size={19} /></span>
