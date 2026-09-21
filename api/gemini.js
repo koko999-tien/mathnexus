@@ -1,4 +1,4 @@
-import { normalizeTutor, tutorInstruction } from './tutorPolicy.js';
+import { normalizeTutor, tutorInstruction, tutorUserContext } from './tutorPolicy.js';
 
 const DEFAULT_MODEL = 'gemini-3.8-flash';
 const STABLE_FALLBACK_MODELS = ['gemini-3.7-flash', 'gemini-3.6-flash'];
@@ -215,8 +215,12 @@ export default async function handler(request, response) {
     return response.status(400).json({ error: 'Message is too long', code: 'MESSAGE_TOO_LONG' });
   }
 
-  const userText = appContext
-    ? `Ngữ cảnh MathNexus:\n${appContext}\n\nCâu hỏi của người dùng:\n${message}`
+  const contextBlocks = [
+    appContext ? `Ngữ cảnh MathNexus:\n${appContext}` : '',
+    tutorUserContext(tutor),
+  ].filter(Boolean);
+  const userText = contextBlocks.length
+    ? `${contextBlocks.join('\n\n')}\n\nCâu hỏi của người dùng:\n${message}`
     : message;
 
   const dynamicSystemPrompt = [SYSTEM_PROMPT, tutorInstruction(tutor)].filter(Boolean).join('\n\n');
