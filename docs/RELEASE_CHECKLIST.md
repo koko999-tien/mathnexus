@@ -17,6 +17,7 @@ Checklist này dùng cho release production, tách biệt với việc merge PR 
 ## 2. Deploy
 
 - [ ] Deploy đúng commit SHA từ `main`.
+- [ ] Nếu dùng GitHub Pages, chạy workflow `Deploy to GitHub Pages` thủ công; merge vào `main` không tự deploy.
 - [ ] Không thay nhiều biến môi trường không liên quan trong cùng release.
 - [ ] Chờ deployment hoàn tất trước smoke test; không kết luận từ trạng thái build GitHub alone.
 
