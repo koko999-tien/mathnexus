@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Activity, ArrowRight, Calculator, CheckCircle2, Gauge, Integral, Sigma, Target } from 'lucide-react';
+import { Activity, ArrowRight, Calculator, CheckCircle2, Gauge, Sigma, Target } from 'lucide-react';
 import { compileExpression, expressionErrorMessage } from '../utils/expressionMath';
 import { findRootNear, localBehavior, numericalSecondDerivative, simpsonIntegral, tangentLine } from '../utils/calculusMath';
 import { formatNumber } from '../utils/math';
@@ -118,7 +118,7 @@ export default function Calculus() {
           </div>
 
           <div className="panel calculus-result-panel">
-            <div className="calculus-panel-title"><Integral size={18} /><div><strong>Tích phân xác định</strong><span>Quy tắc Simpson trên đoạn [a, b].</span></div></div>
+            <div className="calculus-panel-title"><Sigma size={18} /><div><strong>Tích phân xác định</strong><span>Quy tắc Simpson trên đoạn [a, b].</span></div></div>
             {!intervalValid ? <p className="calculus-empty">Hãy nhập hai cận hữu hạn.</p> : integral === null ? <p className="calculus-empty">Không thể tích phân ổn định trên đoạn này. Có thể hàm gián đoạn hoặc vượt miền xác định.</p> : <>
               <div className="calculus-equation">∫[{fmt(left)}, {fmt(right)}] f(x)dx ≈ {fmt(integral)}</div>
               <div className="analysis-list">
