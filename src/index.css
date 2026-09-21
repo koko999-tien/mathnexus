@@ -1190,3 +1190,25 @@ svg { flex-shrink: 0; }
   .precision-mode-field{min-width:0;}
   .precision-policy-meta{grid-column:auto;}
 }
+
+/* Learning Goal Engine */
+.learning-goal-focus { margin: 24px 0 30px; }
+.learning-goal-focus-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px; }
+.learning-goal-focus-head h2 { margin: 1px 0 4px; font-size: 20px; font-weight: 650; }
+.learning-goal-focus-head p { margin: 0; color: var(--color-muted); font-size: 11px; }
+.learning-goal-focus-head > strong { font-size: 28px; font-weight: 650; letter-spacing: -1px; }
+.learning-goal-focus.blocked { border-color: #d9b77d; }
+.learning-goal-focus.complete { border-color: var(--color-sage); }
+.learning-goal-focus-actions { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 15px; }
+.learning-goal-focus-actions > span { color: var(--color-muted); font-size: 11px; }
+.learning-goal-focus-actions > div { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.learning-goal-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 16px 0 20px; }
+.learning-goal-controls .helper-text { flex-basis: 100%; margin: 0; }
+
+@media (max-width: 700px) {
+  .learning-goal-focus-head { grid-template-columns: auto minmax(0, 1fr); }
+  .learning-goal-focus-head > strong { grid-column: 1 / -1; font-size: 22px; }
+  .learning-goal-focus-actions { align-items: stretch; flex-direction: column; }
+  .learning-goal-focus-actions > div { justify-content: stretch; }
+  .learning-goal-focus-actions .button { flex: 1 1 180px; }
+}
