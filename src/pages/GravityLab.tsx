@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Activity, ArrowRight, BookOpen, CircleDot, Cpu, Gauge, Pause, Play, RotateCcw, SlidersHorizontal } from 'lucide-react';
 import { ChatText } from '../components/ui/ChatText';
 import { NBodyScene } from '../simulations/NBodyScene';
 import { createNBodyEngine, type NBodyDiagnostics } from '../simulations/nbody/CpuNBodyEngine';
+import { recordSimulationAdjustment, recordSimulationSession } from '../exploration/explorationState';
 
 const BODY_OPTIONS = [48, 96, 160, 256];
 const SPEED_OPTIONS = [0.25, 0.5, 1, 2, 4];
@@ -22,6 +23,7 @@ export default function GravityLab() {
   const [revision, setRevision] = useState(0);
   const [mobile, setMobile] = useState(() => isMobileProfile());
   const [reduceMotion, setReduceMotion] = useState(false);
+  const explorationSessionRecorded = useRef(false);
 
   const engine = useMemo(
     () => createNBodyEngine({ bodyCount, seed, softening }),
@@ -30,6 +32,13 @@ export default function GravityLab() {
 
   const initialDiagnostics = useMemo(() => engine.diagnostics(), [engine]);
   const [metrics, setMetrics] = useState<NBodyDiagnostics>(initialDiagnostics);
+
+  useEffect(() => {
+    if (!explorationSessionRecorded.current) {
+      explorationSessionRecorded.current = true;
+      recordSimulationSession('gravity');
+    }
+  }, []);
 
   useEffect(() => {
     setMetrics(initialDiagnostics);
@@ -98,7 +107,7 @@ export default function GravityLab() {
 
         <div className="gravity-control-grid">
           <label className="field">Số vật thể
-            <select aria-label="Số vật thể N-body" value={bodyCount} onChange={event => setBodyCount(Number(event.target.value))}>
+            <select aria-label="Số vật thể N-body" value={bodyCount} onChange={event => { setBodyCount(Number(event.target.value)); recordSimulationAdjustment('gravity'); }}>
               {BODY_OPTIONS.map(value => <option key={value} value={value}>{value}</option>)}
             </select>
           </label>
@@ -106,12 +115,12 @@ export default function GravityLab() {
             <input aria-label="Seed mô phỏng" type="number" value={seed} onChange={event => setSeed(Number(event.target.value) || 1)} />
           </label>
           <label className="field">Tốc độ
-            <select aria-label="Tốc độ mô phỏng" value={speed} onChange={event => setSpeed(Number(event.target.value))}>
+            <select aria-label="Tốc độ mô phỏng" value={speed} onChange={event => { setSpeed(Number(event.target.value)); recordSimulationAdjustment('gravity'); }}>
               {SPEED_OPTIONS.map(value => <option key={value} value={value}>{value}×</option>)}
             </select>
           </label>
           <label className="field">Softening ε = {softening.toFixed(2)}
-            <input aria-label="Softening hấp dẫn" type="range" min="0.15" max="1.2" step="0.05" value={softening} onChange={event => setSoftening(Number(event.target.value))} />
+            <input aria-label="Softening hấp dẫn" type="range" min="0.15" max="1.2" step="0.05" value={softening} onChange={event => setSoftening(Number(event.target.value))} onPointerUp={() => recordSimulationAdjustment('gravity')} onKeyUp={() => recordSimulationAdjustment('gravity')} />
           </label>
         </div>
 
