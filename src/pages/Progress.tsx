@@ -2,7 +2,8 @@ import { useRef, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Download, Upload, RotateCcw, Check, BookOpen, Brain, Flame, PenTool, Target, ArrowUpRight, Network, Gauge } from 'lucide-react';
-import { saveProgress, DEFAULT_PROGRESS, localDate, load, save, parseBackup } from '../utils/storage';
+import { saveProgress, DEFAULT_PROGRESS, localDate } from '../utils/storage';
+import { createBackupSnapshot, parseBackupSnapshot, restoreBackupSnapshot } from '../utils/backup';
 import { useProgress } from '../hooks/useProgress';
 import { LESSONS } from '../data/lessons';
 import { QUIZ } from '../data/quiz';
@@ -35,25 +36,28 @@ export default function Progress() {
   const exploration = useExplorationSummary();
   const explorationStats = explorationMetrics(exploration);
 
-  const exportData = () => downloadFile(JSON.stringify({ app: 'MathNexus', version: 1, exportedAt: new Date().toISOString(), progress: p, notes: load<string>('notes', '') }, null, 2), 'mathnexus-' + localDate() + '.json', 'application/json');
+  const exportData = () => downloadFile(JSON.stringify(createBackupSnapshot(), null, 2), 'mathnexus-' + localDate() + '.json', 'application/json');
 
   const importData = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file) return;
     try {
-      if (file.size > 2 * 1024 * 1024) throw new Error('Tệp quá lớn. Vui lòng chọn bản sao lưu nhỏ hơn 2 MB.');
-      const backup = parseBackup(await file.text());
-      if (!window.confirm('Khôi phục sẽ thay thế tiến độ và sổ tay hiện tại bằng bản sao lưu này. Tiếp tục?')) return;
-      const previousNotes = load<string>('notes', '');
-      if (!save('notes', backup.notes)) throw new Error('Trình duyệt chưa lưu được sổ tay.');
-      if (!saveProgress(backup.progress)) {
-        save('notes', previousNotes);
-        throw new Error('Trình duyệt chưa lưu được tiến độ. Hãy kiểm tra dung lượng lưu trữ.');
-      }
+      if (file.size > 8 * 1024 * 1024) throw new Error('Tệp quá lớn. Vui lòng chọn bản sao lưu nhỏ hơn 8 MB.');
+      const backup = parseBackupSnapshot(await file.text());
+      const confirmText = backup.sourceVersion === 2
+        ? 'Khôi phục sẽ thay thế tiến độ, sổ tay, mục tiêu học, dữ liệu khám phá và Math Canvas hiện tại. Tiếp tục?'
+        : 'Đây là bản sao lưu MathNexus v1. Chỉ tiến độ và sổ tay sẽ được thay thế; mục tiêu học, dữ liệu khám phá và Math Canvas hiện tại sẽ được giữ nguyên. Tiếp tục?';
+      if (!window.confirm(confirmText)) return;
+
+      const restored = restoreBackupSnapshot(backup);
+      if (!restored.ok) throw new Error(restored.error);
+
       setName(backup.progress.displayName);
       setGoal(String(backup.progress.dailyGoal));
-      setMessage('Đã khôi phục tiến độ và sổ tay thành công.');
+      setMessage(backup.sourceVersion === 2
+        ? 'Đã khôi phục đầy đủ dữ liệu học tập từ bản sao lưu v2.'
+        : 'Đã khôi phục bản sao lưu v1. Dữ liệu học tập mới hơn vẫn được giữ nguyên.');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Không đọc được tệp sao lưu.');
     }
@@ -164,7 +168,7 @@ export default function Progress() {
 
     <div className="panel mt-5"><h2 className="panel-title">Những điều bạn đã khám phá</h2>{completed.length ? <div className="completed-lessons">{completed.map(lesson => <Link key={lesson.id} to={'/lesson/' + lesson.id}><Check size={16} /><span>{lesson.t}<small>{lesson.cat} · {lesson.lv}</small></span><ArrowUpRight size={16} /></Link>)}</div> : <div className="empty-state"><BookOpen size={30} /><p>Hành trình đang chờ bài học đầu tiên của bạn.</p><Link to="/library" className="button button-light">Khám phá thư viện</Link></div>}</div>
 
-    <div className="panel mt-5"><h2 className="panel-title">Dữ liệu luôn trong tay bạn</h2><p className="helper-text mb-4">Tiến độ và sổ tay được lưu trên trình duyệt này. Để chuyển sang điện thoại hoặc máy tính khác, tải bản sao lưu rồi khôi phục trên thiết bị đó.</p><div className="flex flex-wrap gap-3"><button onClick={exportData} className="button button-light"><Download size={16} />Tải bản sao lưu</button><button onClick={() => inputRef.current?.click()} className="button button-light"><Upload size={16} />Khôi phục dữ liệu</button><input ref={inputRef} type="file" accept=".json,application/json" aria-label="Chọn bản sao lưu" className="hidden" onChange={event => void importData(event)} /><button onClick={reset} className="button button-light text-red-600"><RotateCcw size={16} />Đặt lại tiến độ</button></div></div>
+    <div className="panel mt-5"><h2 className="panel-title">Dữ liệu luôn trong tay bạn</h2><p className="helper-text mb-4">Tiến độ, sổ tay, mục tiêu học, dữ liệu khám phá và Math Canvas đều được lưu cục bộ. Bản sao lưu v2 mang toàn bộ dữ liệu học tập bền vững sang thiết bị khác.</p><div className="flex flex-wrap gap-3"><button onClick={exportData} className="button button-light"><Download size={16} />Tải bản sao lưu</button><button onClick={() => inputRef.current?.click()} className="button button-light"><Upload size={16} />Khôi phục dữ liệu</button><input ref={inputRef} type="file" accept=".json,application/json" aria-label="Chọn bản sao lưu" className="hidden" onChange={event => void importData(event)} /><button onClick={reset} className="button button-light text-red-600"><RotateCcw size={16} />Đặt lại tiến độ</button></div></div>
     {message && <p role="status" className="form-message">{message}</p>}
   </section>;
 }
