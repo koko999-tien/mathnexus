@@ -25,8 +25,8 @@
     "gsap": "^3.15.0",
     "katex": "^0.18.7",
     "lucide-react": "^1.47.0",
-    "react": "19.2.8",
-    "react-dom": "19.2.8",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
     "react-router-dom": "^7.18.4",
     "tailwindcss": "^4.3.3",
     "three": "^0.186.0"
