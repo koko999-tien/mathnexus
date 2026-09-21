@@ -82,8 +82,8 @@ UI đã có nhiều nền tốt: skip link, native `dialog`, aria-label/progress
 
 ## Backlog sau baseline
 
-- [ ] Backup/restore schema v2 cho Progress + Notes + Learning Goal + Exploration + Math Canvas.
-- [ ] Rate limiting cho `/api/gemini`.
+- [x] Backup/restore schema v2 cho Progress + Notes + Learning Goal + Exploration + Math Canvas.
+- [ ] Bật Vercel WAF rate limiting cho `/api/gemini` khi release; code-level guards + warm-instance throttle đã có.
 - [ ] Client/API structured observability tối thiểu.
 - [ ] Accessibility CI.
 - [ ] Kiểm tra và tối ưu Three/Drei chunk nếu ảnh hưởng thiết bị thấp.
