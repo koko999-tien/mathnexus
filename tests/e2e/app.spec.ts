@@ -15,7 +15,7 @@ test('dashboard, theme and complete navigation work at every screen size', async
   if (isMobile) {
     await page.getByRole('button', { name: 'Mở menu' }).click();
     const drawer = page.getByRole('dialog', { name: 'MathNexus', exact: true });
-    await expect(drawer.getByRole('link')).toHaveCount(12);
+    await expect(drawer.getByRole('link')).toHaveCount(13);
     await drawer.getByRole('link', { name: 'Tiến độ học tập' }).click();
     await expect(drawer).not.toBeVisible();
   } else await page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link', { name: 'Tiến độ học tập' }).click();
@@ -51,6 +51,24 @@ test('dashboard recommendations and knowledge map adapt to learning history', as
   await expect(page.getByRole('progressbar', { name: 'Tiến độ Giải tích' })).toHaveAttribute('aria-valuenow', '25');
   await expect(page.getByText('14 ngày gần đây')).toBeVisible();
 });
+
+
+test('knowledge map exposes prerequisite depth, gaps and learning paths', async ({ page }) => {
+  await page.goto('/map?concept=derivative-definition');
+  await expect(page.getByRole('heading', { name: 'Bản đồ cấu trúc toán học' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Định nghĩa đạo hàm' })).toBeVisible();
+
+  const prerequisites = page.locator('.concept-relations').filter({ hasText: 'Cần biết trước' });
+  await expect(prerequisites).toBeVisible();
+  await expect(prerequisites.getByRole('button', { name: 'Giới hạn', exact: true })).toBeVisible();
+  await expect(prerequisites.getByRole('button', { name: 'Tính liên tục', exact: true })).toBeVisible();
+  await expect(page.locator('.learning-path-card')).toContainText('Đường học tới “Định nghĩa đạo hàm”');
+
+  await prerequisites.getByRole('button', { name: 'Tính liên tục', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Tính liên tục' })).toBeVisible();
+  await expect(page.getByText('Nút kiến thức chưa có tài nguyên riêng')).toBeVisible();
+});
+
 
 test('search without accents opens lessons and completion survives reload', async ({ page }) => {
   await page.goto('/');
@@ -286,27 +304,33 @@ test('AI shows local fallback when the server is unavailable', async ({ page }) 
   await page.goto('/ai');
   await page.getByRole('button', { name: 'Số phức là gì?' }).click();
   await expect(page.getByText('Tra cứu cục bộ · Không phải câu trả lời từ Gemini')).toBeVisible();
-  await expect(page.locator('.chat-links').getByRole('link', { name: 'Số phức', exact: true })).toBeVisible();
+  await expect(page.locator('.chat-links a[href="/lesson/cplx"]')).toBeVisible();
+  await expect(page.locator('.chat-links a[href*="concept=complex-numbers"]')).toBeVisible();
 });
 
-test('AI renders a successful Gemini math response', async ({ page, context }) => {
-  await context.route('**/api/gemini', route => route.fulfill({ status: 200, json: { text: 'Đáp án là $2+2=4$.' } }));
-  await page.goto('/ai');
-  await page.evaluate(async () => {
-    const registrations = await navigator.serviceWorker?.getRegistrations?.() || [];
-    await Promise.all(registrations.map(registration => registration.unregister()));
+test('AI renders a successful Gemini math response', async ({ browser }) => {
+  const context = await browser.newContext({
+    baseURL: 'http://127.0.0.1:4173',
+    serviceWorkers: 'block',
   });
-  await page.reload();
-  await page.getByRole('textbox', { name: 'Câu hỏi cho trợ lý' }).fill('2+2 bằng mấy?');
-  await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
-  await expect(page.locator('.chat-message').last()).toContainText('Đáp án là');
-  await expect(page.locator('.chat-message').last().locator('.katex')).toBeVisible();
+  const page = await context.newPage();
+
+  try {
+    await context.route('**/api/gemini', route => route.fulfill({ status: 200, json: { text: 'Đáp án là $2+2=4$.' } }));
+    await page.goto('/ai');
+    await page.getByRole('textbox', { name: 'Câu hỏi cho trợ lý' }).fill('2+2 bằng mấy?');
+    await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+    await expect(page.locator('.chat-message').last()).toContainText('Đáp án là');
+    await expect(page.locator('.chat-message').last().locator('.katex')).toBeVisible();
+  } finally {
+    await context.close();
+  }
 });
 
 test('every route fits the viewport and has no client-side errors', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
-  for (const route of ['/library', '/books', '/book/unknown', '/think', '/practice', '/graph', '/tools', '/calculus', '/formulas', '/formula/deMoivre', '/ai', '/notebook', '/progress', '/does-not-exist']) {
+  for (const route of ['/library', '/map', '/books', '/book/unknown', '/think', '/practice', '/graph', '/tools', '/calculus', '/formulas', '/formula/deMoivre', '/ai', '/notebook', '/progress', '/does-not-exist']) {
     await page.goto(route);
     await expect(page.locator('main')).not.toBeEmpty();
     await expect(page.getByText('Đang mở góc học tập…')).not.toBeVisible();
