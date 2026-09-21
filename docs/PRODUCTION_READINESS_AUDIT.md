@@ -16,7 +16,7 @@ Mục tiêu: ưu tiên độ đúng, an toàn dữ liệu và khả năng vận 
 | UX / mobile | Tốt | E2E desktop Chrome, Android Chrome, iPhone WebKit; có skip link, dialog native, responsive checks. | Thêm automated accessibility audit và reduced-motion coverage rộng hơn. |
 | PWA / offline | Tốt | Service worker prompt update, offline state, offline E2E, cache cleanup. | Kiểm tra cache strategy khi dữ liệu/content tăng mạnh. |
 | CI / release | Tốt, cần gate rõ | CI chạy lint → unit → build → Playwright. | Dependency audit, bundle budget, timeout/concurrency, production checklist. |
-| Observability | Yếu | Error Boundary + console logging, chưa có structured client error/performance telemetry. | Thêm privacy-preserving error/performance monitoring trước public scale. |
+| Observability | Baseline đã có | Error Boundary + privacy-safe client error/performance telemetry vào structured Function logs; không thu nội dung học/chat. | Sau deploy xác minh log và đặt alert/retention phù hợp ở provider. |
 | Backend/API | Cần siết | Validation, timeout, retry/fallback đã có; chưa có rate limiting/app-level abuse protection. | Rate limit + request correlation + health/diagnostic endpoint. |
 
 ## Các phát hiện ưu tiên
@@ -84,8 +84,8 @@ UI đã có nhiều nền tốt: skip link, native `dialog`, aria-label/progress
 
 - [x] Backup/restore schema v2 cho Progress + Notes + Learning Goal + Exploration + Math Canvas.
 - [ ] Bật Vercel WAF rate limiting cho `/api/gemini` khi release; code-level guards + warm-instance throttle đã có.
-- [ ] Client/API structured observability tối thiểu.
-- [ ] Accessibility CI.
+- [x] Client/API structured observability tối thiểu.
+- [x] Accessibility CI.
 - [ ] Kiểm tra và tối ưu Three/Drei chunk nếu ảnh hưởng thiết bị thấp.
 - [ ] Cache/version migration policy cho content và ontology.
 - [ ] Release checklist + rollback notes cho lần deploy production tiếp theo.
