@@ -15,7 +15,7 @@ test('dashboard, theme and complete navigation work at every screen size', async
   if (isMobile) {
     await page.getByRole('button', { name: 'Mở menu' }).click();
     const drawer = page.getByRole('dialog', { name: 'MathNexus', exact: true });
-    await expect(drawer.getByRole('link')).toHaveCount(12);
+    await expect(drawer.getByRole('link')).toHaveCount(13);
     await drawer.getByRole('link', { name: 'Tiến độ học tập' }).click();
     await expect(drawer).not.toBeVisible();
   } else await page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link', { name: 'Tiến độ học tập' }).click();
@@ -51,6 +51,22 @@ test('dashboard recommendations and knowledge map adapt to learning history', as
   await expect(page.getByRole('progressbar', { name: 'Tiến độ Giải tích' })).toHaveAttribute('aria-valuenow', '25');
   await expect(page.getByText('14 ngày gần đây')).toBeVisible();
 });
+
+
+test('knowledge map exposes prerequisite depth, gaps and learning paths', async ({ page }) => {
+  await page.goto('/map?concept=derivative-definition');
+  await expect(page.getByRole('heading', { name: 'Bản đồ cấu trúc toán học' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Định nghĩa đạo hàm' })).toBeVisible();
+  await expect(page.getByText('Cần biết trước')).toBeVisible();
+  await expect(page.getByRole('button', { name: /Giới hạn/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Tính liên tục/ })).toBeVisible();
+  await expect(page.locator('.learning-path-card')).toContainText('Đường học tới “Định nghĩa đạo hàm”');
+
+  await page.getByRole('button', { name: /Tính liên tục/ }).click();
+  await expect(page.getByRole('heading', { name: 'Tính liên tục' })).toBeVisible();
+  await expect(page.getByText('Nút kiến thức chưa có tài nguyên riêng')).toBeVisible();
+});
+
 
 test('search without accents opens lessons and completion survives reload', async ({ page }) => {
   await page.goto('/');
@@ -306,7 +322,7 @@ test('AI renders a successful Gemini math response', async ({ page, context }) =
 test('every route fits the viewport and has no client-side errors', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
-  for (const route of ['/library', '/books', '/book/unknown', '/think', '/practice', '/graph', '/tools', '/calculus', '/formulas', '/formula/deMoivre', '/ai', '/notebook', '/progress', '/does-not-exist']) {
+  for (const route of ['/library', '/map', '/books', '/book/unknown', '/think', '/practice', '/graph', '/tools', '/calculus', '/formulas', '/formula/deMoivre', '/ai', '/notebook', '/progress', '/does-not-exist']) {
     await page.goto(route);
     await expect(page.locator('main')).not.toBeEmpty();
     await expect(page.getByText('Đang mở góc học tập…')).not.toBeVisible();
