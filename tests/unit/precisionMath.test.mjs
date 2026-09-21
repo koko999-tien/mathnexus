@@ -11,6 +11,7 @@ import {
   highPrecisionQuadratic,
 } from '../../src/utils/precisionMath.ts';
 import { getPrecisionPolicy, HIGH_PRECISION_DIGITS } from '../../src/utils/precisionPolicy.ts';
+import { solveLinearSystem2 } from '../../src/utils/advancedMath.ts';
 
 test('decimal backend preserves exact decimal arithmetic that Float64 cannot represent exactly', () => {
   assert.equal(formatHighPrecision(highPrecisionAdd('0.1', '0.2')), '0.3');
@@ -18,6 +19,34 @@ test('decimal backend preserves exact decimal arithmetic that Float64 cannot rep
   assert.ok(percent);
   assert.equal(percent.significantDigits, HIGH_PRECISION_DIGITS);
   assert.match(percent.value, /^33\.333333333333333333333333333333333333333333333333/);
+});
+
+test('Float64 and Decimal expose different truth boundaries on an ill-conditioned decimal system', () => {
+  const standard = solveLinearSystem2(
+    Number('1'),
+    Number('1'),
+    Number('2'),
+    Number('1'),
+    Number('1.0000000000000000000000001'),
+    Number('2.0000000000000000000000001'),
+  );
+
+  const precise = highPrecisionLinearSystem2(
+    '1',
+    '1',
+    '2',
+    '1',
+    '1.0000000000000000000000001',
+    '2.0000000000000000000000001',
+  );
+
+  // IEEE-754 rounds the 25th-decimal perturbation away, so the standard path
+  // sees two identical equations. High Precision keeps the decimal evidence.
+  assert.equal(standard?.kind, 'infinite');
+  assert.equal(precise?.kind, 'unique');
+  assert.equal(precise?.determinant.value, '1e-25');
+  assert.equal(precise?.x?.value, '1');
+  assert.equal(precise?.y?.value, '1');
 });
 
 test('high precision linear algebra separates systems beyond Float64 decimal resolution', () => {
