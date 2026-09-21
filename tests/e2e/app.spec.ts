@@ -38,6 +38,18 @@ test('search without accents opens lessons and completion survives reload', asyn
   await expect(page.locator('.stat-card').filter({ hasText: 'Ngày học liên tiếp' })).toContainText('1');
 });
 
+test('natural-language search ranks relevant knowledge and can hand the question to AI', async ({ page }) => {
+  const query = 'mình đang yếu đạo hàm nên học gì trước';
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Tìm kiếm', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('textbox').fill(query);
+  await expect(dialog.locator('.search-result').first()).toContainText('Đạo hàm');
+  await dialog.getByRole('link', { name: new RegExp('Hỏi MathNexus AI') }).click();
+  await expect(page).toHaveURL(/\/ai\?q=/);
+  await expect(page.getByRole('textbox', { name: 'Câu hỏi cho trợ lý' })).toHaveValue(query);
+});
+
 test('library filters have a useful empty state and can be cleared', async ({ page }) => {
   await page.goto('/library');
   await page.getByRole('textbox', { name: 'Tìm bài học' }).fill('khongcotrongthuvien');
