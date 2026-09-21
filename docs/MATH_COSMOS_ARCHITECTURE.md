@@ -626,3 +626,116 @@ The physics branch now includes:
 Simulation parameters are treated as **learning probes**, not mastery evidence by themselves.
 
 Opening or changing the gravity simulation may support curiosity/discovery metrics later, but it must not automatically mark Newtonian gravity or N-body dynamics as mastered.
+
+
+---
+
+## Infinite Math Canvas Foundation — Phase 8 status
+
+### Implemented architecture
+
+The first Math Canvas is deliberately single-user and local-first.
+
+Object model:
+
+```text
+MathCanvasState
+  viewport
+  title
+  objects[]
+
+MathCanvasObject
+  stable id
+  x / y
+  width / height
+  optional groupId
+  createdAt / updatedAt
+
+object types:
+  text
+  latex
+  concept
+  formula
+  simulation
+  link
+  stroke
+  arrow
+```
+
+The workspace reuses canonical MathNexus data:
+- concept cards reference `MATH_CONCEPTS`;
+- formula cards reference `FORMS`;
+- simulation cards link to the real Gravity Lab;
+- LaTeX rendering reuses the existing KaTeX/ChatText path.
+
+### Spatial interaction
+
+Implemented:
+- pan mode;
+- cursor-centered zoom;
+- select and multi-select;
+- group IDs;
+- grouped dragging;
+- freehand strokes;
+- arrows;
+- card dragging;
+- persistent viewport;
+- large vector workspace via SVG;
+- mobile responsive inspector.
+
+No object stores screen coordinates. Object coordinates are world coordinates and the viewport transform is stored separately.
+
+### Persistence policy
+
+Canvas persistence is independent from the legacy progress/notes backup schema.
+
+Storage is:
+- local-first;
+- debounced by the page before writes;
+- split into fixed-size object chunks;
+- hash-compared so unchanged chunks are not rewritten;
+- normalized on load so malformed objects are dropped instead of corrupting the workspace.
+
+This avoids a single giant JSON document being rewritten on every pointer movement.
+
+### Collaboration status
+
+Yjs/CRDT is **not implemented yet**.
+
+Collaboration is intentionally deferred until:
+1. the single-user object schema is stable;
+2. object operations are proven in E2E;
+3. persistence/migration semantics are clear.
+
+Future collaboration should sync object-level operations, not replace the workspace with one continuously rewritten JSON blob.
+
+### Security/accessibility notes
+
+- external link cards only activate HTTP/HTTPS URLs;
+- Canvas remains usable without network access;
+- toolbar actions are standard keyboard-focusable buttons;
+- 3D/WebGPU is not required for Canvas;
+- concepts/formulas remain reachable through normal MathNexus routes.
+
+### Phase status
+
+Completed:
+- stable object IDs;
+- serializable spatial state;
+- pan/zoom;
+- text and LaTeX blocks;
+- concept/formula/simulation/link cards;
+- free drawing;
+- arrows;
+- grouping;
+- chunked/debounced persistence;
+- local export;
+- offline route coverage.
+
+Still next:
+- object resize handles;
+- import with schema validation;
+- richer graph/simulation embeds;
+- keyboard spatial navigation;
+- operation history / undo-redo;
+- only then CRDT/Yjs collaboration.
