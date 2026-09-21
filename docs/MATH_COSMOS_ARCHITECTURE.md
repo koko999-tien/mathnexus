@@ -630,6 +630,97 @@ Opening or changing the gravity simulation may support curiosity/discovery metri
 
 ---
 
+## Socratic Tutor Contextual Integration — Phase 7 status
+
+### Runtime pipeline
+
+```text
+Question
+  ↓
+Shared deterministic retrieval
+  ↓
+Concept anchors
+  ↓
+Local mastery evidence
+  ↓
+Tutor Planner
+  ├─ DISCOVER
+  ├─ GUIDED_HINT
+  ├─ CONCEPT_EXPLANATION
+  ├─ PROOF_GUIDANCE
+  ├─ ERROR_DIAGNOSIS
+  ├─ VISUAL_INTUITION
+  └─ DIRECT_SOLUTION
+  ↓
+Validated server tutor policy
+  ↓
+Gemini + MathNexus context
+```
+
+### Policy
+
+Default behavior is Socratic, not evasive.
+
+The tutor should:
+- ask or hint before revealing a complete solution when the learner did not request one;
+- provide a complete solution when explicitly requested;
+- explain concepts with intuition before notation when appropriate;
+- diagnose the first incorrect step rather than rewriting an entire attempt;
+- guide proofs using goals, hypotheses and relevant lemmas;
+- use mastery only as bounded evidence, never as a psychological or intelligence inference.
+
+### Trust boundary
+
+The browser is untrusted.
+
+Only a whitelisted tutor mode may affect the server system instruction.
+
+Client-provided:
+- mastery summaries;
+- concept IDs;
+- retrieved app context;
+
+are placed in the user-context portion of the request, not in the system instruction.
+
+Arbitrary client `strategy` strings are ignored server-side.
+
+### Local fallback
+
+When Gemini is unavailable, MathNexus still:
+- retrieves local knowledge;
+- selects a tutor mode;
+- provides a mode-specific opening prompt;
+- surfaces relevant concept/lesson/formula links.
+
+This preserves useful learning behavior without pretending the local retrieval output is an LLM answer.
+
+### Completed in Phase 7
+
+- deterministic tutor intent classifier;
+- user-selectable tutor modes;
+- mastery-aware tutor planning;
+- concept-anchor extraction from shared retrieval;
+- explicit direct-solution escape hatch;
+- server-side mode whitelist;
+- system/user prompt trust separation;
+- local Socratic fallback;
+- unit tests for intent, planner and server policy;
+- handler-level test that verifies untrusted strings do not reach the system prompt;
+- E2E coverage for automatic discovery mode and direct-solution mode.
+
+### Not yet added
+
+- conversation-stage escalation (hint 1 → hint 2 → structured solution);
+- proof-state representation;
+- symbolic verification of generated algebra;
+- external vector database;
+- model-independent response validator.
+
+Those remain future work and should be added only with measurable learning/reliability value.
+
+
+---
+
 ## Exploration State Engine — Phase 9 status
 
 ### Terminology

@@ -1,3 +1,5 @@
+import { normalizeTutor, tutorInstruction, tutorUserContext } from './tutorPolicy.js';
+
 const DEFAULT_MODEL = 'gemini-3.8-flash';
 const STABLE_FALLBACK_MODELS = ['gemini-3.7-flash', 'gemini-3.6-flash'];
 const REQUEST_BUDGET_MS = 24000;
@@ -10,7 +12,9 @@ Bạn là MathNexus AI, trợ lý học toán cho người Việt.
 Nguyên tắc:
 - Trả lời bằng tiếng Việt trừ khi người dùng yêu cầu ngôn ngữ khác.
 - Ưu tiên giải thích rõ bản chất, sau đó mới đến công thức.
-- Với bài toán, trình bày từng bước và tự kiểm tra kết quả trước khi trả lời.
+- Với bài toán, tự kiểm tra kết quả trước khi trả lời.
+- Mặc định hỗ trợ học bằng câu hỏi dẫn dắt/gợi ý; không cố tình giữ đáp án nếu người dùng đã yêu cầu lời giải đầy đủ.
+- Không tuyên bố biết cảm xúc, bệnh lý, trí thông minh hay năng lực của người dùng từ hành vi học tập.
 - Nếu có "Ngữ cảnh MathNexus", hãy dùng nó làm nguồn ngữ cảnh cho nội dung trong ứng dụng.
 - Không bịa rằng MathNexus có bài học, sách hay công thức nếu ngữ cảnh không cung cấp.
 - Khi câu hỏi thiếu dữ kiện, nêu giả định ngắn gọn thay vì bịa dữ kiện.
@@ -53,12 +57,13 @@ function normalizeHistory(history) {
     }));
 }
 
+
 function timeoutSignal(deadline) {
   const remaining = Math.max(1, deadline - Date.now());
   return AbortSignal.timeout(Math.max(500, Math.min(ATTEMPT_TIMEOUT_MS, remaining)));
 }
 
-async function callGemini({ apiKey, model, contents, signal }) {
+async function callGemini({ apiKey, model, contents, signal, systemPrompt }) {
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
 
   let geminiResponse;
@@ -72,7 +77,7 @@ async function callGemini({ apiKey, model, contents, signal }) {
       },
       body: JSON.stringify({
         systemInstruction: {
-          parts: [{ text: SYSTEM_PROMPT }],
+          parts: [{ text: systemPrompt || SYSTEM_PROMPT }],
         },
         contents,
         generationConfig: {
@@ -200,6 +205,7 @@ export default async function handler(request, response) {
 
   const message = typeof body.message === 'string' ? body.message.trim() : '';
   const appContext = typeof body.appContext === 'string' ? body.appContext.trim().slice(0, 12000) : '';
+  const tutor = normalizeTutor(body.tutor);
 
   if (!message) {
     return response.status(400).json({ error: 'Message is required', code: 'EMPTY_MESSAGE' });
@@ -209,9 +215,15 @@ export default async function handler(request, response) {
     return response.status(400).json({ error: 'Message is too long', code: 'MESSAGE_TOO_LONG' });
   }
 
-  const userText = appContext
-    ? `Ngữ cảnh MathNexus:\n${appContext}\n\nCâu hỏi của người dùng:\n${message}`
+  const contextBlocks = [
+    appContext ? `Ngữ cảnh MathNexus:\n${appContext}` : '',
+    tutorUserContext(tutor),
+  ].filter(Boolean);
+  const userText = contextBlocks.length
+    ? `${contextBlocks.join('\n\n')}\n\nCâu hỏi của người dùng:\n${message}`
     : message;
+
+  const dynamicSystemPrompt = [SYSTEM_PROMPT, tutorInstruction(tutor)].filter(Boolean).join('\n\n');
 
   const contents = [
     ...normalizeHistory(body.history),
@@ -242,6 +254,7 @@ export default async function handler(request, response) {
         model,
         contents,
         signal: timeoutSignal(deadline),
+        systemPrompt: dynamicSystemPrompt,
       });
 
       attempts.push({ model, attempt, code: result.ok ? 'OK' : String(result.code || result.status) });
@@ -251,6 +264,7 @@ export default async function handler(request, response) {
           text: result.text,
           model: result.model,
           fallbackUsed: model !== configuredModel,
+          tutorMode: tutor?.mode || null,
         });
       }
 

@@ -983,6 +983,22 @@ svg { flex-shrink: 0; }
 }
 
 
+/* Socratic Tutor */
+.tutor-mode-bar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:0 0 13px; padding:10px 12px; border:1px solid var(--color-line); border-radius:10px; background:var(--color-panel); }
+.tutor-mode-bar > label { display:flex; align-items:center; gap:8px; min-width:0; color:var(--color-ink); }
+.tutor-mode-bar > label > svg { color:var(--color-accent); }
+.tutor-mode-bar > label > span { font-size:9px; font-weight:650; white-space:nowrap; }
+.tutor-mode-bar select { min-height:34px; padding:5px 28px 5px 8px; border:1px solid var(--color-line); border-radius:7px; background:var(--color-bg); color:var(--color-ink); font-size:9px; }
+.tutor-mode-bar small { color:var(--color-muted); font-size:8px; line-height:1.45; text-align:right; }
+
+@media (max-width:680px){
+  .tutor-mode-bar{align-items:flex-start;flex-direction:column;}
+  .tutor-mode-bar > label{width:100%;}
+  .tutor-mode-bar select{flex:1;}
+  .tutor-mode-bar small{text-align:left;}
+}
+
+
 /* Exploration State Engine */
 .exploration-state-panel { margin-bottom:18px; }
 .exploration-summary-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin:14px 0; }
