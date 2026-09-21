@@ -1,6 +1,6 @@
 import test, { beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { currentStreak, emptyActivity, getProgress, localDate, normalizeProgress, parseBackup, recordActivity, recordQuestionAttempt, saveProgress } from '../../src/utils/storage.ts';
+import { currentStreak, emptyActivity, getProgress, localDate, normalizeProgress, parseBackup, PROGRESS_SCHEMA_VERSION, recordActivity, recordQuestionAttempt, saveProgress } from '../../src/utils/storage.ts';
 
 const memory = new Map();
 Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: { getItem: key => memory.get(key) ?? null, setItem: (key, value) => memory.set(key, value) } });
@@ -10,6 +10,7 @@ beforeEach(() => memory.clear());
 test('legacy and corrupted progress are safely migrated with fresh defaults', () => {
   memory.set('mathnexus_progress', '{bad json');
   assert.equal(getProgress().dailyGoal, 5);
+  assert.equal(getProgress().version, PROGRESS_SCHEMA_VERSION);
   memory.set('mathnexus_progress', JSON.stringify({ lessonsRead: ['quad', 'quad', 3], questionsDone: 2 }));
   assert.deepEqual(getProgress().lessonsRead, ['quad']);
   assert.equal(getProgress().questionsCorrect, 0);
@@ -76,4 +77,48 @@ test('backups round-trip progress and notes, rejecting unrelated data', () => {
   assert.throws(() => parseBackup(JSON.stringify({ ...backup, notes: {} })), /không phải/);
   saveProgress({ ...getProgress(), displayName: '   Tiến   ' });
   assert.equal(getProgress().displayName, 'Tiến');
+});
+
+
+test('legacy progress without a version upgrades to the current schema on normalize and save', () => {
+  memory.set('mathnexus_progress', JSON.stringify({
+    lessonsRead: ['quad'],
+    questionsDone: 2,
+    booksOpened: [],
+  }));
+
+  const progress = getProgress();
+  assert.equal(progress.version, PROGRESS_SCHEMA_VERSION);
+  assert.equal(saveProgress(progress), true);
+
+  const persisted = JSON.parse(memory.get('mathnexus_progress'));
+  assert.equal(persisted.version, PROGRESS_SCHEMA_VERSION);
+  assert.deepEqual(persisted.lessonsRead, ['quad']);
+});
+
+test('older code refuses to overwrite a future progress schema', () => {
+  memory.set('mathnexus_progress', JSON.stringify({
+    version: PROGRESS_SCHEMA_VERSION + 1,
+    lessonsRead: ['future-lesson'],
+    questionsDone: 7,
+    booksOpened: [],
+    futureField: { keep: true },
+  }));
+
+  let storageErrors = 0;
+  const handler = () => { storageErrors += 1; };
+  window.addEventListener('mathnexus:storage-error', handler);
+
+  try {
+    const readable = getProgress();
+    assert.equal(readable.version, PROGRESS_SCHEMA_VERSION);
+    assert.equal(saveProgress({ ...readable, displayName: 'Rollback app' }), false);
+
+    const raw = JSON.parse(memory.get('mathnexus_progress'));
+    assert.equal(raw.version, PROGRESS_SCHEMA_VERSION + 1);
+    assert.deepEqual(raw.futureField, { keep: true });
+    assert.equal(storageErrors, 1);
+  } finally {
+    window.removeEventListener('mathnexus:storage-error', handler);
+  }
 });
