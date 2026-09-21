@@ -1,6 +1,8 @@
 const DEFAULT_MODEL = 'gemini-3.8-flash';
 const STABLE_FALLBACK_MODELS = ['gemini-3.7-flash', 'gemini-3.6-flash'];
-const RETRY_DELAYS_MS = [800, 1800];
+const REQUEST_BUDGET_MS = 24000;
+const ATTEMPT_TIMEOUT_MS = 7000;
+const RETRY_DELAY_MS = 650;
 
 const SYSTEM_PROMPT = `
 Bạn là MathNexus AI, trợ lý học toán cho người Việt.
@@ -28,9 +30,14 @@ function isTransientGeminiError(result) {
   return (
     result.status === 408 ||
     result.status === 429 ||
-    result.status >= 500 ||
+    result.status === 502 ||
+    result.status === 503 ||
+    result.status === 504 ||
     result.code === 'UNAVAILABLE' ||
-    result.code === 'RESOURCE_EXHAUSTED'
+    result.code === 'RESOURCE_EXHAUSTED' ||
+    result.code === 'NETWORK_ERROR' ||
+    result.code === 'TIMEOUT' ||
+    result.code === 'EMPTY_RESPONSE'
   );
 }
 
@@ -46,27 +53,59 @@ function normalizeHistory(history) {
     }));
 }
 
+function timeoutSignal(deadline) {
+  const remaining = Math.max(1, deadline - Date.now());
+  return AbortSignal.timeout(Math.max(500, Math.min(ATTEMPT_TIMEOUT_MS, remaining)));
+}
+
 async function callGemini({ apiKey, model, contents, signal }) {
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
 
-  const geminiResponse = await fetch(endpoint, {
-    signal,
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-goog-api-key': apiKey,
-    },
-    body: JSON.stringify({
-      systemInstruction: {
-        parts: [{ text: SYSTEM_PROMPT }],
+  let geminiResponse;
+  try {
+    geminiResponse = await fetch(endpoint, {
+      signal,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
       },
-      contents,
-      generationConfig: {
-        temperature: 0.25,
-        maxOutputTokens: 4096,
-      },
-    }),
-  });
+      body: JSON.stringify({
+        systemInstruction: {
+          parts: [{ text: SYSTEM_PROMPT }],
+        },
+        contents,
+        generationConfig: {
+          temperature: 0.25,
+          maxOutputTokens: 4096,
+        },
+      }),
+    });
+  } catch (error) {
+    const isTimeout = error?.name === 'TimeoutError' || error?.name === 'AbortError';
+    const detail = isTimeout
+      ? 'Gemini request timed out'
+      : error instanceof Error
+        ? error.message
+        : 'Gemini network request failed';
+
+    console.warn(
+      '[MathNexus Gemini transport error]',
+      JSON.stringify({
+        code: isTimeout ? 'TIMEOUT' : 'NETWORK_ERROR',
+        message: detail.slice(0, 500),
+        model,
+      }),
+    );
+
+    return {
+      ok: false,
+      status: isTimeout ? 504 : 503,
+      code: isTimeout ? 'TIMEOUT' : 'NETWORK_ERROR',
+      detail,
+      model,
+    };
+  }
 
   let payload = {};
   try {
@@ -126,6 +165,13 @@ async function callGemini({ apiKey, model, contents, signal }) {
   };
 }
 
+function responseStatusFor(error) {
+  if (!error) return 502;
+  if (error.status === 429 || error.code === 'RESOURCE_EXHAUSTED') return 429;
+  if (isTransientGeminiError(error)) return 503;
+  return 502;
+}
+
 export default async function handler(request, response) {
   response.setHeader('Cache-Control', 'no-store');
   if (request.method !== 'POST') {
@@ -181,82 +227,82 @@ export default async function handler(request, response) {
     DEFAULT_MODEL,
     ...STABLE_FALLBACK_MODELS,
   ])];
+  const deadline = Date.now() + REQUEST_BUDGET_MS;
+  const attempts = [];
 
-  try {
-    let lastError = null;
-    const signal = AbortSignal.timeout(25000);
+  let lastError = null;
 
-    for (const model of modelsToTry) {
-      let result = await callGemini({ apiKey, model, contents, signal });
+  for (const model of modelsToTry) {
+    let attempt = 0;
+
+    while (attempt < 2 && Date.now() < deadline - 500) {
+      attempt += 1;
+      const result = await callGemini({
+        apiKey,
+        model,
+        contents,
+        signal: timeoutSignal(deadline),
+      });
+
+      attempts.push({ model, attempt, code: result.ok ? 'OK' : String(result.code || result.status) });
 
       if (result.ok) {
         return response.status(200).json({
           text: result.text,
           model: result.model,
+          fallbackUsed: model !== configuredModel,
         });
       }
 
       lastError = result;
 
-      if (isTransientGeminiError(result)) {
-        for (const delayMs of RETRY_DELAYS_MS) {
-          await sleep(delayMs);
-          result = await callGemini({ apiKey, model, contents, signal });
-
-          if (result.ok) {
-            return response.status(200).json({
-              text: result.text,
-              model: result.model,
-            });
-          }
-
-          lastError = result;
-
-          if (!isTransientGeminiError(result)) {
-            break;
-          }
-        }
-      }
-
-      const modelLooksInvalid =
-        result.status === 404 ||
-        /model.*(not found|not supported|invalid)|not found.*model/i.test(String(result.detail));
-
-      const shouldTryNextModel = modelLooksInvalid || isTransientGeminiError(result);
-
-      if (!shouldTryNextModel) {
+      if (!isTransientGeminiError(result) || attempt >= 2) {
         break;
       }
 
-      console.warn(
-        '[MathNexus Gemini fallback]',
-        JSON.stringify({
-          fromModel: model,
-          reason: String(result.code || result.status),
-        }),
-      );
+      const remaining = deadline - Date.now();
+      if (remaining <= RETRY_DELAY_MS + 500) {
+        break;
+      }
+      await sleep(RETRY_DELAY_MS);
     }
 
-    return response.status(502).json({
-      error: String(lastError?.detail || 'Gemini request failed').slice(0, 1000),
-      code: String(lastError?.code || 'GEMINI_UPSTREAM_ERROR'),
-      upstreamStatus: lastError?.status || null,
-      model: lastError?.model || configuredModel,
-    });
-  } catch (error) {
-    if (error?.name === 'TimeoutError' || error?.name === 'AbortError') {
-      return response.status(504).json({ error: 'Gemini took too long to respond', code: 'TIMEOUT' });
-    }
-    const detail = error instanceof Error ? error.message : 'Unknown server error';
+    if (!lastError) break;
 
-    console.error(
-      '[MathNexus Gemini server error]',
-      JSON.stringify({ message: detail.slice(0, 1000) }),
+    const modelLooksInvalid =
+      lastError.status === 404 ||
+      /model.*(not found|not supported|invalid)|not found.*model/i.test(String(lastError.detail));
+
+    if (!modelLooksInvalid && !isTransientGeminiError(lastError)) {
+      break;
+    }
+
+    if (Date.now() >= deadline - 500) {
+      break;
+    }
+
+    console.warn(
+      '[MathNexus Gemini fallback]',
+      JSON.stringify({
+        fromModel: model,
+        reason: String(lastError.code || lastError.status),
+      }),
     );
-
-    return response.status(500).json({
-      error: detail,
-      code: 'SERVER_ERROR',
-    });
   }
+
+  console.warn(
+    '[MathNexus Gemini exhausted]',
+    JSON.stringify({
+      attempts,
+      lastCode: String(lastError?.code || 'UNKNOWN'),
+      elapsedMs: REQUEST_BUDGET_MS - Math.max(0, deadline - Date.now()),
+    }),
+  );
+
+  return response.status(responseStatusFor(lastError)).json({
+    error: String(lastError?.detail || 'Gemini request failed').slice(0, 1000),
+    code: String(lastError?.code || 'GEMINI_UPSTREAM_ERROR'),
+    upstreamStatus: lastError?.status || null,
+    model: lastError?.model || configuredModel,
+  });
 }
