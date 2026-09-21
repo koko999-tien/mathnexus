@@ -1,5 +1,5 @@
-import { MATH_CONCEPTS, CONCEPT_BY_ID, type MathConcept, type MathDomainId } from '../data/mathKnowledge';
-import type { ProgressData } from './storage';
+import { MATH_CONCEPTS, CONCEPT_BY_ID, type MathConcept, type MathDomainId } from '../data/mathKnowledge.ts';
+import type { ProgressData } from './storage.ts';
 
 export type ConceptLearningState = 'covered' | 'ready' | 'locked' | 'gap';
 
