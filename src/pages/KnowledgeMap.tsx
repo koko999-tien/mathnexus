@@ -200,5 +200,6 @@ function toolLabel(path: string) {
   if (path === '/calculus') return 'Phòng thí nghiệm giải tích';
   if (path === '/graph') return 'Phòng thí nghiệm hàm số';
   if (path === '/tools') return 'Math Workbench';
+  if (path === '/simulations/gravity') return 'Phòng mô phỏng hấp dẫn N-body';
   return 'Công cụ toán học';
 }

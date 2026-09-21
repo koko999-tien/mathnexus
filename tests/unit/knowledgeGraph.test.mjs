@@ -8,8 +8,8 @@ test('math knowledge graph has valid ids, references and no prerequisite cycles'
   const diagnostics = knowledgeGraphDiagnostics();
   assert.deepEqual(diagnostics.duplicateIds, []);
   assert.deepEqual(diagnostics.missingPrerequisites, []);
-  assert.equal(diagnostics.domainCount, 10);
-  assert.ok(diagnostics.conceptCount >= 45);
+  assert.equal(diagnostics.domainCount, 11);
+  assert.ok(diagnostics.conceptCount >= 49);
 
   for (const concept of MATH_CONCEPTS) {
     assert.ok(conceptDepth(concept.id) >= 0);

@@ -149,10 +149,11 @@ export default function GravityLab() {
     <div className="panel gravity-knowledge">
       <div><BookOpen size={18} /><span><strong>Kiến thức nền nối với Knowledge Graph</strong><small>Mô phỏng không đứng riêng; các mắt xích toán học đã có trong MathNexus.</small></span></div>
       <div className="gravity-knowledge-links">
+        <Link to="/map?concept=newtonian-gravity">Hấp dẫn Newton<ArrowRight size={13} /></Link>
+        <Link to="/map?concept=nbody-problem">Bài toán N-body<ArrowRight size={13} /></Link>
+        <Link to="/map?concept=hamiltonian-mechanics">Cơ học Hamilton<ArrowRight size={13} /></Link>
         <Link to="/map?concept=vectors">Vector<ArrowRight size={13} /></Link>
-        <Link to="/map?concept=derivative-definition">Đạo hàm<ArrowRight size={13} /></Link>
         <Link to="/map?concept=first-order-ode">ODE cấp một<ArrowRight size={13} /></Link>
-        <Link to="/calculus">Calculus Lab<ArrowRight size={13} /></Link>
       </div>
     </div>
   </section>;

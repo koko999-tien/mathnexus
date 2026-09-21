@@ -113,6 +113,9 @@ test('Math Cosmos exposes the 3D knowledge universe and spatial node search', as
   await page.getByRole('button', { name: 'Số phức', exact: true }).click();
   await expect(page.locator('.cosmos-hud')).toContainText('Số phức');
   await expect(page.locator('.cosmos-runtime-badges')).toContainText('node đang render');
+
+  await page.getByRole('button', { name: 'N-body', exact: true }).click();
+  await expect(page.locator('.cosmos-hud')).toContainText('Bài toán N-body');
 });
 
 test('Math Cosmos degrades to deterministic layout fallback and honors reduced motion', async ({ page }, info) => {
@@ -151,7 +154,12 @@ test('N-body gravity lab runs a real CPU simulation with deterministic controls'
   await page.getByLabel('Seed mô phỏng').fill('123');
   await page.getByRole('button', { name: /Reset cùng tham số/ }).click();
   await expect(page.getByRole('button', { name: 'Tiếp tục mô phỏng' })).toBeVisible();
-  await expect(page.getByRole('link', { name: /ODE cấp một/ })).toHaveAttribute('href', '/map?concept=first-order-ode');
+  const nbodyLink = page.getByRole('link', { name: /Bài toán N-body/ });
+  await expect(nbodyLink).toHaveAttribute('href', '/map?concept=nbody-problem');
+  await nbodyLink.click();
+  await expect(page).toHaveURL(/\/map\?concept=nbody-problem/);
+  await expect(page.getByRole('heading', { name: 'Bài toán N-body', exact: true })).toBeVisible();
+  await expect(page.getByText('Gravity Lab của MathNexus')).toBeVisible();
 });
 
 test('search without accents opens lessons and completion survives reload', async ({ page }) => {

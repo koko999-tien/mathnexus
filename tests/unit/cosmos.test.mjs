@@ -62,3 +62,12 @@ test('spatial hash returns nearby nodes without scanning semantic relations', ()
   assert.deepEqual(index.queryRadius([0, 0, 0], 5).sort((a, b) => a - b), [0, 1, 3]);
   assert.deepEqual(index.queryRadius([30, 0, 0], 1), [2]);
 });
+
+
+test('Math Cosmos includes mathematical physics and finds the N-body concept', () => {
+  const graph = buildCosmosGraph('nbody-problem');
+  assert.ok(graph.nodes.some(node => node.id === 'domain:mathematical-physics'));
+  assert.ok(graph.nodes.some(node => node.id === 'concept:nbody-problem'));
+  assert.ok(graph.nodes.some(node => node.id === 'atom:nbody-energy-drift'));
+  assert.equal(cosmosSearch(graph, 'N-body', 5)[0]?.id, 'concept:nbody-problem');
+});

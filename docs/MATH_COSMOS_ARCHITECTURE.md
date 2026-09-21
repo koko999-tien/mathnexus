@@ -563,3 +563,66 @@ Still next:
 - simulation-to-concept events;
 - Newtonian gravity / classical mechanics ontology expansion;
 - additional simulations only after the engine boundary proves reusable.
+
+
+---
+
+## Phase 6 — Simulation ↔ Knowledge Graph integration
+
+The gravity simulation is no longer an isolated visual tool.
+
+A new **Mathematical Physics** domain now connects the running N-body lab to the canonical knowledge model:
+
+```text
+Vectors
+  +
+Derivative definition
+  ↓
+Classical Mechanics
+  +
+First-order ODE
+  ↓
+Newtonian Gravity
+  ↓
+N-body Problem
+  ↘
+Hamiltonian Mechanics
+```
+
+### Canonical concepts
+
+- `classical-mechanics`
+- `newtonian-gravity`
+- `nbody-problem`
+- `hamiltonian-mechanics`
+
+The same IDs are consumed by:
+- Knowledge Map;
+- Math Cosmos;
+- Search;
+- Gemini/local retrieval context;
+- Gravity Lab links;
+- future adaptive learning-path logic.
+
+### Deep ontology
+
+The physics branch now includes:
+- mechanical state;
+- Newton's second law;
+- momentum and momentum conservation;
+- inverse-square gravity;
+- vector acceleration;
+- gravitational potential energy;
+- coupled 6N-dimensional ODE state;
+- timestep selection;
+- energy-drift interpretation;
+- numerical softening misconception;
+- phase space;
+- Hamiltonian dynamics;
+- symplectic/leapfrog interpretation.
+
+### Product rule
+
+Simulation parameters are treated as **learning probes**, not mastery evidence by themselves.
+
+Opening or changing the gravity simulation may support curiosity/discovery metrics later, but it must not automatically mark Newtonian gravity or N-body dynamics as mastered.

@@ -14,6 +14,7 @@ const QUICK_JUMPS = [
   ['concept:eigen', 'Trị riêng'],
   ['concept:complex-numbers', 'Số phức'],
   ['concept:first-order-ode', 'ODE'],
+  ['concept:nbody-problem', 'N-body'],
 ] as const;
 
 export default function MathCosmos() {

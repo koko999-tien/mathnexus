@@ -9,8 +9,8 @@ test('deep ontology references valid concepts and atoms', () => {
   assert.deepEqual(diagnostics.duplicateAtomIds, []);
   assert.deepEqual(diagnostics.unknownConceptIds, []);
   assert.deepEqual(diagnostics.missingAtomDependencies, []);
-  assert.ok(diagnostics.atomCount >= 60);
-  assert.ok(diagnostics.deepConceptCount >= 10);
+  assert.ok(diagnostics.atomCount >= 80);
+  assert.ok(diagnostics.deepConceptCount >= 14);
 
   const derivative = atomsForConcept('derivative-definition');
   assert.ok(derivative.some(atom => atom.kind === 'definition'));
@@ -39,4 +39,18 @@ test('mastery estimator separates score from evidence confidence', () => {
   assert.ok(measured.confidence >= 70);
   assert.equal(measured.state, 'strong');
   assert.equal(measured.practice.attemptedQuestions, 3);
+});
+
+
+test('mathematical physics ontology connects gravity simulation concepts deeply', () => {
+  const gravity = atomsForConcept('newtonian-gravity');
+  const nbody = atomsForConcept('nbody-problem');
+  const hamilton = atomsForConcept('hamiltonian-mechanics');
+
+  assert.ok(gravity.some(atom => atom.id === 'gravity-force-law'));
+  assert.ok(gravity.some(atom => atom.kind === 'misconception'));
+  assert.ok(nbody.some(atom => atom.id === 'nbody-energy-drift'));
+  assert.ok(nbody.some(atom => atom.kind === 'exercise'));
+  assert.ok(hamilton.some(atom => atom.id === 'symplectic-integrator'));
+  assert.ok(ontologyDepthScore('nbody-problem') >= 35);
 });
