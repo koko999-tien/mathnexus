@@ -9,7 +9,7 @@ import { useLearningGoal } from '../hooks/useLearningGoal';
 import { emptyActivity, localDate } from '../utils/storage';
 import { recommendLessons, todayPlan } from '../utils/learningInsights';
 import { buildLearningCompass } from '../utils/learningCompass';
-import { buildLearningGoalState } from '../learning/learningGoal';
+import { buildGoalDiagnosticPlan, buildLearningGoalState } from '../learning/learningGoal';
 import { practiceOverview } from '../utils/practiceInsights';
 import { LessonCard } from '../components/ui/LessonCard';
 import { MathArtwork } from '../components/ui/MathArtwork';
@@ -31,6 +31,7 @@ export default function Dashboard() {
   const practice = practiceOverview(QUIZ, p);
   const compass = buildLearningCompass(p, exploration, 3);
   const focusGoal = buildLearningGoalState(p, learningGoal.goal);
+  const goalDiagnostic = buildGoalDiagnosticPlan(p, learningGoal.goal);
 
   return <section className="dashboard page-enter">
     <div className="dashboard-heading"><div><p className="eyebrow">GÓC HỌC TẬP CỦA BẠN</p><h1>Một ngày mới, một ý tưởng mới<span className="heading-dot">.</span></h1><p>Chào {p.displayName === 'Bạn học Toán' ? 'bạn' : p.displayName}, cùng khám phá vẻ đẹp của toán học nhé.</p></div><span className="date-pill"><CalendarDays size={15} />{today}</span></div>
@@ -67,6 +68,7 @@ export default function Dashboard() {
         <span>{focusGoal.satisfiedCount}/{focusGoal.totalCount} nút có bằng chứng</span>
         <div>
           <Link to={'/map?concept=' + encodeURIComponent(focusGoal.target.id)} className="button button-light">Xem toàn bộ lộ trình</Link>
+          {goalDiagnostic && goalDiagnostic.questionIds.length > 0 && <Link to="/practice?mode=goal&size=5" className="button button-light"><Brain size={15} />Chẩn đoán lộ trình · {goalDiagnostic.questionIds.length} câu</Link>}
           {focusGoal.nextAction && <Link to={focusGoal.nextAction.to} className="button button-dark">{focusGoal.nextAction.title}<ArrowRight size={15} /></Link>}
           {focusGoal.status === 'complete' && <button type="button" className="button button-light" onClick={learningGoal.clearGoal}>Kết thúc mục tiêu</button>}
         </div>
