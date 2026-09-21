@@ -66,7 +66,7 @@ export default function Practice() {
       <p className="helper-text">{mode === 'review' ? 'Chế độ ôn tập chỉ lấy những câu bạn từng làm sai và chưa trả lời đúng liên tiếp 2 lần.' : filtered.length + ' câu phù hợp với bộ lọc hiện tại.'}</p>
     </div>
 
-    {insights.length > 0 && <div className="practice-insights panel"><div className="panel-heading-row"><div><p className="eyebrow">DỮ LIỆU TỪ CHÍNH CÁC LẦN BẠN LÀM</p><h2 className="panel-title">Điểm cần chú ý theo chuyên đề</h2></div><Link to="/progress" className="text-link">Xem tiến độ<ArrowRight size={15} /></Link></div>
+    {insights.length > 0 && <div className="practice-insights panel"><div className="panel-heading-row"><div><p className="eyebrow">DỮ LIỆU TỪ CHÍNH CÁC LẦN BẠN LÀM</p><h2 className="panel-title">Điểm cần chú ý theo chuyên đề</h2></div><Link to="/progress" className="text-link">Mở trang tiến độ<ArrowRight size={15} /></Link></div>
       <div className="practice-insight-grid">{insights.map(item => <div className="practice-insight" key={item.name}><div><strong>{item.name}</strong><span>{item.attempted}/{item.total} câu đã gặp</span></div><div className="practice-insight-score"><strong>{item.accuracy === null ? '—' : item.accuracy + '%'}</strong><small>{item.needsReview ? item.needsReview + ' cần ôn' : 'Đang ổn'}</small></div></div>)}</div>
     </div>}
 
