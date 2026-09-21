@@ -28,6 +28,14 @@ export interface DailyActivity {
   books: number;
 }
 
+export interface QuestionPracticeStat {
+  attempts: number;
+  correct: number;
+  correctStreak: number;
+  lastCorrect: boolean;
+  updatedAt: string;
+}
+
 export interface ProgressData {
   lessonsRead: string[];
   questionsDone: number;
@@ -39,6 +47,7 @@ export interface ProgressData {
   questionsCorrect: number;
   lastLesson: string;
   activity: Record<string, DailyActivity>;
+  practice: Record<string, QuestionPracticeStat>;
 }
 
 export const DEFAULT_PROGRESS: ProgressData = {
@@ -52,6 +61,7 @@ export const DEFAULT_PROGRESS: ProgressData = {
   questionsCorrect: 0,
   lastLesson: '',
   activity: {},
+  practice: {},
 };
 
 export function localDate(date = new Date()): string {
@@ -64,6 +74,25 @@ export function emptyActivity(): DailyActivity {
 
 const count = (value: unknown) => typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? value : 0;
 const ids = (value: unknown) => Array.isArray(value) ? [...new Set(value.filter((id): id is string => typeof id === 'string'))] : [];
+
+function normalizePractice(value: unknown): Record<string, QuestionPracticeStat> {
+  if (!value || typeof value !== 'object') return {};
+  const result: Record<string, QuestionPracticeStat> = {};
+  for (const [id, rawStat] of Object.entries(value)) {
+    if (!id || !rawStat || typeof rawStat !== 'object') continue;
+    const stat = rawStat as Partial<QuestionPracticeStat>;
+    const attempts = count(stat.attempts);
+    const correct = Math.min(count(stat.correct), attempts);
+    result[id] = {
+      attempts,
+      correct,
+      correctStreak: Math.min(count(stat.correctStreak), attempts),
+      lastCorrect: Boolean(stat.lastCorrect),
+      updatedAt: typeof stat.updatedAt === 'string' ? stat.updatedAt : '',
+    };
+  }
+  return result;
+}
 
 export function normalizeProgress(value: unknown): ProgressData {
   const raw = value && typeof value === 'object' ? value as Partial<ProgressData> : {};
@@ -81,7 +110,7 @@ export function normalizeProgress(value: unknown): ProgressData {
     displayName: typeof raw.displayName === 'string' ? raw.displayName.trim().slice(0, 40) || DEFAULT_PROGRESS.displayName : DEFAULT_PROGRESS.displayName,
     lastDate: typeof raw.lastDate === 'string' ? raw.lastDate : '',
     lastLesson: typeof raw.lastLesson === 'string' ? raw.lastLesson : '',
-    streak: count(raw.streak), activity,
+    streak: count(raw.streak), activity, practice: normalizePractice(raw.practice),
   };
 }
 
@@ -110,6 +139,37 @@ export function saveProgress(p: ProgressData): boolean {
   return save('progress', normalizeProgress(p));
 }
 
+function recordQuestion(p: ProgressData, day: DailyActivity, correct: boolean) {
+  p.questionsDone++;
+  day.questions++;
+  if (correct) {
+    p.questionsCorrect++;
+    day.correct++;
+  }
+}
+
+export function recordQuestionAttempt(questionId: string, correct: boolean): void {
+  if (!questionId) return;
+  const p = getProgress();
+  const today = localDate();
+  const day = { ...emptyActivity(), ...p.activity[today] };
+  recordQuestion(p, day, correct);
+
+  const previous = p.practice[questionId] || { attempts: 0, correct: 0, correctStreak: 0, lastCorrect: false, updatedAt: '' };
+  p.practice[questionId] = {
+    attempts: previous.attempts + 1,
+    correct: previous.correct + (correct ? 1 : 0),
+    correctStreak: correct ? previous.correctStreak + 1 : 0,
+    lastCorrect: correct,
+    updatedAt: new Date().toISOString(),
+  };
+
+  p.activity[today] = day;
+  p.lastDate = today;
+  p.streak = currentStreak(p.activity);
+  saveProgress(p);
+}
+
 export function recordActivity(kind: 'lesson' | 'question' | 'book', value: string | boolean): void {
   const p = getProgress();
   const today = localDate();
@@ -124,9 +184,7 @@ export function recordActivity(kind: 'lesson' | 'question' | 'book', value: stri
     p.booksOpened.push(value);
     day.books++;
   } else if (kind === 'question' && typeof value === 'boolean') {
-    p.questionsDone++;
-    day.questions++;
-    if (value) { p.questionsCorrect++; day.correct++; }
+    recordQuestion(p, day, value);
   } else return;
   p.activity[today] = day;
   p.lastDate = today;

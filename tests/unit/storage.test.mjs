@@ -1,6 +1,6 @@
 import test, { beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { currentStreak, emptyActivity, getProgress, localDate, normalizeProgress, parseBackup, recordActivity, saveProgress } from '../../src/utils/storage.ts';
+import { currentStreak, emptyActivity, getProgress, localDate, normalizeProgress, parseBackup, recordActivity, recordQuestionAttempt, saveProgress } from '../../src/utils/storage.ts';
 
 const memory = new Map();
 Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: { getItem: key => memory.get(key) ?? null, setItem: (key, value) => memory.set(key, value) } });
@@ -14,6 +14,7 @@ test('legacy and corrupted progress are safely migrated with fresh defaults', ()
   assert.deepEqual(getProgress().lessonsRead, ['quad']);
   assert.equal(getProgress().questionsCorrect, 0);
   assert.deepEqual(getProgress().activity, {});
+  assert.deepEqual(getProgress().practice, {});
   assert.equal(normalizeProgress({ dailyGoal: 999, questionsDone: -3 }).dailyGoal, 50);
   assert.equal(normalizeProgress({ questionsDone: -3 }).questionsDone, 0);
   getProgress().lessonsRead.push('should-not-leak');
@@ -31,6 +32,30 @@ test('completions are idempotent while each quiz answer counts and updates daily
   assert.equal(p.questionsCorrect, 1);
   assert.deepEqual(p.activity[localDate()], { lessons: 1, books: 1, questions: 2, correct: 1 });
   assert.equal(p.streak, 1);
+});
+
+
+test('practice memory tracks misses and recovery without double-counting answers', () => {
+  recordQuestionAttempt('comb-5-2', false);
+  let p = getProgress();
+  assert.equal(p.questionsDone, 1);
+  assert.deepEqual(p.practice['comb-5-2'], {
+    attempts: 1,
+    correct: 0,
+    correctStreak: 0,
+    lastCorrect: false,
+    updatedAt: p.practice['comb-5-2'].updatedAt,
+  });
+
+  recordQuestionAttempt('comb-5-2', true);
+  recordQuestionAttempt('comb-5-2', true);
+  p = getProgress();
+  assert.equal(p.questionsDone, 3);
+  assert.equal(p.questionsCorrect, 2);
+  assert.equal(p.practice['comb-5-2'].attempts, 3);
+  assert.equal(p.practice['comb-5-2'].correct, 2);
+  assert.equal(p.practice['comb-5-2'].correctStreak, 2);
+  assert.equal(p.practice['comb-5-2'].lastCorrect, true);
 });
 
 test('streak uses local calendar days, survives month boundaries, and expires after a missed day', () => {

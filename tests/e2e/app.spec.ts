@@ -108,6 +108,31 @@ test('quiz scores a complete session once per answer and persists results', asyn
   await expect(page.locator('.stat-card').filter({ hasText: 'Tỷ lệ trả lời đúng' })).toContainText('50%');
 });
 
+
+test('adaptive practice remembers weak questions and filters by difficulty', async ({ page }) => {
+  await page.goto('/practice?cat=' + encodeURIComponent('Tổ hợp'));
+  await expect(page.getByRole('heading', { name: 'Luyện tập thích ứng' })).toBeVisible();
+  await expect(page.getByLabel('Độ khó luyện tập')).toHaveValue('Tất cả');
+
+  await page.getByRole('button', { name: 'B 20', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('được thêm vào vùng cần ôn');
+  await expect(page.locator('.review-card')).toContainText('1');
+
+  await page.getByRole('button', { name: 'Câu tiếp theo' }).click();
+  await page.getByRole('button', { name: 'C 120', exact: true }).click();
+  await page.getByRole('button', { name: 'Xem kết quả' }).click();
+  await expect(page.getByRole('link', { name: 'Ôn câu yếu' })).toBeVisible();
+
+  await page.getByRole('link', { name: 'Ôn câu yếu' }).click();
+  await expect(page).toHaveURL(/mode=review/);
+  await expect(page.getByText('Đây là một câu MathNexus chọn lại vì bạn từng vấp ở đây.')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'C(5,2) bằng?' })).toBeVisible();
+
+  await page.getByLabel('Độ khó luyện tập').selectOption('Vừa');
+  await expect(page).not.toHaveURL(/mode=review/);
+  await expect(page.getByText('0 câu phù hợp với bộ lọc hiện tại.')).toBeVisible();
+});
+
 test('interactive graph draws immediately and validates math inputs', async ({ page }, info) => {
   await page.goto('/graph');
   const path = page.getByTestId('function-path');
