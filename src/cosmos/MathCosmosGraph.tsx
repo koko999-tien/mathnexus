@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { Canvas, type ThreeEvent, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Stars } from '@react-three/drei';
 import gsap from 'gsap';
@@ -85,7 +85,7 @@ function NodeInstances({
   const { camera } = useThree();
   const radius = quality === 'mobile' ? 58 : 84;
 
-  const writeInstances = (cameraPosition: THREE.Vector3) => {
+  const writeInstances = useCallback((cameraPosition: THREE.Vector3) => {
     const mesh = meshRef.current;
     if (!mesh) return;
 
@@ -117,14 +117,12 @@ function NodeInstances({
     mesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     mesh.computeBoundingSphere();
-  };
+  }, [dummy, nodes, radius, selectedId, spatial]);
 
   useLayoutEffect(() => {
     lastCameraRef.current.copy(camera.position);
     writeInstances(camera.position);
-  // writeInstances is intentionally derived from the current graph snapshot.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [camera, dummy, nodes, selectedId, spatial, radius]);
+  }, [camera, writeInstances]);
 
   useFrame(() => {
     frameRef.current += 1;
