@@ -605,3 +605,29 @@ test('learning goal persists from Knowledge Map to Dashboard and can be cleared'
   await page.goto('/');
   await expect(page.locator('.learning-goal-focus')).toHaveCount(0);
 });
+
+
+test('goal diagnostic mode samples missing path evidence and clears stale concept scope', async ({ page }) => {
+  await page.goto('/map?concept=taylor');
+  await page.getByRole('button', { name: 'Đặt làm mục tiêu học' }).click();
+
+  await page.goto('/practice?concept=complex-numbers');
+  await expect(page.getByText(/Knowledge Graph focus: “Số phức”/)).toBeVisible();
+  await page.getByRole('button', { name: 'Chẩn đoán mục tiêu' }).click();
+
+  await expect(page).toHaveURL(/mode=goal/);
+  expect(new URL(page.url()).searchParams.has('concept')).toBe(false);
+  await expect(page.getByText(/Đang chẩn đoán lộ trình tới “Chuỗi Taylor”/)).toBeVisible();
+  await expect(page.getByText(/Goal Diagnostic: “Chuỗi Taylor”/)).toBeVisible();
+
+  const panel = page.locator('.practice-panel');
+  await expect(panel).toBeVisible();
+  await expect(panel.locator('.practice-question')).toBeVisible();
+  await panel.locator('.answer-option').first().click();
+
+  const evidence = await page.evaluate(() => {
+    const progress = JSON.parse(localStorage.getItem('mathnexus_progress') || '{}');
+    return Object.keys(progress.practice || {});
+  });
+  expect(evidence.length).toBe(1);
+});
