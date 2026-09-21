@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowRight, BookOpen, Check, CircleDot, GitBranch, LockKeyhole, Network, Route, Sparkles, Wrench } from 'lucide-react';
-import { MATH_CONCEPTS, MATH_DOMAINS, type MathConcept, type MathDomainId } from '../data/mathKnowledge';
+import { MATH_CONCEPTS, MATH_DOMAINS, type MathConcept } from '../data/mathKnowledge';
 import { FORMS } from '../data/formulas';
 import { LESSONS } from '../data/lessons';
 import { useProgress } from '../hooks/useProgress';
