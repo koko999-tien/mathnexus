@@ -4,6 +4,7 @@ import { QUIZ } from '../data/quiz';
 import type { ProgressData } from './storage';
 import { emptyActivity, localDate } from './storage';
 import { questionsNeedingReview } from './practiceInsights';
+import { conceptForLesson, conceptProgress } from './knowledgeGraph';
 
 export interface LearningBreakdown {
   name: string;
@@ -33,25 +34,38 @@ export function recommendLessons(progress: ProgressData, limit = 3): Lesson[] {
   const unread = LESSONS.filter(lesson => !progress.lessonsRead.includes(lesson.id));
   if (!unread.length) return LESSONS.slice(0, limit);
 
-  const lastLesson = LESSONS.find(lesson => lesson.id === progress.lastLesson);
-  const lastIndex = lastLesson ? LESSONS.indexOf(lastLesson) : -1;
-
   const starterOrder = ['frac', 'quad', 'pyth', 'der', 'prob', 'cplx'];
-  if (!lastLesson && progress.lessonsRead.length === 0) {
+  if (!progress.lastLesson && progress.lessonsRead.length === 0) {
     const starters = starterOrder
       .map(id => unread.find(lesson => lesson.id === id))
       .filter((lesson): lesson is Lesson => Boolean(lesson));
     return [...starters, ...unread.filter(lesson => !starters.includes(lesson))].slice(0, limit);
   }
 
+  const graph = conceptProgress(progress);
+  const graphById = new Map(graph.map(item => [item.concept.id, item]));
+  const lastLesson = LESSONS.find(lesson => lesson.id === progress.lastLesson);
+  const lastConcept = progress.lastLesson ? conceptForLesson(progress.lastLesson) : undefined;
+
   return unread
-    .map(lesson => {
-      const index = LESSONS.indexOf(lesson);
+    .map((lesson, index) => {
+      const concept = conceptForLesson(lesson.id);
+      const conceptState = concept ? graphById.get(concept.id) : undefined;
       let score = 0;
-      if (lastLesson && lesson.cat === lastLesson.cat) score += 40;
-      if (lastLesson && lesson.lv === lastLesson.lv) score += 20;
-      if (lastIndex >= 0) score += Math.max(0, 12 - Math.abs(index - lastIndex));
-      if (lesson.lv === 'THPT') score += 2;
+
+      if (conceptState?.state === 'ready') score += 70;
+      if (conceptState?.state === 'locked') score -= conceptState.unmetPrerequisiteIds.length * 12;
+
+      if (lastConcept && concept) {
+        if (concept.prerequisites.includes(lastConcept.id)) score += 55;
+        if (lastConcept.prerequisites.includes(concept.id)) score += 48;
+        if (concept.domain === lastConcept.domain) score += 18;
+      }
+
+      if (lastLesson && lesson.cat === lastLesson.cat) score += 8;
+      if (lastLesson && lesson.lv === lastLesson.lv) score += 4;
+      if (conceptState) score += Math.max(0, 12 - conceptState.depth);
+
       return { lesson, score, index };
     })
     .sort((a, b) => b.score - a.score || a.index - b.index)
