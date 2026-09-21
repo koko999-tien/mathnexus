@@ -65,7 +65,7 @@ test('knowledge map exposes prerequisite depth, gaps and learning paths', async 
   await expect(page.locator('.learning-path-card')).toContainText('Đường học tới “Định nghĩa đạo hàm”');
 
   await prerequisites.getByRole('button', { name: 'Tính liên tục', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Tính liên tục' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Tính liên tục', exact: true })).toBeVisible();
   await expect(page.getByText('Nút kiến thức chưa có tài nguyên riêng')).toBeVisible();
 });
 
