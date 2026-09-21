@@ -43,6 +43,7 @@ const DOMAIN_COLORS: Record<MathDomainId, string> = {
   discrete: '#8ecae6',
   'number-theory': '#c5a3ff',
   'differential-equations': '#ff8fab',
+  'mathematical-physics': '#7dd3fc',
 };
 
 function hash(text: string) {
