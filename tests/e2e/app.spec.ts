@@ -120,12 +120,12 @@ test('notes, personal goals and exported backup are usable', async ({ page }) =>
 });
 
 test('AI distinguishes server responses from local fallback', async ({ page }) => {
-  let apiMode: 'missing' | 'success' = 'missing';
-  await page.route('**/api/gemini', route => {
-    if (apiMode === 'missing') {
-      return route.fulfill({ status: 503, json: { code: 'MISSING_API_KEY' } });
+  await page.route('**/api/gemini', async route => {
+    const requestBody = route.request().postDataJSON() as { message?: string };
+    if (requestBody.message === '2+2 bằng mấy?') {
+      return route.fulfill({ status: 200, json: { text: 'Đáp án là $2+2=4$.' } });
     }
-    return route.fulfill({ status: 200, json: { text: 'Đáp án là $2+2=4$.' } });
+    return route.fulfill({ status: 503, json: { code: 'MISSING_API_KEY' } });
   });
 
   await page.goto('/ai');
@@ -133,7 +133,6 @@ test('AI distinguishes server responses from local fallback', async ({ page }) =
   await expect(page.getByText('Tra cứu cục bộ · Không phải câu trả lời từ Gemini')).toBeVisible();
   await expect(page.locator('.chat-links').getByRole('link', { name: 'Số phức', exact: true })).toBeVisible();
 
-  apiMode = 'success';
   await page.getByRole('textbox', { name: 'Câu hỏi cho trợ lý' }).fill('2+2 bằng mấy?');
   await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
   await expect(page.locator('.chat-message').last()).toContainText('Đáp án là');
