@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { Download, Upload, RotateCcw, Check, BookOpen, Brain, Flame, PenTool, Target, ArrowUpRight } from 'lucide-react';
+import { Download, Upload, RotateCcw, Check, BookOpen, Brain, Flame, PenTool, Target, ArrowUpRight, Network, Gauge } from 'lucide-react';
 import { saveProgress, DEFAULT_PROGRESS, localDate, load, save, parseBackup } from '../utils/storage';
 import { useProgress } from '../hooks/useProgress';
 import { LESSONS } from '../data/lessons';
@@ -9,6 +9,9 @@ import { QUIZ } from '../data/quiz';
 import { levelProgress, recentActivity, topicProgress } from '../utils/learningInsights';
 import { downloadFile } from '../utils/download';
 import { practiceCategoryInsights, practiceOverview } from '../utils/practiceInsights';
+import { allConceptMastery, masteryLabel } from '../utils/conceptMastery';
+import { MATH_CONCEPTS, MATH_DOMAINS } from '../data/mathKnowledge';
+import { ontologyDepthScore } from '../utils/mathOntology';
 
 export default function Progress() {
   const p = useProgress();
@@ -23,6 +26,10 @@ export default function Progress() {
   const completed = LESSONS.filter(lesson => p.lessonsRead.includes(lesson.id));
   const practice = practiceOverview(QUIZ, p);
   const practiceTopics = practiceCategoryInsights(QUIZ, p).filter(item => item.attempts > 0).slice(0, 8);
+  const conceptMasteries = allConceptMastery(p);
+  const measuredConcepts = conceptMasteries.filter(item => item.score !== null).sort((a, b) => (a.score || 0) - (b.score || 0) || b.confidence - a.confidence);
+  const evidenceCoverage = Math.round(conceptMasteries.filter(item => item.score !== null).length / Math.max(1, MATH_CONCEPTS.length) * 100);
+  const conceptSpotlight = [...measuredConcepts.slice(0, 4), ...conceptMasteries.filter(item => item.score === null && ontologyDepthScore(item.conceptId) > 0).slice(0, Math.max(0, 6 - measuredConcepts.slice(0, 4).length))];
 
   const exportData = () => downloadFile(JSON.stringify({ app: 'MathNexus', version: 1, exportedAt: new Date().toISOString(), progress: p, notes: load<string>('notes', '') }, null, 2), 'mathnexus-' + localDate() + '.json', 'application/json');
 
@@ -79,6 +86,26 @@ export default function Progress() {
         <div className="mastery-score"><strong>{item.accuracy === null ? '—' : item.accuracy + '%'}</strong><small>{item.needsReview > 0 ? item.needsReview + ' câu cần ôn' : 'Không có câu yếu'}</small></div>
         <ArrowUpRight size={16} />
       </Link>)}</div> : <div className="mastery-empty"><Brain size={28} /><div><strong>Chưa có đủ dữ liệu luyện tập</strong><p>Hãy làm vài câu. MathNexus sẽ bắt đầu chỉ ra chuyên đề nào cần quay lại.</p></div><Link to="/practice" className="text-link">Làm phiên đầu tiên<ArrowUpRight size={15} /></Link></div>}
+    </div>
+
+    <div className="panel concept-evidence-panel">
+      <div className="panel-heading-row"><div><p className="eyebrow">NĂNG LỰC THEO KHÁI NIỆM, KHÔNG CHỈ THEO CHUYÊN ĐỀ</p><h2 className="panel-title">Bản đồ bằng chứng học tập</h2><p className="helper-text">Điểm chỉ xuất hiện khi có bằng chứng trực tiếp từ bài học hoặc luyện tập. “Chưa đánh giá” không đồng nghĩa với yếu.</p></div><Link to="/map" className="button button-light"><Network size={16} />Mở bản đồ toán học</Link></div>
+      <div className="concept-evidence-summary">
+        <div><Gauge size={17} /><span><strong>{evidenceCoverage}%</strong><small>khái niệm đã có bằng chứng</small></span></div>
+        <div><Brain size={17} /><span><strong>{measuredConcepts.length}</strong><small>khái niệm đã đo được</small></span></div>
+        <div><Target size={17} /><span><strong>{measuredConcepts.filter(item => item.state === 'strong' || item.state === 'solid').length}</strong><small>khái niệm khá vững trở lên</small></span></div>
+      </div>
+      <div className="concept-evidence-grid">{conceptSpotlight.map(item => {
+        const concept = MATH_CONCEPTS.find(candidate => candidate.id === item.conceptId)!;
+        const domain = MATH_DOMAINS.find(candidate => candidate.id === concept.domain);
+        const depth = ontologyDepthScore(concept.id);
+        return <Link key={concept.id} to={'/map?concept=' + encodeURIComponent(concept.id)} className="concept-evidence-row">
+          <div className="concept-evidence-copy"><strong>{concept.title}</strong><span>{domain?.short} · {concept.level} · nội dung sâu {depth}%</span></div>
+          <div className="concept-evidence-score"><strong>{item.score === null ? '—' : item.score + '%'}</strong><small>{masteryLabel(item.state)} · tin cậy {item.confidence}%</small></div>
+          <ArrowUpRight size={15} />
+        </Link>;
+      })}</div>
+      {!conceptSpotlight.length && <div className="mastery-empty"><Brain size={28} /><div><strong>Chưa có dữ liệu khái niệm</strong><p>Hoàn thành một bài hoặc làm vài câu luyện tập để MathNexus bắt đầu dựng hồ sơ năng lực.</p></div><Link to="/practice" className="text-link">Bắt đầu tạo bằng chứng<ArrowUpRight size={15} /></Link></div>}
     </div>
 
     <div className="learning-breakdown">
