@@ -463,15 +463,69 @@ test('notes, personal goals and exported backup are usable', async ({ page }) =>
   await page.getByRole('textbox', { name: 'Nội dung sổ tay' }).fill('Đạo hàm của x² bằng 2x.');
   await page.reload();
   await expect(page.getByRole('textbox', { name: 'Nội dung sổ tay' })).toHaveValue('Đạo hàm của x² bằng 2x.');
+
+  await page.evaluate(() => {
+    localStorage.setItem('mathnexus_learning_goal_v1', JSON.stringify({
+      version: 1,
+      targetConceptId: 'taylor',
+      createdAt: '2026-09-22T00:00:00.000Z',
+      updatedAt: '2026-09-22T00:00:00.000Z',
+    }));
+    localStorage.setItem('mathnexus_exploration_state_v1', JSON.stringify({
+      version: 1,
+      discoveredConceptIds: ['taylor'],
+      discoveredAtomIds: [],
+      conceptVisits: { taylor: 2 },
+      simulationSessions: {},
+      simulationAdjustments: {},
+      daily: {},
+      lastActivity: '2026-09-22T00:00:00.000Z',
+    }));
+    localStorage.setItem('mathnexus_canvas_v1_main_chunk_0', JSON.stringify([{
+      id: 'obj_backup',
+      type: 'text',
+      x: 10,
+      y: 20,
+      width: 260,
+      height: 150,
+      text: 'Taylor backup',
+      createdAt: '2026-09-22T00:00:00.000Z',
+      updatedAt: '2026-09-22T00:00:00.000Z',
+    }]));
+    localStorage.setItem('mathnexus_canvas_v1_main_meta', JSON.stringify({
+      version: 1,
+      canvasId: 'main',
+      title: 'Canvas backup',
+      viewport: { x: 0, y: 0, zoom: 1 },
+      chunkCount: 1,
+      chunkHashes: ['e2e'],
+      updatedAt: '2026-09-22T00:00:00.000Z',
+    }));
+  });
+
   await page.goto('/progress');
   await page.getByLabel('Tên hiển thị').fill('Tiến');
   await page.getByLabel('Mục tiêu câu hỏi mỗi ngày').fill('3');
   await page.getByRole('button', { name: 'Lưu thay đổi' }).click();
   await expect(page.getByRole('status')).toContainText('Đã lưu');
+
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Tải bản sao lưu' }).click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toMatch(/^mathnexus-.*\.json$/);
+
+  const stream = await download.createReadStream();
+  let backupText = '';
+  for await (const chunk of stream) backupText += chunk.toString();
+  const backup = JSON.parse(backupText);
+  expect(backup.version).toBe(2);
+  expect(backup.progress.displayName).toBe('Tiến');
+  expect(backup.notes).toBe('Đạo hàm của x² bằng 2x.');
+  expect(backup.learningGoal.targetConceptId).toBe('taylor');
+  expect(backup.exploration.discoveredConceptIds).toContain('taylor');
+  expect(backup.canvas.title).toBe('Canvas backup');
+  expect(backup.canvas.objects[0].text).toBe('Taylor backup');
+
   await page.goto('/');
   await expect(page.getByText('Chào Tiến,')).toBeVisible();
   await expect(page.locator('.stat-card').filter({ hasText: 'Mục tiêu hôm nay' })).toContainText('0/3');
