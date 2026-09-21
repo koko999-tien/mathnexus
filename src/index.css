@@ -829,3 +829,24 @@ svg { flex-shrink: 0; }
   .mastery-state{grid-column:1 / -1; justify-self:start;}
   .mastery-evidence-metrics{grid-template-columns:1fr 1fr 1fr;}
 }
+
+
+/* Concept-level evidence on Progress */
+.concept-evidence-panel { margin-bottom:18px; }
+.concept-evidence-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin:14px 0; }
+.concept-evidence-summary > div { display:flex; align-items:center; gap:9px; padding:10px 11px; border:1px solid var(--color-line); border-radius:9px; background:var(--color-bg); }
+.concept-evidence-summary svg { flex-shrink:0; color:var(--color-accent); }
+.concept-evidence-summary strong { display:block; font-size:15px; }
+.concept-evidence-summary small { display:block; margin-top:2px; color:var(--color-muted); font-size:7.5px; }
+.concept-evidence-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
+.concept-evidence-row { min-width:0; display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:center; gap:9px; padding:10px 11px; border:1px solid var(--color-line); border-radius:9px; background:var(--color-bg); color:var(--color-ink); transition:border-color .18s,transform .18s,background .18s; }
+.concept-evidence-row:hover { transform:translateY(-1px); border-color:var(--color-sage); background:var(--color-panel); }
+.concept-evidence-copy,.concept-evidence-score { min-width:0; }
+.concept-evidence-copy strong { display:block; font-size:9.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.concept-evidence-copy span { display:block; margin-top:3px; color:var(--color-muted); font-size:7.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.concept-evidence-score { text-align:right; }
+.concept-evidence-score strong { display:block; font-size:12px; }
+.concept-evidence-score small { display:block; margin-top:2px; color:var(--color-muted); font-size:7px; white-space:nowrap; }
+.concept-evidence-row > svg { color:var(--color-muted); }
+@media (max-width:760px){ .concept-evidence-grid{grid-template-columns:1fr;} }
+@media (max-width:560px){ .concept-evidence-summary{grid-template-columns:1fr;} .concept-evidence-row{grid-template-columns:minmax(0,1fr) auto;} .concept-evidence-row > svg{display:none;} }
