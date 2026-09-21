@@ -34,12 +34,13 @@ export default function KnowledgeMap() {
   const mastery = conceptMastery(progress, selectedId);
   const requestedAtomId = params.get('atom');
   const selectedAtom = atoms.find(atom => atom.id === requestedAtomId) || atoms[0];
+  const requestedAtomValid = Boolean(requestedAtomId && MATH_ATOMS.some(atom => atom.id === requestedAtomId && atom.conceptId === selectedId));
   const ontologyScore = ontologyDepthScore(selectedId);
 
   useEffect(() => {
     recordConceptExploration(selectedId);
-    if (requestedAtomId && atoms.some(atom => atom.id === requestedAtomId)) recordAtomExploration(requestedAtomId);
-  }, [atoms, requestedAtomId, selectedId]);
+    if (requestedAtomId && requestedAtomValid) recordAtomExploration(requestedAtomId);
+  }, [requestedAtomId, requestedAtomValid, selectedId]);
 
   const selectConcept = (id: string) => {
     const next = new URLSearchParams(params);
