@@ -1,12 +1,13 @@
 import { useEffect, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { AlertTriangle, ArrowRight, BookOpen, Check, CircleDot, Gauge, GitBranch, GraduationCap, Layers3, LockKeyhole, Network, Route, Sparkles, Wrench } from 'lucide-react';
+import { AlertTriangle, ArrowRight, BookOpen, Check, CircleDot, Flag, FlagOff, Gauge, GitBranch, GraduationCap, Layers3, LockKeyhole, Network, Route, Sparkles, Wrench } from 'lucide-react';
 import { MATH_CONCEPTS, MATH_DOMAINS, type MathConcept } from '../data/mathKnowledge';
 import { MATH_ATOMS, ONTOLOGY_KIND_META, type MathAtom, type OntologyKind } from '../data/mathOntology';
 import { FORMS } from '../data/formulas';
 import { LESSONS } from '../data/lessons';
 import { useProgress } from '../hooks/useProgress';
+import { useLearningGoal } from '../hooks/useLearningGoal';
 import { conceptProgress, directDependents, learningPathTo } from '../utils/knowledgeGraph';
 import { atomsForConcept, atomDependencies, ontologyDepthScore } from '../utils/mathOntology';
 import { conceptMastery, masteryLabel } from '../utils/conceptMastery';
@@ -22,6 +23,7 @@ const STATE_LABEL = {
 
 export default function KnowledgeMap() {
   const progress = useProgress();
+  const learningGoal = useLearningGoal();
   const [params, setParams] = useSearchParams();
   const progressItems = useMemo(() => conceptProgress(progress), [progress]);
   const defaultConcept = progressItems.find(item => item.state === 'ready')?.concept.id || MATH_CONCEPTS[0].id;
@@ -36,6 +38,8 @@ export default function KnowledgeMap() {
   const selectedAtom = atoms.find(atom => atom.id === requestedAtomId) || atoms[0];
   const requestedAtomValid = Boolean(requestedAtomId && MATH_ATOMS.some(atom => atom.id === requestedAtomId && atom.conceptId === selectedId));
   const ontologyScore = ontologyDepthScore(selectedId);
+  const selectedIsGoal = learningGoal.goal?.targetConceptId === selectedId;
+  const currentGoalConcept = learningGoal.goal ? MATH_CONCEPTS.find(concept => concept.id === learningGoal.goal?.targetConceptId) : undefined;
 
   useEffect(() => {
     recordConceptExploration(selectedId);
@@ -109,6 +113,15 @@ export default function KnowledgeMap() {
             <div><span>Độ sâu</span><strong>Tầng {selectedProgress.depth}</strong></div>
             <div><span>Tiên quyết trực tiếp</span><strong>{selected.prerequisites.length}</strong></div>
             <div><span>Mở ra tiếp</span><strong>{dependents.length}</strong></div>
+          </div>
+
+          <div className="learning-goal-controls">
+            <button type="button" className={'button ' + (selectedIsGoal ? 'button-light' : 'button-dark')} onClick={() => selectedIsGoal ? learningGoal.clearGoal() : learningGoal.setGoal(selected.id)}>
+              {selectedIsGoal ? <FlagOff size={15} /> : <Flag size={15} />}
+              {selectedIsGoal ? 'Bỏ mục tiêu này' : 'Đặt làm mục tiêu học'}
+            </button>
+            {currentGoalConcept && !selectedIsGoal && <Link className="text-link" to={'/map?concept=' + encodeURIComponent(currentGoalConcept.id)}><Flag size={13} />Mục tiêu hiện tại: {currentGoalConcept.title}<ArrowRight size={13} /></Link>}
+            {selectedIsGoal && <span className="helper-text">Learning Goal Engine sẽ theo dõi toàn bộ chuỗi tiên quyết tới nút này trên Dashboard.</span>}
           </div>
 
           <div className="mastery-evidence-card">
