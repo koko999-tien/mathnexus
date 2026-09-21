@@ -13,6 +13,21 @@ updates:
         dependency-type: production
       development-dependencies:
         dependency-type: development
+    ignore:
+      # React 19.3 currently conflicts with @react-three/fiber@9.7 peer range (>=19 <19.3).
+      - dependency-name: react
+        versions:
+          - "19.3.x"
+      - dependency-name: react-dom
+        versions:
+          - "19.3.x"
+      # Compiler/runtime type majors are handled in a dedicated upgrade cycle after release.
+      - dependency-name: typescript
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "@types/node"
+        update-types:
+          - "version-update:semver-major"
 
   - package-ecosystem: github-actions
     directory: /

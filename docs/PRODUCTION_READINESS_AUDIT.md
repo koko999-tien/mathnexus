@@ -80,6 +80,12 @@ UI đã có nhiều nền tốt: skip link, native `dialog`, aria-label/progress
 9. Không deploy production chỉ vì PR merge; deploy là bước release riêng.
 10. Mỗi đợt production release cần smoke test sau deploy.
 
+## Dependency upgrade holds
+
+- **React / ReactDOM 19.3.x:** tạm giữ ở 19.2.8 vì `@react-three/fiber@9.7.0` hiện khai báo peer `react >=19 <19.3`; bỏ ignore khi Fiber hỗ trợ 19.3 và full CI xanh.
+- **TypeScript 7 / @types/node 26:** hoãn sang compiler-upgrade cycle riêng sau production release; không trộn compiler major vào release-hardening PR.
+- Dependabot vẫn chạy cho các update khác; các ignore này là tạm thời và phải được rà lại sau release.
+
 ## Backlog sau baseline
 
 - [x] Backup/restore schema v2 cho Progress + Notes + Learning Goal + Exploration + Math Canvas.
