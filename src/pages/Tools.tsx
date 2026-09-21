@@ -1,10 +1,12 @@
 import { useId, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Calculator } from 'lucide-react';
+import { Calculator, Grid2X2, Sigma, TrendingUp } from 'lucide-react';
 import { gcd, lcm, isPrime, nCr, nPr, solveQuadratic, formatNumber } from '../utils/math';
+import { arithmeticSequence, descriptiveStatistics, geometricSequence, invertMatrix2, parseNumberList, solveLinearSystem2, vector2 } from '../utils/advancedMath';
 
 const real = (value: string) => value.trim() === '' ? NaN : Number(value);
 const integer = (value: number) => Number.isSafeInteger(value);
+const fmt = (value: number | undefined | null) => value == null ? '—' : formatNumber(value);
 
 export default function Tools() {
   const [gcdValues, setGcdValues] = useState(['48', '18']);
@@ -13,23 +15,73 @@ export default function Tools() {
   const [comb, setComb] = useState(['5', '2']);
   const [complex, setComplex] = useState(['3', '4', '1', '-2']);
   const [prime, setPrime] = useState(['97', '5']);
-  const [ga, gb] = gcdValues.map(real), [pa, pb] = percent.map(real), [a, b, c] = quad.map(real), [n, k] = comb.map(real), [za, zb, zc, zd] = complex.map(real), [pn, pm] = prime.map(real);
+  const [linear, setLinear] = useState(['1', '1', '5', '2', '-1', '1']);
+  const [matrix, setMatrix] = useState(['2', '1', '3', '4']);
+  const [statsText, setStatsText] = useState('2, 4, 6, 8, 10');
+  const [sequenceKind, setSequenceKind] = useState<'arithmetic' | 'geometric'>('arithmetic');
+  const [sequence, setSequence] = useState(['3', '2', '5']);
+  const [vectors, setVectors] = useState(['1', '2', '3', '4']);
+
+  const [ga, gb] = gcdValues.map(real);
+  const [pa, pb] = percent.map(real);
+  const [a, b, c] = quad.map(real);
+  const [n, k] = comb.map(real);
+  const [za, zb, zc, zd] = complex.map(real);
+  const [pn, pm] = prime.map(real);
+  const [la, lb, le, lc, ld, lf] = linear.map(real);
+  const [ma, mb, mc, md] = matrix.map(real);
+  const [s1, sdq, sn] = sequence.map(real);
+  const [vax, vay, vbx, vby] = vectors.map(real);
+
   const combinationValid = integer(n) && integer(k) && n >= 0 && n <= 170 && k >= 0 && k <= n;
   const imaginary = za * zd + zb * zc;
+  const linearResult = solveLinearSystem2(la, lb, le, lc, ld, lf);
+  const matrixResult = invertMatrix2(ma, mb, mc, md);
+  const statsValues = parseNumberList(statsText);
+  const stats = statsValues ? descriptiveStatistics(statsValues) : null;
+  const sequenceResult = sequenceKind === 'arithmetic' ? arithmeticSequence(s1, sdq, sn) : geometricSequence(s1, sdq, sn);
+  const vectorResult = vector2(vax, vay, vbx, vby);
 
-  return <section className="page-enter"><div className="page-header"><p className="eyebrow">TÍNH TOÁN & KIỂM CHỨNG</p><h1>Công cụ toán học</h1><p>Thay đổi dữ kiện để tính ngay. Dùng kết quả để kiểm tra và hiểu sâu hơn lời giải của bạn.</p></div><div className="tools-grid">
-    <ToolPanel title="ƯCLN và BCNN" description="Nhập hai số nguyên, kể cả số âm hoặc 0." labels={['a', 'b']} values={gcdValues} onChange={setGcdValues}><Result>{integer(ga) && integer(gb) ? `ƯCLN = ${formatNumber(gcd(ga, gb))} · BCNN = ${formatNumber(lcm(ga, gb))}` : 'Vui lòng nhập hai số nguyên an toàn.'}</Result></ToolPanel>
-    <ToolPanel title="Tỷ lệ phần trăm" description="a chiếm bao nhiêu phần trăm của b?" labels={['a', 'b']} values={percent} onChange={setPercent}><Result>{!Number.isFinite(pa) || !Number.isFinite(pb) ? 'Vui lòng nhập đủ hai số.' : pb === 0 ? 'Số gốc b phải khác 0.' : `${formatNumber(pa)} = ${formatNumber(pa / pb * 100)}% của ${formatNumber(pb)}`}</Result></ToolPanel>
-    <ToolPanel title="Giải phương trình" description="ax² + bx + c = 0, xét nghiệm thực." labels={['a', 'b', 'c']} values={quad} onChange={setQuad}><Result>{solveQuadratic(a, b, c)}</Result></ToolPanel>
-    <ToolPanel title="Tổ hợp & chỉnh hợp" description="Nhập số nguyên 0 ≤ k ≤ n ≤ 170." labels={['n', 'k']} values={comb} onChange={setComb}><Result>{combinationValid ? `C(${n}, ${k}) = ${formatNumber(nCr(n, k))} · A(${n}, ${k}) = ${formatNumber(nPr(n, k))}${!Number.isSafeInteger(nCr(n, k)) || !Number.isSafeInteger(nPr(n, k)) ? ' (xấp xỉ)' : ''}` : 'Cần số nguyên thỏa mãn 0 ≤ k ≤ n ≤ 170.'}</Result></ToolPanel>
-    <ToolPanel title="Số phức" description="z₁ = a + bi, z₂ = c + di. Tính môđun và tích." labels={['a', 'b', 'c', 'd']} values={complex} onChange={setComplex}><Result>{[za, zb, zc, zd].every(Number.isFinite) ? `|z₁| = ${formatNumber(Math.hypot(za, zb))} · z₁z₂ = ${formatNumber(za * zc - zb * zd)} ${imaginary < 0 ? '−' : '+'} ${formatNumber(Math.abs(imaginary))}i` : 'Vui lòng nhập đủ bốn hệ số.'}</Result></ToolPanel>
-    <ToolPanel title="Nguyên tố & đồng dư" description="Nhập n nguyên, |n| ≤ 10¹² và môđun m nguyên dương." labels={['n', 'm']} values={prime} onChange={setPrime}><Result>{!integer(pn) || Math.abs(pn) > 1e12 || !integer(pm) || pm <= 0 ? 'Cần |n| ≤ 10¹², m > 0 và cả hai là số nguyên.' : `${formatNumber(pn)} ${isPrime(pn) ? 'là' : 'không phải'} số nguyên tố · ${formatNumber(pn)} mod ${formatNumber(pm)} = ${formatNumber(((pn % pm) + pm) % pm)}`}</Result></ToolPanel>
-  </div></section>;
+  return <section className="page-enter">
+    <div className="page-header"><p className="eyebrow">MATH WORKBENCH</p><h1>Công cụ toán học</h1><p>Tính, kiểm chứng và phân tích nhiều lớp toán học trong cùng một nơi — từ số học đến đại số tuyến tính, thống kê và vector.</p></div>
+
+    <div className="tool-section-heading"><div><p className="eyebrow">SỐ HỌC & ĐẠI SỐ</p><h2>Nền tảng tính toán</h2></div><span>6 công cụ</span></div>
+    <div className="tools-grid">
+      <ToolPanel title="ƯCLN và BCNN" description="Nhập hai số nguyên, kể cả số âm hoặc 0." labels={['a', 'b']} values={gcdValues} onChange={setGcdValues}><Result>{integer(ga) && integer(gb) ? 'ƯCLN = ' + formatNumber(gcd(ga, gb)) + ' · BCNN = ' + formatNumber(lcm(ga, gb)) : 'Vui lòng nhập hai số nguyên an toàn.'}</Result></ToolPanel>
+      <ToolPanel title="Tỷ lệ phần trăm" description="a chiếm bao nhiêu phần trăm của b?" labels={['a', 'b']} values={percent} onChange={setPercent}><Result>{!Number.isFinite(pa) || !Number.isFinite(pb) ? 'Vui lòng nhập đủ hai số.' : pb === 0 ? 'Số gốc b phải khác 0.' : formatNumber(pa) + ' = ' + formatNumber(pa / pb * 100) + '% của ' + formatNumber(pb)}</Result></ToolPanel>
+      <ToolPanel title="Giải phương trình" description="ax² + bx + c = 0, xét nghiệm thực." labels={['a', 'b', 'c']} values={quad} onChange={setQuad}><Result>{solveQuadratic(a, b, c)}</Result></ToolPanel>
+      <ToolPanel title="Tổ hợp & chỉnh hợp" description="Nhập số nguyên 0 ≤ k ≤ n ≤ 170." labels={['n', 'k']} values={comb} onChange={setComb}><Result>{combinationValid ? 'C(' + n + ', ' + k + ') = ' + formatNumber(nCr(n, k)) + ' · A(' + n + ', ' + k + ') = ' + formatNumber(nPr(n, k)) + (!Number.isSafeInteger(nCr(n, k)) || !Number.isSafeInteger(nPr(n, k)) ? ' (xấp xỉ)' : '') : 'Cần số nguyên thỏa mãn 0 ≤ k ≤ n ≤ 170.'}</Result></ToolPanel>
+      <ToolPanel title="Số phức" description="z₁ = a + bi, z₂ = c + di. Tính môđun và tích." labels={['a', 'b', 'c', 'd']} values={complex} onChange={setComplex}><Result>{[za, zb, zc, zd].every(Number.isFinite) ? '|z₁| = ' + formatNumber(Math.hypot(za, zb)) + ' · z₁z₂ = ' + formatNumber(za * zc - zb * zd) + ' ' + (imaginary < 0 ? '−' : '+') + ' ' + formatNumber(Math.abs(imaginary)) + 'i' : 'Vui lòng nhập đủ bốn hệ số.'}</Result></ToolPanel>
+      <ToolPanel title="Nguyên tố & đồng dư" description="Nhập n nguyên, |n| ≤ 10¹² và môđun m nguyên dương." labels={['n', 'm']} values={prime} onChange={setPrime}><Result>{!integer(pn) || Math.abs(pn) > 1e12 || !integer(pm) || pm <= 0 ? 'Cần |n| ≤ 10¹², m > 0 và cả hai là số nguyên.' : formatNumber(pn) + ' ' + (isPrime(pn) ? 'là' : 'không phải') + ' số nguyên tố · ' + formatNumber(pn) + ' mod ' + formatNumber(pm) + ' = ' + formatNumber(((pn % pm) + pm) % pm)}</Result></ToolPanel>
+    </div>
+
+    <div className="tool-section-heading"><div><p className="eyebrow">ĐẠI SỐ TUYẾN TÍNH</p><h2>Hệ phương trình, ma trận & vector</h2></div><Grid2X2 size={20} /></div>
+    <div className="tools-grid">
+      <ToolPanel title="Hệ phương trình 2×2" description="a₁x+b₁y=c₁ và a₂x+b₂y=c₂." labels={['a₁', 'b₁', 'c₁', 'a₂', 'b₂', 'c₂']} values={linear} onChange={setLinear}>
+        <Result>{!linearResult ? 'Vui lòng nhập đủ sáu hệ số hữu hạn.' : linearResult.kind === 'unique' ? 'Nghiệm duy nhất: x = ' + fmt(linearResult.x) + ', y = ' + fmt(linearResult.y) + ' · det = ' + fmt(linearResult.determinant) : linearResult.kind === 'infinite' ? 'Hai phương trình phụ thuộc: hệ có vô số nghiệm.' : 'Hai đường thẳng song song: hệ vô nghiệm.'}</Result>
+      </ToolPanel>
+
+      <ToolPanel title="Ma trận 2×2" description="A = [[a,b],[c,d]]. Tính định thức và nghịch đảo." labels={['a', 'b', 'c', 'd']} values={matrix} onChange={setMatrix}>
+        <Result>{!matrixResult ? 'Vui lòng nhập bốn phần tử hữu hạn.' : matrixResult.inverse ? <span>det(A) = {fmt(matrixResult.determinant)} · A⁻¹ = [{fmt(matrixResult.inverse[0])}, {fmt(matrixResult.inverse[1])}; {fmt(matrixResult.inverse[2])}, {fmt(matrixResult.inverse[3])}]</span> : 'det(A) = 0 · Ma trận suy biến, không có nghịch đảo.'}</Result>
+      </ToolPanel>
+
+      <ToolPanel title="Vector 2D" description="u=(a,b), v=(c,d). Tính độ dài, tích vô hướng, định thức và góc." labels={['uₓ', 'uᵧ', 'vₓ', 'vᵧ']} values={vectors} onChange={setVectors}>
+        <Result>{!vectorResult ? 'Vui lòng nhập đủ bốn tọa độ.' : <span>|u| = {fmt(vectorResult.magnitudeA)} · |v| = {fmt(vectorResult.magnitudeB)} · u·v = {fmt(vectorResult.dot)} · det(u,v) = {fmt(vectorResult.determinant)} · góc = {vectorResult.angleDegrees == null ? 'không xác định' : fmt(vectorResult.angleDegrees) + '°'}</span>}</Result>
+      </ToolPanel>
+    </div>
+
+    <div className="tool-section-heading"><div><p className="eyebrow">DỮ LIỆU & DÃY SỐ</p><h2>Thống kê và quy luật</h2></div><Sigma size={20} /></div>
+    <div className="tools-grid">
+      <section className="panel tool-panel advanced-tool-panel" aria-labelledby="statistics-tool"><h2 id="statistics-tool"><TrendingUp size={18} />Thống kê mô tả</h2><p className="helper-text">Nhập tối đa 10.000 số, ngăn cách bằng dấu phẩy, chấm phẩy hoặc khoảng trắng.</p><label className="field">Dữ liệu<textarea rows={3} value={statsText} onChange={event => setStatsText(event.target.value)} placeholder="2, 4, 6, 8, 10" /></label><Result>{!stats ? 'Dữ liệu chưa hợp lệ.' : <span>n = {stats.count} · trung bình = {fmt(stats.mean)} · trung vị = {fmt(stats.median)} · σ = {fmt(stats.standardDeviation)} · Q1 = {fmt(stats.q1)} · Q3 = {fmt(stats.q3)} · min/max = {fmt(stats.min)}/{fmt(stats.max)}</span>}</Result></section>
+
+      <section className="panel tool-panel advanced-tool-panel" aria-labelledby="sequence-tool"><h2 id="sequence-tool"><Sigma size={18} />Cấp số</h2><p className="helper-text">Tính số hạng thứ n và tổng n số hạng đầu.</p><label className="field">Loại dãy<select aria-label="Loại cấp số" value={sequenceKind} onChange={event => setSequenceKind(event.target.value as 'arithmetic' | 'geometric')}><option value="arithmetic">Cấp số cộng</option><option value="geometric">Cấp số nhân</option></select></label><div className="tool-inputs"><label className="field">u₁<input type="number" step="any" value={sequence[0]} onChange={event => setSequence(values => values.map((v, i) => i === 0 ? event.target.value : v))} /></label><label className="field">{sequenceKind === 'arithmetic' ? 'd' : 'q'}<input type="number" step="any" value={sequence[1]} onChange={event => setSequence(values => values.map((v, i) => i === 1 ? event.target.value : v))} /></label><label className="field">n<input type="number" step="1" min="1" value={sequence[2]} onChange={event => setSequence(values => values.map((v, i) => i === 2 ? event.target.value : v))} /></label></div><Result>{!sequenceResult ? 'Cần u₁, công sai/công bội hữu hạn và n nguyên dương trong giới hạn.' : 'uₙ = ' + fmt(sequenceResult.nth) + ' · Sₙ = ' + fmt(sequenceResult.sum)}</Result></section>
+    </div>
+  </section>;
 }
 
 function ToolPanel({ title, description, labels, values, onChange, children }: { title: string; description: string; labels: string[]; values: string[]; onChange: (value: string[]) => void; children: ReactNode }) {
   const id = useId();
-  return <section className="panel tool-panel" aria-labelledby={id}><h2 id={id}><Calculator size={18} />{title}</h2><p className="helper-text">{description}</p><div className="tool-inputs">{labels.map((label, index) => <label className="field" key={label}>{label}<input type="number" step="any" inputMode="decimal" value={values[index]} onChange={e => onChange(values.map((v, i) => i === index ? e.target.value : v))} /></label>)}</div>{children}</section>;
+  return <section className="panel tool-panel" aria-labelledby={id}><h2 id={id}><Calculator size={18} />{title}</h2><p className="helper-text">{description}</p><div className="tool-inputs">{labels.map((label, index) => <label className="field" key={label}>{label}<input type="number" step="any" inputMode="decimal" value={values[index]} onChange={event => onChange(values.map((v, i) => i === index ? event.target.value : v))} /></label>)}</div>{children}</section>;
 }
 
 function Result({ children }: { children: ReactNode }) {
