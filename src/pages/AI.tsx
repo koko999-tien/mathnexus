@@ -1,10 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Send, Sparkles, BookOpen, Trash2, ArrowUpRight } from 'lucide-react';
-import { LESSONS } from '../data/lessons';
-import { BOOKS } from '../data/books';
-import { FORMS } from '../data/formulas';
-import { normalizeSearch } from '../utils/search';
+import { buildKnowledgeContext } from '../utils/knowledgeSearch';
 import { ChatText } from '../components/ui/ChatText';
 
 interface Message {
@@ -58,36 +55,6 @@ function loadConversation(): Message[] {
   }
 }
 
-function localContext(query: string) {
-  const q = normalizeSearch(query);
-  const matches = (title: string) => {
-    const normalized = normalizeSearch(title);
-    return q.length > 1 && (q.includes(normalized) || normalized.includes(q));
-  };
-  const chunks: string[] = [];
-  const links: { to: string; label: string }[] = [];
-  const lesson = LESSONS.find(item => matches(item.t)) || LESSONS.find(item => matches(item.cat));
-  if (lesson) {
-    chunks.push(`${lesson.t}\n${lesson.txt.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()}`);
-    links.push({ to: `/lesson/${lesson.id}`, label: lesson.t });
-  }
-  const formula = FORMS.find(item => matches(item.name) || item.q.some(keyword => keyword.length > 1 && q.includes(normalizeSearch(keyword))));
-  if (formula) {
-    chunks.push(`${formula.name}: ${formula.what}\n$$${formula.expr}$$\nVí dụ: ${formula.ex}`);
-    links.push({ to: `/formula/${formula.id}`, label: formula.name });
-  }
-  const book = BOOKS.find(item => matches(item.t));
-  if (book) {
-    chunks.push(`${book.t}: ${book.why}`);
-    links.push({ to: `/book/${book.id}`, label: book.t });
-  }
-  if (q.includes('tu duy')) {
-    chunks.push('Hãy thử một bài toán suy luận trong mục Phát triển tư duy. Bạn có thể tự tìm lời giải trước khi mở gợi ý.');
-    links.push({ to: '/think', label: 'Khám phá bài tư duy' });
-  }
-  return { text: chunks.join('\n\n'), links };
-}
-
 function friendlyGeminiError(payload: GeminiPayload, status: number): string {
   const code = typeof payload.code === 'string' ? payload.code : '';
   const upstreamStatus = typeof payload.upstreamStatus === 'number' ? payload.upstreamStatus : null;
@@ -101,8 +68,9 @@ function friendlyGeminiError(payload: GeminiPayload, status: number): string {
 }
 
 export default function AI() {
+  const [searchParams] = useSearchParams();
   const [messages, setMessages] = useState<Message[]>(loadConversation);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState(() => searchParams.get('q')?.slice(0, 12000) || '');
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const controllerRef = useRef<AbortController | null>(null);
@@ -134,7 +102,7 @@ export default function AI() {
     if (!text || busy.current) return;
 
     busy.current = true;
-    const context = localContext(text);
+    const context = buildKnowledgeContext(text, 5);
     const controller = new AbortController();
     controllerRef.current = controller;
     const timer = window.setTimeout(() => controller.abort('timeout'), 30000);
@@ -186,6 +154,7 @@ export default function AI() {
           source: 'gemini',
           model: typeof payload.model === 'string' ? payload.model : undefined,
           fallbackUsed: payload.fallbackUsed === true,
+          links: context.links,
         },
       ]);
     } catch (error) {
@@ -202,7 +171,7 @@ export default function AI() {
         {
           role: 'bot',
           source: 'local',
-          text: `${detail}\n\n${context.text || 'Thư viện chưa tìm thấy câu trả lời cho câu hỏi này. Thử tìm theo tên khái niệm như “đạo hàm”, “số phức” hoặc “tổ hợp”.'}`,
+          text: `${detail}\n\n${context.text || 'Thư viện chưa tìm thấy nội dung liên quan. Bạn có thể thử hỏi theo tên khái niệm, chủ đề hoặc mục tiêu học.'}`,
           links: context.links,
         },
       ]);
@@ -213,11 +182,11 @@ export default function AI() {
     }
   };
 
-  return <section className="page-enter"><div className="page-header"><p className="eyebrow">MỘT NGƯỜI BẠN CÙNG SUY NGHĨ</p><h1>Trợ lý MathNexus</h1><p>Hỏi để hiểu bản chất, tìm lời giải từng bước. Gemini cần kết nối máy chủ; thư viện cục bộ luôn sẵn sàng để tra cứu.</p></div><div className="filter-row">{QUICK.map(question => <button className="filter-chip" key={question} onClick={() => void send(question)} disabled={loading}>{question}</button>)}</div>
+  return <section className="page-enter"><div className="page-header"><p className="eyebrow">MỘT NGƯỜI BẠN CÙNG SUY NGHĨ</p><h1>Trợ lý MathNexus</h1><p>Hỏi để hiểu bản chất, tìm lời giải từng bước. Gemini được bổ sung ngữ cảnh từ các bài học, công thức và sách phù hợp nhất trong MathNexus.</p></div><div className="filter-row">{QUICK.map(question => <button className="filter-chip" key={question} onClick={() => void send(question)} disabled={loading}>{question}</button>)}</div>
     <div className="chat-panel"><div className="chat-header"><span><Sparkles size={18} />MathNexus AI · Gemini</span><button className="icon-button" aria-label="Xóa cuộc trò chuyện" disabled={loading} onClick={clearConversation}><Trash2 size={17} /></button></div><div className="chat-messages" ref={scrollRef} role="log" aria-label="Cuộc trò chuyện" aria-live="polite">{messages.map((message, i) => <div key={i} className={`chat-message ${message.role}`}>
       {message.role === 'bot' && <span className="chat-source">{message.source === 'local' ? <><BookOpen size={13} />Tra cứu cục bộ · Không phải câu trả lời từ Gemini</> : <><Sparkles size={13} />{message.source === 'gemini' ? `Gemini${message.model ? ` · ${message.model}` : ''}${message.fallbackUsed ? ' · dự phòng' : ''}` : 'MathNexus'}</>}</span>}
       <div className="chat-text"><ChatText text={message.text} /></div>{!!message.links?.length && <div className="chat-links">{message.links.map(link => <Link key={link.to} to={link.to}>{link.label}<ArrowUpRight size={13} /></Link>)}</div>}
-    </div>)}{loading && <div className="chat-message bot" role="status"><span className="chat-source"><Sparkles size={13} />Gemini đang suy nghĩ…</span><button className="text-link" onClick={() => { controllerRef.current?.abort(); busy.current = false; setLoading(false); }}>Dừng trả lời</button></div>}</div>
-      <form className="chat-input" onSubmit={event => { event.preventDefault(); void send(input); }}><input aria-label="Câu hỏi cho trợ lý" value={input} onChange={e => setInput(e.target.value)} maxLength={12000} disabled={loading} placeholder="Điều gì khiến bạn tò mò?" autoComplete="off" /><button type="submit" aria-label="Gửi câu hỏi" className="button button-dark" disabled={loading || !input.trim()}><Send size={18} /></button></form>
-    </div><p className="helper-text mt-3">Hãy đối chiếu các bước tính với bài học và công cụ để tự kiểm tra kết quả.</p></section>;
+    </div>)}{loading && <div className="chat-message bot" role="status"><span className="chat-source"><Sparkles size={13} />Gemini đang suy nghĩ và tra cứu MathNexus…</span><button className="text-link" onClick={() => { controllerRef.current?.abort(); busy.current = false; setLoading(false); }}>Dừng trả lời</button></div>}</div>
+      <form className="chat-input" onSubmit={event => { event.preventDefault(); void send(input); }}><input aria-label="Câu hỏi cho trợ lý" value={input} onChange={event => setInput(event.target.value)} maxLength={12000} disabled={loading} placeholder="Ví dụ: mình yếu đạo hàm, nên học gì trước?" autoComplete="off" /><button type="submit" aria-label="Gửi câu hỏi" className="button button-dark" disabled={loading || !input.trim()}><Send size={18} /></button></form>
+    </div><p className="helper-text mt-3">Các liên kết dưới câu trả lời là nội dung MathNexus đã được chọn làm ngữ cảnh hoặc tài liệu liên quan để bạn đối chiếu.</p></section>;
 }
