@@ -80,6 +80,15 @@ UI đã có nhiều nền tốt: skip link, native `dialog`, aria-label/progress
 9. Không deploy production chỉ vì PR merge; deploy là bước release riêng.
 10. Mỗi đợt production release cần smoke test sau deploy.
 
+## Repository automation security
+
+- GitHub Gemini Assistant chỉ nhận trigger từ `OWNER`, `MEMBER` hoặc `COLLABORATOR`.
+- Workflow chỉ có `contents: read`; quyền write chỉ giữ cho issue/PR comment.
+- Checkout dùng `persist-credentials: false`.
+- `google-github-actions/run-gemini-cli` được pin vào commit của release đã xác minh thay vì tag trôi.
+- Gemini CLI trong workflow chỉ được allowlist các core tool đọc code: `list_directory`, `read_file`, `grep_search`.
+- Workflow có timeout 15 phút và giới hạn 12 session turns để giảm abuse/cost risk.
+
 ## Dependency upgrade holds
 
 - **React / ReactDOM 19.3.x:** tạm giữ ở 19.2.8 vì `@react-three/fiber@9.7.0` hiện khai báo peer `react >=19 <19.3`; bỏ ignore khi Fiber hỗ trợ 19.3 và full CI xanh.
