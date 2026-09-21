@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Activity, ArrowRight, BookOpen, CircleDot, Cpu, Gauge, Pause, Play, RotateCcw, SlidersHorizontal } from 'lucide-react';
+import { Activity, ArrowRight, BookOpen, CircleDot, Gauge, Pause, Play, RotateCcw, SlidersHorizontal } from 'lucide-react';
 import { ChatText } from '../components/ui/ChatText';
 import { PrecisionBadge } from '../components/ui/PrecisionBadge';
 import { NBodyScene } from '../simulations/NBodyScene';
