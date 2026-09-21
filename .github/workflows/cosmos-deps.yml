@@ -20,6 +20,8 @@ jobs:
         with:
           node-version: 24
           cache: npm
+      - name: Pin current React runtime
+        run: npm install --save-exact react@19.2.8 react-dom@19.2.8
       - name: Install Math Cosmos runtime dependencies
         run: npm install three @react-three/fiber @react-three/drei gsap decimal.js
       - name: Commit package metadata
