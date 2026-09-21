@@ -1,4 +1,4 @@
-import { LayoutDashboard, BookOpen, Library, Brain, PenTool, ChartSpline, Calculator, Sigma, Sparkles, NotebookPen, ChartNoAxesCombined } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Library, Brain, PenTool, ChartSpline, Calculator, Sigma, Sparkles, NotebookPen, ChartNoAxesCombined, Activity } from 'lucide-react';
 
 export const NAVIGATION = [
   { to: '/', icon: LayoutDashboard, label: 'Tổng quan', group: 'Khám phá' },
@@ -8,6 +8,7 @@ export const NAVIGATION = [
   { to: '/think', icon: Brain, label: 'Phát triển tư duy', group: 'Khám phá' },
   { to: '/graph', icon: ChartSpline, label: 'Đồ thị hàm số', group: 'Công cụ học tập' },
   { to: '/tools', icon: Calculator, label: 'Công cụ toán học', group: 'Công cụ học tập' },
+  { to: '/calculus', icon: Activity, label: 'Phòng giải tích', group: 'Công cụ học tập' },
   { to: '/formulas', icon: Sigma, label: 'Công thức', group: 'Công cụ học tập' },
   { to: '/ai', icon: Sparkles, label: 'Trợ lý AI', group: 'Công cụ học tập' },
   { to: '/notebook', icon: NotebookPen, label: 'Sổ tay của tôi', group: 'Cá nhân' },

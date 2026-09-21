@@ -15,7 +15,7 @@ test('dashboard, theme and complete navigation work at every screen size', async
   if (isMobile) {
     await page.getByRole('button', { name: 'Mở menu' }).click();
     const drawer = page.getByRole('dialog', { name: 'MathNexus', exact: true });
-    await expect(drawer.getByRole('link')).toHaveCount(11);
+    await expect(drawer.getByRole('link')).toHaveCount(12);
     await drawer.getByRole('link', { name: 'Tiến độ học tập' }).click();
     await expect(drawer).not.toBeVisible();
   } else await page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link', { name: 'Tiến độ học tập' }).click();
@@ -237,6 +237,31 @@ test('function laboratory exposes mathematical analysis and tangent lines', asyn
   await expect(page.locator('[data-testid="tangent-path"]')).toHaveAttribute('d', /^M/);
 });
 
+
+test('calculus lab parses free expressions and computes core numerical calculus', async ({ page }) => {
+  await page.goto('/calculus');
+  await expect(page.getByRole('heading', { name: 'Phòng thí nghiệm giải tích' })).toBeVisible();
+
+  await page.getByLabel('Biểu thức f(x)').fill('x^2 - 2');
+  await page.getByLabel('Điểm khảo sát x₀').fill('1.5');
+  await expect(page.locator('.calculus-metric').filter({ hasText: 'Nghiệm gần x₀' })).toContainText('1,414');
+
+  await page.getByLabel('Biểu thức f(x)').fill('x^2');
+  await page.getByLabel('Điểm khảo sát x₀').fill('2');
+  await page.getByLabel('Cận a').fill('0');
+  await page.getByLabel('Cận b').fill('1');
+  await expect(page.locator('.calculus-metric').filter({ hasText: 'Đạo hàm f′(x₀)' })).toContainText('4');
+  await expect(page.locator('.calculus-result-panel').filter({ hasText: 'Tiếp tuyến tại x₀' })).toContainText('y = 4');
+  await expect(page.locator('.calculus-result-panel').filter({ hasText: 'Tích phân xác định' })).toContainText('0,333');
+
+  await page.getByLabel('Biểu thức f(x)').fill('abs(x)');
+  await page.getByLabel('Điểm khảo sát x₀').fill('0');
+  await expect(page.locator('.calculus-metric').filter({ hasText: 'Đạo hàm f′(x₀)' })).toContainText('Không tồn tại');
+
+  await page.getByLabel('Biểu thức f(x)').fill('window.alert(1)');
+  await expect(page.getByRole('alert')).toBeVisible();
+});
+
 test('notes, personal goals and exported backup are usable', async ({ page }) => {
   await page.goto('/notebook');
   await page.getByRole('textbox', { name: 'Nội dung sổ tay' }).fill('Đạo hàm của x² bằng 2x.');
@@ -264,9 +289,14 @@ test('AI shows local fallback when the server is unavailable', async ({ page }) 
   await expect(page.locator('.chat-links').getByRole('link', { name: 'Số phức', exact: true })).toBeVisible();
 });
 
-test('AI renders a successful Gemini math response', async ({ page }) => {
-  await page.route('**/api/gemini', route => route.fulfill({ status: 200, json: { text: 'Đáp án là $2+2=4$.' } }));
+test('AI renders a successful Gemini math response', async ({ page, context }) => {
+  await context.route('**/api/gemini', route => route.fulfill({ status: 200, json: { text: 'Đáp án là $2+2=4$.' } }));
   await page.goto('/ai');
+  await page.evaluate(async () => {
+    const registrations = await navigator.serviceWorker?.getRegistrations?.() || [];
+    await Promise.all(registrations.map(registration => registration.unregister()));
+  });
+  await page.reload();
   await page.getByRole('textbox', { name: 'Câu hỏi cho trợ lý' }).fill('2+2 bằng mấy?');
   await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
   await expect(page.locator('.chat-message').last()).toContainText('Đáp án là');
@@ -276,7 +306,7 @@ test('AI renders a successful Gemini math response', async ({ page }) => {
 test('every route fits the viewport and has no client-side errors', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
-  for (const route of ['/library', '/books', '/book/unknown', '/think', '/practice', '/graph', '/tools', '/formulas', '/formula/deMoivre', '/ai', '/notebook', '/progress', '/does-not-exist']) {
+  for (const route of ['/library', '/books', '/book/unknown', '/think', '/practice', '/graph', '/tools', '/calculus', '/formulas', '/formula/deMoivre', '/ai', '/notebook', '/progress', '/does-not-exist']) {
     await page.goto(route);
     await expect(page.locator('main')).not.toBeEmpty();
     await expect(page.getByText('Đang mở góc học tập…')).not.toBeVisible();

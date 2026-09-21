@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { gcd, lcm, isPrime, factorial, nCr, nPr, solveQuadratic, renderMath } from '../../src/utils/math.ts';
 import { arithmeticSequence, descriptiveStatistics, geometricSequence, invertMatrix2, parseNumberList, quadraticAnalysis, solveLinearSystem2, vector2 } from '../../src/utils/advancedMath.ts';
+import { compileExpression } from '../../src/utils/expressionMath.ts';
+import { findRootNear, localBehavior, numericalDerivative, simpsonIntegral, tangentLine } from '../../src/utils/calculusMath.ts';
 
 test('integer tools handle zero, negatives and invalid inputs without hanging', () => {
   assert.equal(gcd(-48, 18), 6);
@@ -86,4 +88,42 @@ test('quadratic analysis exposes roots, vertex, axis and extremum', () => {
   assert.equal(result?.opens, 'up');
   assert.equal(result?.extremum, 'min');
   assert.equal(quadraticAnalysis(0, 1, 2), null);
+});
+
+
+test('expression engine safely parses functions, constants, powers and implicit multiplication', () => {
+  assert.equal(compileExpression('2x + 1').evaluate(3), 7);
+  assert.ok(Math.abs(compileExpression('sin(pi/2) + cos(0)').evaluate(0) - 2) < 1e-12);
+  assert.equal(compileExpression('-x^2').evaluate(3), -9);
+  assert.equal(compileExpression('2^3^2').evaluate(0), 512);
+  assert.equal(compileExpression('(x+1)(x-1)').evaluate(4), 15);
+  assert.equal(compileExpression('√(x²)').evaluate(5), 5);
+  assert.throws(() => compileExpression('window.alert(1)'));
+  assert.throws(() => compileExpression('constructor(x)'), /Tên không được hỗ trợ/);
+});
+
+test('numerical calculus computes derivatives, integrals, tangents and nearby roots', () => {
+  const square = compileExpression('x^2').evaluate;
+  const derivative = numericalDerivative(square, 3);
+  assert.ok(Math.abs((derivative ?? NaN) - 6) < 1e-6);
+
+  const integral = simpsonIntegral(square, 0, 1);
+  assert.ok(Math.abs((integral ?? NaN) - 1 / 3) < 1e-8);
+
+  const tangent = tangentLine(square, 2);
+  assert.ok(Math.abs((tangent?.slope ?? NaN) - 4) < 1e-6);
+  assert.ok(Math.abs((tangent?.intercept ?? NaN) + 4) < 1e-6);
+
+  const root = findRootNear(compileExpression('x^2 - 2').evaluate, 1.5);
+  assert.ok(Math.abs((root?.value ?? NaN) - Math.sqrt(2)) < 1e-8);
+
+  const behavior = localBehavior(compileExpression('x^2').evaluate, 2);
+  assert.equal(behavior.trend, 'đang tăng');
+  assert.equal(behavior.curvature, 'cong lên');
+});
+
+test('calculus engine rejects discontinuities instead of inventing finite results', () => {
+  const reciprocal = compileExpression('1/x').evaluate;
+  assert.equal(simpsonIntegral(reciprocal, -1, 1), null);
+  assert.equal(tangentLine(compileExpression('abs(x)').evaluate, 0), null);
 });
