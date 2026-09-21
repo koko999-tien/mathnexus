@@ -57,12 +57,14 @@ test('knowledge map exposes prerequisite depth, gaps and learning paths', async 
   await page.goto('/map?concept=derivative-definition');
   await expect(page.getByRole('heading', { name: 'Bản đồ cấu trúc toán học' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Định nghĩa đạo hàm' })).toBeVisible();
-  await expect(page.getByText('Cần biết trước')).toBeVisible();
-  await expect(page.getByRole('button', { name: /Giới hạn/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Tính liên tục/ })).toBeVisible();
+
+  const prerequisites = page.locator('.concept-relations').filter({ hasText: 'Cần biết trước' });
+  await expect(prerequisites).toBeVisible();
+  await expect(prerequisites.getByRole('button', { name: 'Giới hạn', exact: true })).toBeVisible();
+  await expect(prerequisites.getByRole('button', { name: 'Tính liên tục', exact: true })).toBeVisible();
   await expect(page.locator('.learning-path-card')).toContainText('Đường học tới “Định nghĩa đạo hàm”');
 
-  await page.getByRole('button', { name: /Tính liên tục/ }).click();
+  await prerequisites.getByRole('button', { name: 'Tính liên tục', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Tính liên tục' })).toBeVisible();
   await expect(page.getByText('Nút kiến thức chưa có tài nguyên riêng')).toBeVisible();
 });
@@ -302,7 +304,8 @@ test('AI shows local fallback when the server is unavailable', async ({ page }) 
   await page.goto('/ai');
   await page.getByRole('button', { name: 'Số phức là gì?' }).click();
   await expect(page.getByText('Tra cứu cục bộ · Không phải câu trả lời từ Gemini')).toBeVisible();
-  await expect(page.locator('.chat-links').getByRole('link', { name: 'Số phức', exact: true })).toBeVisible();
+  await expect(page.locator('.chat-links a[href="/lesson/cplx"]')).toBeVisible();
+  await expect(page.locator('.chat-links a[href*="concept=complex-numbers"]')).toBeVisible();
 });
 
 test('AI renders a successful Gemini math response', async ({ page, context }) => {
