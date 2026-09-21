@@ -41,10 +41,14 @@ const FUNCTIONS = {
   ceil: Math.ceil,
 } as const;
 
-const CONSTANTS: Record<string, number> = {
+const CONSTANTS: Record<string, number> = Object.freeze({
   pi: Math.PI,
   e: Math.E,
-};
+});
+
+function hasOwn(object: object, key: PropertyKey) {
+  return Object.prototype.hasOwnProperty.call(object, key);
+}
 
 export interface CompiledExpression {
   source: string;
@@ -200,9 +204,9 @@ class Parser {
       const name = token.value;
 
       if (name === 'x') return { kind: 'variable' };
-      if (name in CONSTANTS) return { kind: 'number', value: CONSTANTS[name] };
+      if (hasOwn(CONSTANTS, name)) return { kind: 'number', value: CONSTANTS[name] };
 
-      if (name in FUNCTIONS) {
+      if (hasOwn(FUNCTIONS, name)) {
         if (!this.matchSymbol('(')) {
           throw new ExpressionError('Hàm ' + name + ' cần dấu ngoặc, ví dụ ' + name + '(x).', token.position);
         }
