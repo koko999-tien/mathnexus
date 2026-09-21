@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Activity, ArrowRight, CheckCircle2, FunctionSquare, Gauge, Integral, Sigma, Target } from 'lucide-react';
+import { Activity, ArrowRight, Calculator, CheckCircle2, Gauge, Integral, Sigma, Target } from 'lucide-react';
 import { compileExpression, expressionErrorMessage } from '../utils/expressionMath';
 import { findRootNear, localBehavior, numericalSecondDerivative, simpsonIntegral, tangentLine } from '../utils/calculusMath';
 import { formatNumber } from '../utils/math';
@@ -63,7 +63,7 @@ export default function Calculus() {
 
     <div className="calculus-layout">
       <div className="panel calculus-input-panel">
-        <div className="calculus-panel-title"><FunctionSquare size={19} /><div><strong>Biểu thức</strong><span>Parser toán học riêng, không chạy mã JavaScript.</span></div></div>
+        <div className="calculus-panel-title"><Calculator size={19} /><div><strong>Biểu thức</strong><span>Parser toán học riêng, không chạy mã JavaScript.</span></div></div>
         <label className="field">f(x)
           <input
             aria-label="Biểu thức f(x)"
