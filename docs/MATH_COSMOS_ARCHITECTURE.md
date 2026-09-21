@@ -1076,3 +1076,20 @@ Potential justified extensions:
 5. interval/error-bound arithmetic for selected numerical methods.
 
 Do not migrate rendering, ordinary graph coordinates, or all simulation state to Decimal. Different computational layers have different precision requirements.
+
+
+---
+
+## Production deployment synchronization
+
+The production alias is expected to deploy from the repository's `main` branch.
+
+On 2026-09-22, production deployment was explicitly re-synchronized after the Git integration skipped an empty-tree redeploy commit. This documentation-only tree change exists to force a fresh production build without modifying runtime behavior.
+
+Deployment verification requirements remain unchanged:
+
+- source commit must be on `main`;
+- CI must be green;
+- Vercel deployment must reach `READY`;
+- `mathnexus-three.vercel.app` must resolve to the new production deployment;
+- critical routes must be checked after alias promotion.
