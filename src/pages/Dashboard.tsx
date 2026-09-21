@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, ArrowUpRight, BookOpen, CalendarDays, ChartSpline, Check, Circle, Flame, Lightbulb, PenTool, Sigma, Sparkles, Target } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, BookOpen, Brain, CalendarDays, ChartSpline, Check, Circle, Flame, Lightbulb, PenTool, Sigma, Sparkles, Target } from 'lucide-react';
 import { LESSONS } from '../data/lessons';
 import { THINK } from '../data/think';
+import { QUIZ } from '../data/quiz';
 import { useProgress } from '../hooks/useProgress';
 import { emptyActivity, localDate } from '../utils/storage';
 import { recommendLessons, todayPlan } from '../utils/learningInsights';
+import { practiceOverview } from '../utils/practiceInsights';
 import { LessonCard } from '../components/ui/LessonCard';
 import { MathArtwork } from '../components/ui/MathArtwork';
 
@@ -20,6 +22,7 @@ export default function Dashboard() {
   const planDone = plan.filter(item => item.done).length;
   const day = p.activity[localDate()] || emptyActivity();
   const goalProgress = Math.min(100, Math.round(day.questions / p.dailyGoal * 100));
+  const practice = practiceOverview(QUIZ, p);
 
   return <section className="dashboard page-enter">
     <div className="dashboard-heading"><div><p className="eyebrow">GÓC HỌC TẬP CỦA BẠN</p><h1>Một ngày mới, một ý tưởng mới<span className="heading-dot">.</span></h1><p>Chào {p.displayName === 'Bạn học Toán' ? 'bạn' : p.displayName}, cùng khám phá vẻ đẹp của toán học nhé.</p></div><span className="date-pill"><CalendarDays size={15} />{today}</span></div>
@@ -53,7 +56,7 @@ export default function Dashboard() {
       { to: '/formulas', Icon: Sigma, title: 'Hiểu một công thức', text: 'Ý nghĩa đằng sau ký hiệu.', tone: 'blue' },
       { to: '/ai', Icon: Sparkles, title: 'Hỏi trợ lý AI', text: 'Gỡ rối từng bước suy luận.', tone: 'lilac' },
     ].map(({ to, Icon, title, text, tone }) => <Link key={to} to={to} className="quick-tool"><span className={'small-icon ' + tone}><Icon size={21} /></span><div><h3>{title}</h3><p>{text}</p></div><ArrowUpRight size={18} /></Link>)}</div></div>
-      <div className="daily-goal"><div className="goal-heading"><span className="small-icon green">{goalProgress === 100 ? <Check size={20} /> : <Target size={20} />}</span><span>THÓI QUEN NHỎ, TIẾN BỘ LỚN</span></div><h3>{goalProgress === 100 ? 'Bạn đã hoàn thành mục tiêu!' : 'Dành ít phút cho ' + p.dailyGoal + ' câu hỏi'}</h3><p>Không cần nhanh hơn ai. Chỉ cần tiến xa hơn chính mình ngày hôm qua.</p><div className="goal-label"><span>Mục tiêu hôm nay</span><strong>{day.questions}/{p.dailyGoal} câu</strong></div><div className="progress-track" role="progressbar" aria-label="Mục tiêu hôm nay" aria-valuenow={goalProgress} aria-valuemin={0} aria-valuemax={100}><span style={{ width: goalProgress + '%' }} /></div><Link to="/practice" className="text-link">Luyện tập ngay<ArrowRight size={16} /></Link></div>
+      <div className="daily-goal"><div className="goal-heading"><span className="small-icon green">{practice.reviewQuestions > 0 ? <Brain size={20} /> : goalProgress === 100 ? <Check size={20} /> : <Target size={20} />}</span><span>THÓI QUEN NHỎ, TIẾN BỘ LỚN</span></div><h3>{practice.reviewQuestions > 0 ? 'Có ' + practice.reviewQuestions + ' câu nên ôn lại' : goalProgress === 100 ? 'Bạn đã hoàn thành mục tiêu!' : 'Dành ít phút cho ' + p.dailyGoal + ' câu hỏi'}</h3><p>{practice.reviewQuestions > 0 ? 'MathNexus đã gom các câu bạn từng vấp để bạn xử lý đúng điểm yếu trước.' : 'Không cần nhanh hơn ai. Chỉ cần tiến xa hơn chính mình ngày hôm qua.'}</p><div className="goal-label"><span>Mục tiêu hôm nay</span><strong>{day.questions}/{p.dailyGoal} câu</strong></div><div className="progress-track" role="progressbar" aria-label="Mục tiêu hôm nay" aria-valuenow={goalProgress} aria-valuemin={0} aria-valuemax={100}><span style={{ width: goalProgress + '%' }} /></div><Link to={practice.reviewQuestions > 0 ? "/practice?mode=review" : "/practice"} className="text-link">{practice.reviewQuestions > 0 ? 'Ôn câu đang yếu' : 'Luyện tập ngay'}<ArrowRight size={16} /></Link></div>
     </div>
   </section>;
 }
