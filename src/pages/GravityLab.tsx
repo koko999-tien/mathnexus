@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Activity, ArrowRight, BookOpen, CircleDot, Cpu, Gauge, Pause, Play, RotateCcw, SlidersHorizontal } from 'lucide-react';
 import { ChatText } from '../components/ui/ChatText';
+import { PrecisionBadge } from '../components/ui/PrecisionBadge';
 import { NBodyScene } from '../simulations/NBodyScene';
 import { createNBodyEngine, type NBodyDiagnostics } from '../simulations/nbody/CpuNBodyEngine';
 import { recordSimulationAdjustment, recordSimulationSession } from '../exploration/explorationState';
@@ -81,7 +82,8 @@ export default function GravityLab() {
         <p>Một hệ hấp dẫn nhiều vật thể chạy bằng CPU Float64, tích phân leapfrog và dữ liệu TypedArray. Đây là mô phỏng số có kiểm soát, không phải ảnh động được dựng sẵn.</p>
       </div>
       <div className="gravity-runtime">
-        <span><Cpu size={14} />CPU engine · Float64</span>
+        <PrecisionBadge mode="standard" suffix="CPU simulation state" compact />
+        <PrecisionBadge mode="visual" suffix="Float32 render buffer" compact />
         <span><CircleDot size={14} />{engine.particleCount} vật thể</span>
         <span><Gauge size={14} />{metrics.lastStepMs.toFixed(2)} ms/bước</span>
       </div>
