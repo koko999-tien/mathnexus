@@ -1,7 +1,9 @@
 import { BOOKS } from '../data/books';
 import { LESSONS, type Lesson } from '../data/lessons';
+import { QUIZ } from '../data/quiz';
 import type { ProgressData } from './storage';
 import { emptyActivity, localDate } from './storage';
+import { questionsNeedingReview } from './practiceInsights';
 
 export interface LearningBreakdown {
   name: string;
@@ -111,6 +113,8 @@ export function todayPlan(progress: ProgressData): DailyPlanItem[] {
   const nextLesson = recommendLessons(progress, 1)[0];
   const nextBook = BOOKS.find(book => !progress.booksOpened.includes(book.id));
   const allBooksExplored = BOOKS.length > 0 && progress.booksOpened.length >= BOOKS.length;
+  const reviewQuestions = questionsNeedingReview(QUIZ, progress);
+  const reviewSessionSize = progress.dailyGoal <= 5 ? '5' : '10';
 
   return [
     {
@@ -123,11 +127,11 @@ export function todayPlan(progress: ProgressData): DailyPlanItem[] {
     },
     {
       id: 'practice',
-      title: `Luyện ${progress.dailyGoal} câu`,
-      detail: 'Củng cố bằng việc tự trả lời thay vì chỉ đọc.',
-      to: lastLessonCategory(progress) ? `/practice?cat=${encodeURIComponent(lastLessonCategory(progress)!)}` : '/practice',
+      title: reviewQuestions.length ? 'Ôn ' + reviewQuestions.length + ' câu đang yếu' : 'Luyện ' + progress.dailyGoal + ' câu',
+      detail: reviewQuestions.length ? 'MathNexus ưu tiên những câu bạn từng trả lời sai và chưa phục hồi vững.' : 'Củng cố bằng việc tự trả lời thay vì chỉ đọc.',
+      to: reviewQuestions.length ? '/practice?mode=review&size=' + reviewSessionSize : lastLessonCategory(progress) ? '/practice?cat=' + encodeURIComponent(lastLessonCategory(progress)!) : '/practice',
       done: day.questions >= progress.dailyGoal,
-      progressLabel: `${Math.min(day.questions, progress.dailyGoal)}/${progress.dailyGoal} câu`,
+      progressLabel: Math.min(day.questions, progress.dailyGoal) + '/' + progress.dailyGoal + ' câu',
     },
     {
       id: 'book',

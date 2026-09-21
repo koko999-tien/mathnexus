@@ -1,12 +1,14 @@
 import { useRef, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { Download, Upload, RotateCcw, Check, BookOpen, Flame, PenTool, Target, ArrowUpRight } from 'lucide-react';
+import { Download, Upload, RotateCcw, Check, BookOpen, Brain, Flame, PenTool, Target, ArrowUpRight } from 'lucide-react';
 import { saveProgress, DEFAULT_PROGRESS, localDate, load, save, parseBackup } from '../utils/storage';
 import { useProgress } from '../hooks/useProgress';
 import { LESSONS } from '../data/lessons';
+import { QUIZ } from '../data/quiz';
 import { levelProgress, recentActivity, topicProgress } from '../utils/learningInsights';
 import { downloadFile } from '../utils/download';
+import { practiceCategoryInsights, practiceOverview } from '../utils/practiceInsights';
 
 export default function Progress() {
   const p = useProgress();
@@ -19,6 +21,8 @@ export default function Progress() {
   const topics = topicProgress(p).slice(0, 6);
   const levels = levelProgress(p);
   const completed = LESSONS.filter(lesson => p.lessonsRead.includes(lesson.id));
+  const practice = practiceOverview(QUIZ, p);
+  const practiceTopics = practiceCategoryInsights(QUIZ, p).filter(item => item.attempts > 0).slice(0, 8);
 
   const exportData = () => downloadFile(JSON.stringify({ app: 'MathNexus', version: 1, exportedAt: new Date().toISOString(), progress: p, notes: load<string>('notes', '') }, null, 2), 'mathnexus-' + localDate() + '.json', 'application/json');
 
@@ -67,6 +71,15 @@ export default function Progress() {
       { Icon: Target, value: p.questionsDone ? Math.round(p.questionsCorrect / p.questionsDone * 100) + '%' : '—', title: 'Tỷ lệ trả lời đúng', tone: 'lilac' },
       { Icon: Flame, value: p.streak, title: 'Ngày học liên tiếp', tone: 'peach' },
     ].map(({ Icon, value, title, tone }) => <div className="stat-card" key={title}><div className="stat-top"><span className={'small-icon ' + tone}><Icon size={20} /></span><strong>{value}</strong></div><h3>{title}</h3></div>)}</div>
+
+    <div className="panel mastery-panel">
+      <div className="panel-heading-row"><div><p className="eyebrow">KHÔNG CHỈ HỌC XONG — CẦN BIẾT MÌNH ĐANG VƯỚNG Ở ĐÂU</p><h2 className="panel-title">Độ vững qua luyện tập</h2><p className="helper-text">Được tính từ chính các câu bạn đã làm, không phải từ số bài đã mở.</p></div><Link to={practice.reviewQuestions > 0 ? "/practice?mode=review" : "/practice"} className="button button-light"><Brain size={16} />{practice.reviewQuestions > 0 ? 'Ôn ' + practice.reviewQuestions + ' câu yếu' : 'Bắt đầu luyện'}</Link></div>
+      {practiceTopics.length ? <div className="mastery-grid">{practiceTopics.map(item => <Link key={item.name} to={item.needsReview > 0 ? '/practice?cat=' + encodeURIComponent(item.name) + '&mode=review' : '/practice?cat=' + encodeURIComponent(item.name)} className="mastery-row">
+        <div className="mastery-copy"><strong>{item.name}</strong><span>{item.attempted}/{item.total} câu đã gặp · {item.attempts} lượt làm</span></div>
+        <div className="mastery-score"><strong>{item.accuracy === null ? '—' : item.accuracy + '%'}</strong><small>{item.needsReview > 0 ? item.needsReview + ' câu cần ôn' : 'Không có câu yếu'}</small></div>
+        <ArrowUpRight size={16} />
+      </Link>)}</div> : <div className="mastery-empty"><Brain size={28} /><div><strong>Chưa có đủ dữ liệu luyện tập</strong><p>Hãy làm vài câu. MathNexus sẽ bắt đầu chỉ ra chuyên đề nào cần quay lại.</p></div><Link to="/practice" className="text-link">Làm phiên đầu tiên<ArrowUpRight size={15} /></Link></div>}
+    </div>
 
     <div className="learning-breakdown">
       <div className="panel"><div className="panel-heading-row"><div><p className="eyebrow">BẢN ĐỒ KIẾN THỨC</p><h2 className="panel-title">Theo chuyên đề</h2></div><span className="helper-text">{completed.length} bài đã hoàn thành</span></div>

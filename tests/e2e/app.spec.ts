@@ -133,6 +133,47 @@ test('adaptive practice remembers weak questions and filters by difficulty', asy
   await expect(page.getByText('0 câu phù hợp với bộ lọc hiện tại.')).toBeVisible();
 });
 
+
+test('dashboard and progress prioritize weak-question review', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    localStorage.setItem('mathnexus_progress', JSON.stringify({
+      lessonsRead: [],
+      questionsDone: 1,
+      booksOpened: [],
+      streak: 0,
+      lastDate: '',
+      dailyGoal: 5,
+      displayName: 'Bạn học Toán',
+      questionsCorrect: 0,
+      lastLesson: '',
+      activity: {},
+      practice: {
+        'comb-5-2': {
+          attempts: 1,
+          correct: 0,
+          correctStreak: 0,
+          lastCorrect: false,
+          updatedAt: '2026-09-21T08:00:00.000Z',
+        },
+      },
+    }));
+  });
+  await page.reload();
+
+  const practicePlan = page.locator('.plan-item').filter({ hasText: 'Ôn 1 câu đang yếu' });
+  await expect(practicePlan).toBeVisible();
+  await expect(practicePlan).toHaveAttribute('href', /mode=review/);
+  await expect(page.getByRole('link', { name: /Ôn câu đang yếu/ })).toBeVisible();
+
+  await page.goto('/progress');
+  await expect(page.getByRole('heading', { name: 'Độ vững qua luyện tập' })).toBeVisible();
+  const combinatorics = page.locator('.mastery-row').filter({ hasText: 'Tổ hợp' });
+  await expect(combinatorics).toContainText('1 câu cần ôn');
+  await combinatorics.click();
+  await expect(page).toHaveURL(/\/practice\?.*mode=review/);
+});
+
 test('interactive graph draws immediately and validates math inputs', async ({ page }, info) => {
   await page.goto('/graph');
   const path = page.getByTestId('function-path');
