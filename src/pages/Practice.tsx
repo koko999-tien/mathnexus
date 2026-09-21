@@ -7,6 +7,7 @@ import { QUIZ_CONCEPT_MAP } from '../data/mathOntology';
 import { useProgress } from '../hooks/useProgress';
 import { useLearningGoal } from '../hooks/useLearningGoal';
 import { buildGoalDiagnosticPlan } from '../learning/learningGoal';
+import { buildGoalDiagnosticDebrief, type GoalDiagnosticDebrief } from '../learning/diagnosticDebrief';
 import { recordQuestionAttempt } from '../utils/storage';
 import { practiceCategoryInsights, practiceOverview, questionAccuracy, questionsNeedingReview } from '../utils/practiceInsights';
 
@@ -92,6 +93,8 @@ export default function Practice() {
 
 function PracticeSession({ candidates, mode, size, cat, difficulty, conceptId, goalTargetId }: { candidates: Quiz[]; mode: 'normal' | 'review' | 'goal'; size: typeof SESSION_SIZES[number]; cat: string; difficulty: 'Tất cả' | QuizDifficulty; conceptId: string; goalTargetId: string }) {
   const progress = useProgress();
+  const learningGoal = useLearningGoal();
+  const [sessionBaseline, setSessionBaseline] = useState(() => progress);
   const [questions] = useState(() => {
     const pool = mode === 'review' ? questionsNeedingReview(candidates, progress) : candidates;
     const limit = size === 'all' ? pool.length : Number(size);
@@ -111,8 +114,11 @@ function PracticeSession({ candidates, mode, size, cat, difficulty, conceptId, g
   const currentStat = progress.practice[q.id];
   const previousAccuracy = questionAccuracy(currentStat);
   const wrongQuestions = questions.filter((question, i) => answers[i] !== question.i);
+  const debrief = mode === 'goal' && finished
+    ? buildGoalDiagnosticDebrief(questions, answers, sessionBaseline, progress, learningGoal.goal)
+    : null;
 
-  const restart = () => { setIndex(0); setAnswers([]); setFinished(false); };
+  const restart = () => { setSessionBaseline(progress); setIndex(0); setAnswers([]); setFinished(false); };
   const answer = (choice: number) => {
     if (answered !== undefined) return;
     setAnswers(current => [...current, choice]);
@@ -120,7 +126,19 @@ function PracticeSession({ candidates, mode, size, cat, difficulty, conceptId, g
   };
   const next = () => { if (index + 1 === questions.length) setFinished(true); else setIndex(i => i + 1); };
 
-  if (finished) return <div className="panel practice-result" aria-live="polite"><span className="result-trophy"><Trophy size={36} /></span><p className="eyebrow">HOÀN THÀNH PHIÊN LUYỆN TẬP</p><h2>Bạn đã làm đúng {score}/{questions.length} câu!</h2><p>{score === questions.length ? 'Phiên này sạch lỗi. Nếu đây là câu từng sai, thêm một lần đúng nữa có thể đưa nó khỏi danh sách cần ôn.' : 'Có ' + wrongQuestions.length + ' câu nên quay lại sớm. MathNexus đã ghi nhớ chúng cho phiên ôn tập tiếp theo.'}</p><div className="flex flex-wrap justify-center gap-3 my-6"><button className="button button-dark" onClick={restart}><RotateCcw size={16} />Luyện lại phiên này</button>{wrongQuestions.length > 0 && <Link to={buildReviewHref(cat, difficulty, size, conceptId)} className="button button-light"><Brain size={16} />Ôn câu yếu</Link>}<Link to="/progress" className="button button-light">Xem tiến độ</Link></div>{wrongQuestions.map(question => <div key={question.id} className="review-question"><div className="review-question-head"><strong>{question.q}</strong><span className={'difficulty-tag ' + difficultyClass(question.difficulty)}>{question.difficulty}</span></div><p>Đáp án đúng: {question.a[question.i]}</p><small>{question.ex}</small></div>)}</div>;
+  if (finished) return <div className="panel practice-result" aria-live="polite">
+    <span className="result-trophy"><Trophy size={36} /></span>
+    <p className="eyebrow">{mode === 'goal' ? 'GOAL DIAGNOSTIC · PHIÊN CHẨN ĐOÁN HOÀN TẤT' : 'HOÀN THÀNH PHIÊN LUYỆN TẬP'}</p>
+    <h2>Bạn đã làm đúng {score}/{questions.length} câu!</h2>
+    <p>{mode === 'goal' ? 'Kết quả đã được chuyển thành evidence theo từng concept trên lộ trình, không chỉ lưu một điểm tổng.' : score === questions.length ? 'Phiên này sạch lỗi. Nếu đây là câu từng sai, thêm một lần đúng nữa có thể đưa nó khỏi danh sách cần ôn.' : 'Có ' + wrongQuestions.length + ' câu nên quay lại sớm. MathNexus đã ghi nhớ chúng cho phiên ôn tập tiếp theo.'}</p>
+    {debrief && <DiagnosticDebriefPanel debrief={debrief} />}
+    <div className="flex flex-wrap justify-center gap-3 my-6">
+      <button className="button button-dark" onClick={restart}><RotateCcw size={16} />Luyện lại phiên này</button>
+      {mode !== 'goal' && wrongQuestions.length > 0 && <Link to={buildReviewHref(cat, difficulty, size, conceptId)} className="button button-light"><Brain size={16} />Ôn câu yếu</Link>}
+      <Link to="/progress" className="button button-light">Xem tiến độ</Link>
+    </div>
+    {wrongQuestions.map(question => <div key={question.id} className="review-question"><div className="review-question-head"><strong>{question.q}</strong><span className={'difficulty-tag ' + difficultyClass(question.difficulty)}>{question.difficulty}</span></div><p>Đáp án đúng: {question.a[question.i]}</p><small>{question.ex}</small></div>)}
+  </div>;
 
   return <div className="panel practice-panel">
     <div className="practice-meta"><span>Câu {index + 1} / {questions.length}</span><span><Check size={15} />{score} câu đúng</span></div>
@@ -131,6 +149,37 @@ function PracticeSession({ candidates, mode, size, cat, difficulty, conceptId, g
     {answered !== undefined && <div className={'answer-explanation ' + (answered === q.i ? 'correct' : 'incorrect')} role="status"><strong>{answered === q.i ? 'Chính xác, làm tốt lắm!' : 'Chưa đúng — câu này đã được thêm vào vùng cần ôn.'}</strong><p>{q.ex}</p>{answered !== q.i && <small>Muốn đưa câu này ra khỏi vùng ôn, hãy trả lời đúng nó ở các lần luyện sau.</small>}</div>}
     <div className="practice-actions"><span className="helper-text">{answered === undefined ? mode === 'review' ? 'Đây là một câu MathNexus chọn lại vì bạn từng vấp ở đây.' : mode === 'goal' ? 'Câu này được lấy từ một concept còn thiếu bằng chứng trên lộ trình mục tiêu.' : 'Chọn một đáp án để xem lời giải.' : mode === 'goal' ? 'Kết quả đã cập nhật evidence cho lộ trình mục tiêu.' : 'Kết quả đã được ghi vào trí nhớ luyện tập.'}</span><button disabled={answered === undefined} onClick={next} className="button button-dark">{index + 1 === questions.length ? 'Xem kết quả' : 'Câu tiếp theo'}<ArrowRight size={16} /></button></div>
   </div>;
+}
+
+function DiagnosticDebriefPanel({ debrief }: { debrief: GoalDiagnosticDebrief }) {
+  const weak = debrief.weakestConcept;
+  const weakNeedsRepair = Boolean(weak && weak.correct < weak.attempted);
+  return <section className="diagnostic-debrief" aria-label="Diagnostic Debrief">
+    <div className="diagnostic-debrief-head">
+      <div><p className="eyebrow">DIAGNOSTIC DEBRIEF</p><h3>Bản đồ bằng chứng sau phiên</h3><p>Mục tiêu: <strong>{debrief.targetTitle}</strong></p></div>
+      <div className="diagnostic-debrief-score"><strong>{debrief.accuracy}%</strong><span>{debrief.correct}/{debrief.attempted} câu đúng</span></div>
+    </div>
+    <div className="diagnostic-debrief-metrics">
+      <div><span>Tiến độ mục tiêu</span><strong>{debrief.goalProgressBefore}% → {debrief.goalProgressAfter}%</strong><small>{debrief.goalProgressDelta > 0 ? '+' + debrief.goalProgressDelta + '% trong phiên này' : 'Chưa vượt ngưỡng mastery mới'}</small></div>
+      <div><span>Concept đã đo</span><strong>{debrief.concepts.length}</strong><small>Evidence được tách theo ontology</small></div>
+    </div>
+    <div className="diagnostic-concept-grid">
+      {debrief.concepts.map(item => <Link key={item.conceptId} to={item.to} className="diagnostic-concept-row">
+        <div><strong>{item.title}</strong><span>{item.correct}/{item.attempted} đúng · {item.stateLabel}</span></div>
+        <div className="diagnostic-concept-evidence"><strong>{item.accuracy}%</strong><small>Confidence {item.confidenceBefore}% → {item.confidenceAfter}%{item.confidenceDelta > 0 ? ' (+' + item.confidenceDelta + ')' : ''}</small></div>
+        <ArrowRight size={15} />
+      </Link>)}
+    </div>
+    <div className="diagnostic-debrief-next">
+      {weakNeedsRepair && weak ? <>
+        <div><Brain size={17} /><span><strong>Ưu tiên củng cố: {weak.title}</strong><small>Đây là concept có độ chính xác thấp nhất trong phiên vừa rồi.</small></span></div>
+        <Link to={'/practice?concept=' + encodeURIComponent(weak.conceptId) + '&mode=review&size=5'} className="button button-light">Ôn đúng điểm yếu<ArrowRight size={14} /></Link>
+      </> : debrief.nextAction ? <>
+        <div><Flag size={17} /><span><strong>Bước tiếp theo: {debrief.nextAction.title}</strong><small>{debrief.nextAction.detail}</small></span></div>
+        <Link to={debrief.nextAction.to} className="button button-light">Tiếp tục lộ trình<ArrowRight size={14} /></Link>
+      </> : <div><Check size={17} /><span><strong>Mục tiêu đã có đủ bằng chứng</strong><small>Không cần tạo thêm bước học bắt buộc cho mục tiêu này.</small></span></div>}
+    </div>
+  </section>;
 }
 
 function difficultyClass(difficulty: QuizDifficulty) {
