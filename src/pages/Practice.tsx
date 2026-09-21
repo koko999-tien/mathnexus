@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { ArrowRight, Brain, Check, CircleAlert, Gauge, RotateCcw, Target, Trophy, X } from 'lucide-react';
 import { QUIZ, type Quiz, type QuizDifficulty } from '../data/quiz';
+import { MATH_CONCEPTS } from '../data/mathKnowledge';
+import { QUIZ_CONCEPT_MAP } from '../data/mathOntology';
 import { useProgress } from '../hooks/useProgress';
 import { recordQuestionAttempt } from '../utils/storage';
 import { practiceCategoryInsights, practiceOverview, questionAccuracy, questionsNeedingReview } from '../utils/practiceInsights';
@@ -20,10 +22,16 @@ export default function Practice() {
   const requestedSize = params.get('size') || '5';
   const size = SESSION_SIZES.includes(requestedSize as typeof SESSION_SIZES[number]) ? requestedSize as typeof SESSION_SIZES[number] : '5';
   const mode = params.get('mode') === 'review' ? 'review' : 'normal';
+  const requestedConcept = params.get('concept') || '';
+  const concept = MATH_CONCEPTS.find(item => item.id === requestedConcept);
+  const conceptQuestionIds = concept
+    ? new Set(Object.entries(QUIZ_CONCEPT_MAP).filter(([, conceptId]) => conceptId === concept.id).map(([questionId]) => questionId))
+    : null;
 
   const overview = practiceOverview(QUIZ, progress);
   const insights = practiceCategoryInsights(QUIZ, progress).filter(item => item.attempts > 0).slice(0, 5);
   const filtered = QUIZ.filter(question =>
+    (conceptQuestionIds === null || conceptQuestionIds.has(question.id)) &&
     (cat === 'Tất cả' || question.cat === cat) &&
     (difficulty === 'Tất cả' || question.difficulty === difficulty)
   );
@@ -43,10 +51,10 @@ export default function Practice() {
     setParams(next, { replace: true });
   };
 
-  const sessionKey = [cat, difficulty, size, mode].join('|');
+  const sessionKey = [concept?.id || '', cat, difficulty, size, mode].join('|');
 
   return <section className="page-enter">
-    <div className="page-header"><p className="eyebrow">LUYỆN ĐÚNG CHỖ MÌNH ĐANG YẾU</p><h1>Luyện tập thích ứng</h1><p>MathNexus ghi nhớ câu bạn hay sai để lần sau ưu tiên ôn đúng điểm yếu, thay vì bắt bạn làm lại mọi thứ như nhau.</p></div>
+    <div className="page-header"><p className="eyebrow">LUYỆN ĐÚNG CHỖ MÌNH ĐANG YẾU</p><h1>Luyện tập thích ứng</h1><p>{concept ? 'Phiên này đang khóa vào khái niệm “' + concept.title + '” từ Learning Compass/Knowledge Graph. MathNexus chỉ lấy các câu đã được ontology gắn trực tiếp với nút này.' : 'MathNexus ghi nhớ câu bạn hay sai để lần sau ưu tiên ôn đúng điểm yếu, thay vì bắt bạn làm lại mọi thứ như nhau.'}</p></div>
 
     <div className="practice-overview">
       <div className="practice-overview-card"><span className="small-icon green"><Target size={20} /></span><div><strong>{overview.attemptedQuestions}/{QUIZ.length}</strong><small>Câu đã từng làm</small></div></div>
@@ -63,18 +71,18 @@ export default function Practice() {
         <label className="field">Độ dài phiên<select aria-label="Độ dài phiên luyện tập" value={size} onChange={event => updateParam('size', event.target.value, '5')}><option value="5">5 câu</option><option value="10">10 câu</option><option value="all">Toàn bộ câu phù hợp</option></select></label>
         <button type="button" className={'button ' + (mode === 'review' ? 'button-dark' : 'button-light')} onClick={() => setMode(mode === 'review' ? 'normal' : 'review')}><Brain size={16} />{mode === 'review' ? 'Thoát ôn câu yếu' : 'Ôn câu cần nhớ'}{overview.reviewQuestions > 0 && <span className="practice-count-badge">{overview.reviewQuestions}</span>}</button>
       </div>
-      <p className="helper-text">{mode === 'review' ? 'Chế độ ôn tập chỉ lấy những câu bạn từng làm sai và chưa trả lời đúng liên tiếp 2 lần.' : filtered.length + ' câu phù hợp với bộ lọc hiện tại.'}</p>
+      <p className="helper-text">{concept ? 'Knowledge Graph focus: “' + concept.title + '”. ' : ''}{mode === 'review' ? 'Chế độ ôn tập chỉ lấy những câu bạn từng làm sai và chưa trả lời đúng liên tiếp 2 lần.' : filtered.length + ' câu phù hợp với bộ lọc hiện tại.'}</p>
     </div>
 
     {insights.length > 0 && <div className="practice-insights panel"><div className="panel-heading-row"><div><p className="eyebrow">DỮ LIỆU TỪ CHÍNH CÁC LẦN BẠN LÀM</p><h2 className="panel-title">Điểm cần chú ý theo chuyên đề</h2></div><Link to="/progress" className="text-link">Mở trang tiến độ<ArrowRight size={15} /></Link></div>
       <div className="practice-insight-grid">{insights.map(item => <div className="practice-insight" key={item.name}><div><strong>{item.name}</strong><span>{item.attempted}/{item.total} câu đã gặp</span></div><div className="practice-insight-score"><strong>{item.accuracy === null ? '—' : item.accuracy + '%'}</strong><small>{item.needsReview ? item.needsReview + ' cần ôn' : 'Đang ổn'}</small></div></div>)}</div>
     </div>}
 
-    <PracticeSession key={sessionKey} candidates={filtered} mode={mode} size={size} cat={cat} difficulty={difficulty} />
+    <PracticeSession key={sessionKey} candidates={filtered} mode={mode} size={size} cat={cat} difficulty={difficulty} conceptId={concept?.id || ''} />
   </section>;
 }
 
-function PracticeSession({ candidates, mode, size, cat, difficulty }: { candidates: Quiz[]; mode: 'normal' | 'review'; size: typeof SESSION_SIZES[number]; cat: string; difficulty: 'Tất cả' | QuizDifficulty }) {
+function PracticeSession({ candidates, mode, size, cat, difficulty, conceptId }: { candidates: Quiz[]; mode: 'normal' | 'review'; size: typeof SESSION_SIZES[number]; cat: string; difficulty: 'Tất cả' | QuizDifficulty; conceptId: string }) {
   const progress = useProgress();
   const [questions] = useState(() => {
     const pool = mode === 'review' ? questionsNeedingReview(candidates, progress) : candidates;
@@ -86,7 +94,7 @@ function PracticeSession({ candidates, mode, size, cat, difficulty }: { candidat
   const [finished, setFinished] = useState(false);
 
   if (!questions.length) {
-    return <div className="panel practice-empty"><span className="small-icon green"><Check size={20} /></span><h2>{mode === 'review' ? 'Không còn câu nào cần ôn trong bộ lọc này' : 'Chưa có câu hỏi phù hợp'}</h2><p>{mode === 'review' ? 'Các câu bạn từng sai đã được làm đúng liên tiếp đủ để tạm rời danh sách ôn.' : 'Hãy đổi chuyên đề hoặc độ khó để bắt đầu một phiên khác.'}</p>{mode === 'review' && <Link to={buildPracticeHref(cat, difficulty, size)} className="button button-light">Luyện bình thường</Link>}</div>;
+    return <div className="panel practice-empty"><span className="small-icon green"><Check size={20} /></span><h2>{mode === 'review' ? 'Không còn câu nào cần ôn trong bộ lọc này' : 'Chưa có câu hỏi phù hợp'}</h2><p>{mode === 'review' ? 'Các câu bạn từng sai đã được làm đúng liên tiếp đủ để tạm rời danh sách ôn.' : 'Hãy đổi chuyên đề hoặc độ khó để bắt đầu một phiên khác.'}</p>{mode === 'review' && <Link to={buildPracticeHref(cat, difficulty, size, conceptId)} className="button button-light">Luyện bình thường</Link>}</div>;
   }
 
   const q = questions[index];
@@ -104,7 +112,7 @@ function PracticeSession({ candidates, mode, size, cat, difficulty }: { candidat
   };
   const next = () => { if (index + 1 === questions.length) setFinished(true); else setIndex(i => i + 1); };
 
-  if (finished) return <div className="panel practice-result" aria-live="polite"><span className="result-trophy"><Trophy size={36} /></span><p className="eyebrow">HOÀN THÀNH PHIÊN LUYỆN TẬP</p><h2>Bạn đã làm đúng {score}/{questions.length} câu!</h2><p>{score === questions.length ? 'Phiên này sạch lỗi. Nếu đây là câu từng sai, thêm một lần đúng nữa có thể đưa nó khỏi danh sách cần ôn.' : 'Có ' + wrongQuestions.length + ' câu nên quay lại sớm. MathNexus đã ghi nhớ chúng cho phiên ôn tập tiếp theo.'}</p><div className="flex flex-wrap justify-center gap-3 my-6"><button className="button button-dark" onClick={restart}><RotateCcw size={16} />Luyện lại phiên này</button>{wrongQuestions.length > 0 && <Link to={buildReviewHref(cat, difficulty, size)} className="button button-light"><Brain size={16} />Ôn câu yếu</Link>}<Link to="/progress" className="button button-light">Xem tiến độ</Link></div>{wrongQuestions.map(question => <div key={question.id} className="review-question"><div className="review-question-head"><strong>{question.q}</strong><span className={'difficulty-tag ' + difficultyClass(question.difficulty)}>{question.difficulty}</span></div><p>Đáp án đúng: {question.a[question.i]}</p><small>{question.ex}</small></div>)}</div>;
+  if (finished) return <div className="panel practice-result" aria-live="polite"><span className="result-trophy"><Trophy size={36} /></span><p className="eyebrow">HOÀN THÀNH PHIÊN LUYỆN TẬP</p><h2>Bạn đã làm đúng {score}/{questions.length} câu!</h2><p>{score === questions.length ? 'Phiên này sạch lỗi. Nếu đây là câu từng sai, thêm một lần đúng nữa có thể đưa nó khỏi danh sách cần ôn.' : 'Có ' + wrongQuestions.length + ' câu nên quay lại sớm. MathNexus đã ghi nhớ chúng cho phiên ôn tập tiếp theo.'}</p><div className="flex flex-wrap justify-center gap-3 my-6"><button className="button button-dark" onClick={restart}><RotateCcw size={16} />Luyện lại phiên này</button>{wrongQuestions.length > 0 && <Link to={buildReviewHref(cat, difficulty, size, conceptId)} className="button button-light"><Brain size={16} />Ôn câu yếu</Link>}<Link to="/progress" className="button button-light">Xem tiến độ</Link></div>{wrongQuestions.map(question => <div key={question.id} className="review-question"><div className="review-question-head"><strong>{question.q}</strong><span className={'difficulty-tag ' + difficultyClass(question.difficulty)}>{question.difficulty}</span></div><p>Đáp án đúng: {question.a[question.i]}</p><small>{question.ex}</small></div>)}</div>;
 
   return <div className="panel practice-panel">
     <div className="practice-meta"><span>Câu {index + 1} / {questions.length}</span><span><Check size={15} />{score} câu đúng</span></div>
@@ -121,8 +129,9 @@ function difficultyClass(difficulty: QuizDifficulty) {
   return difficulty === 'Cơ bản' ? 'easy' : difficulty === 'Vừa' ? 'medium' : 'hard';
 }
 
-function buildPracticeHref(cat: string, difficulty: 'Tất cả' | QuizDifficulty, size: typeof SESSION_SIZES[number]) {
+function buildPracticeHref(cat: string, difficulty: 'Tất cả' | QuizDifficulty, size: typeof SESSION_SIZES[number], conceptId = '') {
   const params = new URLSearchParams();
+  if (conceptId) params.set('concept', conceptId);
   if (cat !== 'Tất cả') params.set('cat', cat);
   if (difficulty !== 'Tất cả') params.set('difficulty', difficulty);
   if (size !== '5') params.set('size', size);
@@ -130,8 +139,9 @@ function buildPracticeHref(cat: string, difficulty: 'Tất cả' | QuizDifficult
   return '/practice' + (query ? '?' + query : '');
 }
 
-function buildReviewHref(cat: string, difficulty: 'Tất cả' | QuizDifficulty, size: typeof SESSION_SIZES[number]) {
+function buildReviewHref(cat: string, difficulty: 'Tất cả' | QuizDifficulty, size: typeof SESSION_SIZES[number], conceptId = '') {
   const href = new URLSearchParams();
+  if (conceptId) href.set('concept', conceptId);
   if (cat !== 'Tất cả') href.set('cat', cat);
   if (difficulty !== 'Tất cả') href.set('difficulty', difficulty);
   if (size !== '5') href.set('size', size);

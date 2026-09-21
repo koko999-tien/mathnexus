@@ -4,14 +4,17 @@ import { LESSONS } from '../data/lessons';
 import { THINK } from '../data/think';
 import { QUIZ } from '../data/quiz';
 import { useProgress } from '../hooks/useProgress';
+import { useExplorationSummary } from '../hooks/useExplorationSummary';
 import { emptyActivity, localDate } from '../utils/storage';
 import { recommendLessons, todayPlan } from '../utils/learningInsights';
+import { buildLearningCompass } from '../utils/learningCompass';
 import { practiceOverview } from '../utils/practiceInsights';
 import { LessonCard } from '../components/ui/LessonCard';
 import { MathArtwork } from '../components/ui/MathArtwork';
 
 export default function Dashboard() {
   const p = useProgress();
+  const exploration = useExplorationSummary();
   const now = new Date();
   const today = now.toLocaleDateString('vi-VI', { weekday: 'long', day: 'numeric', month: 'long' });
   const challengeIndex = Number(localDate().replaceAll('-', '')) % THINK.length;
@@ -23,6 +26,7 @@ export default function Dashboard() {
   const day = p.activity[localDate()] || emptyActivity();
   const goalProgress = Math.min(100, Math.round(day.questions / p.dailyGoal * 100));
   const practice = practiceOverview(QUIZ, p);
+  const compass = buildLearningCompass(p, exploration, 3);
 
   return <section className="dashboard page-enter">
     <div className="dashboard-heading"><div><p className="eyebrow">GÓC HỌC TẬP CỦA BẠN</p><h1>Một ngày mới, một ý tưởng mới<span className="heading-dot">.</span></h1><p>Chào {p.displayName === 'Bạn học Toán' ? 'bạn' : p.displayName}, cùng khám phá vẻ đẹp của toán học nhé.</p></div><span className="date-pill"><CalendarDays size={15} />{today}</span></div>
@@ -47,6 +51,16 @@ export default function Dashboard() {
         <span className="plan-progress">{item.progressLabel}<ArrowRight size={15} /></span>
       </Link>)}</div>
     </div>
+
+    <div className="section-heading"><div><span className="eyebrow">LEARNING COMPASS · DỰA TRÊN BẰNG CHỨNG</span><h2>Bước tiếp theo có lý do</h2></div><Link to="/map" className="text-link">Mở Knowledge Graph<ArrowRight size={16} /></Link></div>
+    <div className="quick-tools">{compass.map(item => {
+      const Icon = item.kind === 'repair' ? Brain : item.kind === 'advance' ? Target : item.kind === 'explore' ? Sparkles : PenTool;
+      const tone = item.kind === 'repair' ? 'peach' : item.kind === 'advance' ? 'green' : item.kind === 'explore' ? 'blue' : 'lilac';
+      return <Link key={item.kind + '-' + (item.conceptId || item.to)} to={item.to} className="quick-tool">
+        <span className={'small-icon ' + tone}><Icon size={21} /></span>
+        <div><h3>{item.title}</h3><p>{item.detail}</p></div><ArrowUpRight size={18} />
+      </Link>;
+    })}</div>
 
     <div className="section-heading"><div><span className="eyebrow">ĐỀ XUẤT THEO NHỊP HỌC CỦA BẠN</span><h2>{p.lastLesson ? 'Nên học gì tiếp?' : 'Bắt đầu từ đâu?'}</h2></div><Link to="/library" className="text-link">Tất cả bài học<ArrowRight size={16} /></Link></div>
     <div className="lesson-grid">{recommended.map(lesson => <LessonCard key={lesson.id} lesson={lesson} done={p.lessonsRead.includes(lesson.id)} />)}</div>
