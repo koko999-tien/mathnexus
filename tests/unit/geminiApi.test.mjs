@@ -77,3 +77,94 @@ test('Gemini handler keeps untrusted tutor context out of system instruction', a
     else process.env.GEMINI_MODEL = originalModel;
   }
 });
+
+
+test('Gemini handler rejects oversized and cross-origin browser requests before upstream work', async () => {
+  const originalFetch = globalThis.fetch;
+  let fetchCalls = 0;
+  globalThis.fetch = async () => { fetchCalls += 1; throw new Error('must not call upstream'); };
+
+  try {
+    const oversizedResponse = mockResponse();
+    await handler({
+      method: 'POST',
+      headers: { 'content-length': String(128 * 1024 + 1) },
+      body: { message: 'hello' },
+    }, oversizedResponse);
+
+    assert.equal(oversizedResponse.statusCode, 413);
+    assert.equal(oversizedResponse.payload.code, 'REQUEST_TOO_LARGE');
+    assert.equal(typeof oversizedResponse.headers['X-Request-Id'], 'string');
+
+    const crossOriginResponse = mockResponse();
+    await handler({
+      method: 'POST',
+      headers: {
+        origin: 'https://evil.example',
+        host: 'mathnexus.example',
+      },
+      body: { message: 'hello' },
+    }, crossOriginResponse);
+
+    assert.equal(crossOriginResponse.statusCode, 403);
+    assert.equal(crossOriginResponse.payload.code, 'ORIGIN_NOT_ALLOWED');
+    assert.equal(fetchCalls, 0);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('Gemini handler applies a warm-instance request throttle and returns correlation IDs', async () => {
+  const originalFetch = globalThis.fetch;
+  const originalKey = process.env.GEMINI_API_KEY;
+  const originalModel = process.env.GEMINI_MODEL;
+  let fetchCalls = 0;
+
+  process.env.GEMINI_API_KEY = 'unit-test-key';
+  process.env.GEMINI_MODEL = 'unit-rate-model';
+  globalThis.fetch = async () => {
+    fetchCalls += 1;
+    return {
+      ok: true,
+      status: 200,
+      async json() {
+        return {
+          modelVersion: 'unit-rate-model',
+          candidates: [{ content: { parts: [{ text: 'ok' }] } }],
+        };
+      },
+    };
+  };
+
+  try {
+    for (let index = 0; index < 20; index++) {
+      const response = mockResponse();
+      await handler({
+        method: 'POST',
+        headers: { 'x-forwarded-for': '203.0.113.77' },
+        body: { message: 'Câu ' + index },
+      }, response);
+      assert.equal(response.statusCode, 200);
+      assert.equal(typeof response.payload.requestId, 'string');
+      assert.equal(response.headers['X-RateLimit-Limit'], '20');
+    }
+
+    const limited = mockResponse();
+    await handler({
+      method: 'POST',
+      headers: { 'x-forwarded-for': '203.0.113.77' },
+      body: { message: 'Câu vượt giới hạn' },
+    }, limited);
+
+    assert.equal(limited.statusCode, 429);
+    assert.equal(limited.payload.code, 'INSTANCE_RATE_LIMITED');
+    assert.equal(limited.headers['Retry-After'], '60');
+    assert.equal(fetchCalls, 20);
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalKey === undefined) delete process.env.GEMINI_API_KEY;
+    else process.env.GEMINI_API_KEY = originalKey;
+    if (originalModel === undefined) delete process.env.GEMINI_MODEL;
+    else process.env.GEMINI_MODEL = originalModel;
+  }
+});

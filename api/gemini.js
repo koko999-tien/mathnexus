@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { normalizeTutor, tutorInstruction, tutorUserContext } from './tutorPolicy.js';
 
 const DEFAULT_MODEL = 'gemini-3.8-flash';
@@ -5,6 +6,10 @@ const STABLE_FALLBACK_MODELS = ['gemini-3.7-flash', 'gemini-3.6-flash'];
 const REQUEST_BUDGET_MS = 24000;
 const ATTEMPT_TIMEOUT_MS = 7000;
 const RETRY_DELAY_MS = 650;
+const MAX_REQUEST_BYTES = 128 * 1024;
+const INSTANCE_RATE_WINDOW_MS = 60_000;
+const INSTANCE_RATE_LIMIT = 20;
+const rateBuckets = new Map();
 
 const SYSTEM_PROMPT = `
 Bạn là MathNexus AI, trợ lý học toán cho người Việt.
@@ -20,6 +25,70 @@ Nguyên tắc:
 - Khi câu hỏi thiếu dữ kiện, nêu giả định ngắn gọn thay vì bịa dữ kiện.
 - Giữ câu trả lời dễ đọc trên màn hình điện thoại.
 `.trim();
+
+
+function headerValue(request, name) {
+  const headers = request?.headers;
+  if (!headers) return '';
+  if (typeof headers.get === 'function') return String(headers.get(name) || '').trim();
+  const direct = headers[name] ?? headers[name.toLowerCase()] ?? headers[name.toUpperCase()];
+  return Array.isArray(direct) ? String(direct[0] || '').trim() : String(direct || '').trim();
+}
+
+function requestBodyBytes(request) {
+  const contentLength = Number(headerValue(request, 'content-length'));
+  if (Number.isFinite(contentLength) && contentLength >= 0) return contentLength;
+  try {
+    if (typeof request.body === 'string') return Buffer.byteLength(request.body, 'utf8');
+    if (request.body && typeof request.body === 'object') return Buffer.byteLength(JSON.stringify(request.body), 'utf8');
+  } catch {
+    return MAX_REQUEST_BYTES + 1;
+  }
+  return 0;
+}
+
+function sameOriginBrowserRequest(request) {
+  const origin = headerValue(request, 'origin');
+  if (!origin) return true;
+  const host = headerValue(request, 'x-forwarded-host') || headerValue(request, 'host');
+  if (!host) return true;
+  try {
+    return new URL(origin).host === host;
+  } catch {
+    return false;
+  }
+}
+
+function clientAddress(request) {
+  const forwarded = headerValue(request, 'x-forwarded-for');
+  const first = forwarded.split(',')[0]?.trim();
+  return first || headerValue(request, 'x-real-ip') || '';
+}
+
+function consumeInstanceRateLimit(request, now = Date.now()) {
+  const key = clientAddress(request);
+  if (!key) return { allowed: true, remaining: INSTANCE_RATE_LIMIT, retryAfterSeconds: 0 };
+
+  if (rateBuckets.size > 2048) {
+    for (const [bucketKey, bucket] of rateBuckets) {
+      if (bucket.resetAt <= now) rateBuckets.delete(bucketKey);
+    }
+  }
+
+  const existing = rateBuckets.get(key);
+  const bucket = !existing || existing.resetAt <= now
+    ? { count: 0, resetAt: now + INSTANCE_RATE_WINDOW_MS }
+    : existing;
+
+  bucket.count += 1;
+  rateBuckets.set(key, bucket);
+
+  return {
+    allowed: bucket.count <= INSTANCE_RATE_LIMIT,
+    remaining: Math.max(0, INSTANCE_RATE_LIMIT - bucket.count),
+    retryAfterSeconds: Math.max(1, Math.ceil((bucket.resetAt - now) / 1000)),
+  };
+}
 
 function cleanEnv(value) {
   if (typeof value !== 'string') return '';
@@ -63,7 +132,7 @@ function timeoutSignal(deadline) {
   return AbortSignal.timeout(Math.max(500, Math.min(ATTEMPT_TIMEOUT_MS, remaining)));
 }
 
-async function callGemini({ apiKey, model, contents, signal, systemPrompt }) {
+async function callGemini({ apiKey, model, contents, signal, systemPrompt, requestId }) {
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
 
   let geminiResponse;
@@ -100,6 +169,7 @@ async function callGemini({ apiKey, model, contents, signal, systemPrompt }) {
         code: isTimeout ? 'TIMEOUT' : 'NETWORK_ERROR',
         message: detail.slice(0, 500),
         model,
+        requestId,
       }),
     );
 
@@ -130,6 +200,7 @@ async function callGemini({ apiKey, model, contents, signal, systemPrompt }) {
         code,
         message: String(detail).slice(0, 1000),
         model,
+        requestId,
       }),
     );
 
@@ -151,7 +222,7 @@ async function callGemini({ apiKey, model, contents, signal, systemPrompt }) {
   if (!text) {
     console.error(
       '[MathNexus Gemini empty response]',
-      JSON.stringify({ model, finishReason: payload?.candidates?.[0]?.finishReason || null }),
+      JSON.stringify({ model, requestId, finishReason: payload?.candidates?.[0]?.finishReason || null }),
     );
 
     return {
@@ -178,10 +249,21 @@ function responseStatusFor(error) {
 }
 
 export default async function handler(request, response) {
+  const requestId = randomUUID();
   response.setHeader('Cache-Control', 'no-store');
+  response.setHeader('X-Request-Id', requestId);
+
   if (request.method !== 'POST') {
     response.setHeader('Allow', 'POST');
-    return response.status(405).json({ error: 'Method not allowed' });
+    return response.status(405).json({ error: 'Method not allowed', code: 'METHOD_NOT_ALLOWED', requestId });
+  }
+
+  if (!sameOriginBrowserRequest(request)) {
+    return response.status(403).json({ error: 'Cross-origin browser request is not allowed', code: 'ORIGIN_NOT_ALLOWED', requestId });
+  }
+
+  if (requestBodyBytes(request) > MAX_REQUEST_BYTES) {
+    return response.status(413).json({ error: 'Request body is too large', code: 'REQUEST_TOO_LARGE', requestId });
   }
 
   const apiKey = cleanEnv(process.env.GEMINI_API_KEY);
@@ -189,6 +271,19 @@ export default async function handler(request, response) {
     return response.status(503).json({
       error: 'GEMINI_API_KEY is not configured on the server',
       code: 'MISSING_API_KEY',
+      requestId,
+    });
+  }
+
+  const rate = consumeInstanceRateLimit(request);
+  response.setHeader('X-RateLimit-Limit', String(INSTANCE_RATE_LIMIT));
+  response.setHeader('X-RateLimit-Remaining', String(rate.remaining));
+  if (!rate.allowed) {
+    response.setHeader('Retry-After', String(rate.retryAfterSeconds));
+    return response.status(429).json({
+      error: 'Too many Gemini requests from this client',
+      code: 'INSTANCE_RATE_LIMITED',
+      requestId,
     });
   }
 
@@ -196,11 +291,11 @@ export default async function handler(request, response) {
   try {
     body = typeof request.body === 'string' ? JSON.parse(request.body || '{}') : request.body || {};
   } catch {
-    return response.status(400).json({ error: 'Invalid JSON body', code: 'INVALID_JSON' });
+    return response.status(400).json({ error: 'Invalid JSON body', code: 'INVALID_JSON', requestId });
   }
 
   if (!body || typeof body !== 'object' || Array.isArray(body)) {
-    return response.status(400).json({ error: 'Expected a JSON object', code: 'INVALID_JSON' });
+    return response.status(400).json({ error: 'Expected a JSON object', code: 'INVALID_JSON', requestId });
   }
 
   const message = typeof body.message === 'string' ? body.message.trim() : '';
@@ -208,11 +303,11 @@ export default async function handler(request, response) {
   const tutor = normalizeTutor(body.tutor);
 
   if (!message) {
-    return response.status(400).json({ error: 'Message is required', code: 'EMPTY_MESSAGE' });
+    return response.status(400).json({ error: 'Message is required', code: 'EMPTY_MESSAGE', requestId });
   }
 
   if (message.length > 12000) {
-    return response.status(400).json({ error: 'Message is too long', code: 'MESSAGE_TOO_LONG' });
+    return response.status(400).json({ error: 'Message is too long', code: 'MESSAGE_TOO_LONG', requestId });
   }
 
   const contextBlocks = [
@@ -255,6 +350,7 @@ export default async function handler(request, response) {
         contents,
         signal: timeoutSignal(deadline),
         systemPrompt: dynamicSystemPrompt,
+        requestId,
       });
 
       attempts.push({ model, attempt, code: result.ok ? 'OK' : String(result.code || result.status) });
@@ -265,6 +361,7 @@ export default async function handler(request, response) {
           model: result.model,
           fallbackUsed: model !== configuredModel,
           tutorMode: tutor?.mode || null,
+          requestId,
         });
       }
 
@@ -300,6 +397,7 @@ export default async function handler(request, response) {
       JSON.stringify({
         fromModel: model,
         reason: String(lastError.code || lastError.status),
+        requestId,
       }),
     );
   }
@@ -310,6 +408,7 @@ export default async function handler(request, response) {
       attempts,
       lastCode: String(lastError?.code || 'UNKNOWN'),
       elapsedMs: REQUEST_BUDGET_MS - Math.max(0, deadline - Date.now()),
+      requestId,
     }),
   );
 
@@ -318,5 +417,6 @@ export default async function handler(request, response) {
     code: String(lastError?.code || 'GEMINI_UPSTREAM_ERROR'),
     upstreamStatus: lastError?.status || null,
     model: lastError?.model || configuredModel,
+    requestId,
   });
 }
