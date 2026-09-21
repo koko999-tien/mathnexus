@@ -33,6 +33,24 @@ export default defineConfig({
     },
     workbox: {
       globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+      globIgnores: [
+        '**/MathCosmos-*.js',
+        '**/react-three-fiber.esm-*.js',
+      ],
+      runtimeCaching: [
+        {
+          urlPattern: /\/assets\/(?:MathCosmos|react-three-fiber\.esm)-[^/]+\.js$/,
+          handler: 'CacheFirst',
+          options: {
+            cacheName: 'mathnexus-cosmos-runtime-v1',
+            cacheableResponse: { statuses: [0, 200] },
+            expiration: {
+              maxEntries: 6,
+              maxAgeSeconds: 30 * 24 * 60 * 60,
+            },
+          },
+        },
+      ],
       navigateFallback: `${base}index.html`,
       navigateFallbackDenylist: [/^\/api\//],
       cleanupOutdatedCaches: true,
