@@ -188,7 +188,6 @@ export default function AI() {
           tutor: {
             mode: plan.mode,
             directSolutionAllowed: plan.directSolutionAllowed,
-            strategy: plan.strategy,
             masterySummary: plan.masterySummary,
             anchorConceptIds: plan.anchorConceptIds,
           },
