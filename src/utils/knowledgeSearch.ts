@@ -1,9 +1,9 @@
-import { LESSONS } from '../data/lessons';
-import { BOOKS } from '../data/books';
-import { FORMS } from '../data/formulas';
-import { MATH_CONCEPTS, MATH_DOMAINS } from '../data/mathKnowledge';
-import { MATH_ATOMS, ONTOLOGY_KIND_META } from '../data/mathOntology';
-import { rankRetrieval, type RetrievalDocument } from './retrievalEngine';
+import { LESSONS } from '../data/lessons.ts';
+import { BOOKS } from '../data/books.ts';
+import { FORMS } from '../data/formulas.ts';
+import { MATH_CONCEPTS, MATH_DOMAINS } from '../data/mathKnowledge.ts';
+import { MATH_ATOMS, ONTOLOGY_KIND_META } from '../data/mathOntology.ts';
+import { rankRetrieval, type RetrievalDocument } from './retrievalEngine.ts';
 
 export type KnowledgeKind = 'atom' | 'concept' | 'lesson' | 'formula' | 'book';
 
