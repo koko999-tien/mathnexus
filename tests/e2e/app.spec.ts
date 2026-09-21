@@ -289,9 +289,14 @@ test('AI shows local fallback when the server is unavailable', async ({ page }) 
   await expect(page.locator('.chat-links').getByRole('link', { name: 'Số phức', exact: true })).toBeVisible();
 });
 
-test('AI renders a successful Gemini math response', async ({ page }) => {
-  await page.route('**/api/gemini', route => route.fulfill({ status: 200, json: { text: 'Đáp án là $2+2=4$.' } }));
+test('AI renders a successful Gemini math response', async ({ page, context }) => {
+  await context.route('**/api/gemini', route => route.fulfill({ status: 200, json: { text: 'Đáp án là $2+2=4$.' } }));
   await page.goto('/ai');
+  await page.evaluate(async () => {
+    const registrations = await navigator.serviceWorker?.getRegistrations?.() || [];
+    await Promise.all(registrations.map(registration => registration.unregister()));
+  });
+  await page.reload();
   await page.getByRole('textbox', { name: 'Câu hỏi cho trợ lý' }).fill('2+2 bằng mấy?');
   await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
   await expect(page.locator('.chat-message').last()).toContainText('Đáp án là');
