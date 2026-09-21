@@ -15,7 +15,7 @@ test('dashboard, theme and complete navigation work at every screen size', async
   if (isMobile) {
     await page.getByRole('button', { name: 'Mở menu' }).click();
     const drawer = page.getByRole('dialog', { name: 'MathNexus', exact: true });
-    await expect(drawer.getByRole('link')).toHaveCount(15);
+    await expect(drawer.getByRole('link')).toHaveCount(16);
     await drawer.getByRole('link', { name: 'Tiến độ học tập' }).click();
     await expect(drawer).not.toBeVisible();
   } else await page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link', { name: 'Tiến độ học tập' }).click();
@@ -403,6 +403,39 @@ test('calculus lab parses free expressions and computes core numerical calculus'
   await expect(page.getByRole('alert')).toBeVisible();
 });
 
+
+test('Infinite Math Canvas persists spatial objects and viewport locally', async ({ page }) => {
+  await page.goto('/canvas');
+  await expect(page.getByRole('heading', { name: 'Không gian toán học vô hạn' })).toBeVisible();
+  await expect(page.getByTestId('math-canvas-stage')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Thêm LaTeX' }).click();
+  await page.getByLabel('Nội dung LaTeX').fill('\\int_0^1 x^2\\,dx=\\frac{1}{3}');
+  await expect(page.locator('.canvas-latex-card .katex')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Thêm khái niệm' }).click();
+  await page.getByLabel('Khái niệm trên Canvas').selectOption('nbody-problem');
+  await expect(page.locator('.canvas-concept-card')).toContainText('Bài toán N-body');
+
+  await page.getByRole('button', { name: 'Thêm mô phỏng' }).click();
+  await expect(page.locator('.canvas-simulation-card')).toContainText('N-body Gravity Lab');
+  await expect(page.locator('.canvas-simulation-card').getByRole('link', { name: 'Mở mô phỏng' })).toHaveAttribute('href', '/simulations/gravity');
+
+  await page.getByRole('button', { name: 'Phóng to' }).click();
+  await expect(page.locator('.canvas-coordinate-hud')).toContainText('120%');
+
+  await page.getByLabel('Tên Math Canvas').fill('Không gian Giải tích & Vật lý');
+  await expect(page.getByRole('status')).toContainText('Đã lưu cục bộ');
+
+  await page.reload();
+  await expect(page.getByLabel('Tên Math Canvas')).toHaveValue('Không gian Giải tích & Vật lý');
+  await expect(page.locator('.canvas-latex-card .katex')).toBeVisible();
+  await expect(page.locator('.canvas-concept-card')).toContainText('Bài toán N-body');
+  await expect(page.locator('.canvas-simulation-card')).toContainText('N-body Gravity Lab');
+  await expect(page.locator('.canvas-coordinate-hud')).toContainText('120%');
+});
+
+
 test('notes, personal goals and exported backup are usable', async ({ page }) => {
   await page.goto('/notebook');
   await page.getByRole('textbox', { name: 'Nội dung sổ tay' }).fill('Đạo hàm của x² bằng 2x.');
@@ -487,7 +520,7 @@ test('AI auto mode sends prerequisite-aware discovery strategy', async ({ page }
 test('every route fits the viewport and has no client-side errors', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
-  for (const route of ['/library', '/map', '/cosmos', '/books', '/book/unknown', '/think', '/practice', '/graph', '/tools', '/calculus', '/simulations/gravity', '/formulas', '/formula/deMoivre', '/ai', '/notebook', '/progress', '/does-not-exist']) {
+  for (const route of ['/library', '/map', '/cosmos', '/books', '/book/unknown', '/think', '/practice', '/graph', '/tools', '/calculus', '/simulations/gravity', '/formulas', '/formula/deMoivre', '/ai', '/notebook', '/canvas', '/progress', '/does-not-exist']) {
     await page.goto(route);
     await expect(page.locator('main')).not.toBeEmpty();
     await expect(page.getByText('Đang mở góc học tập…')).not.toBeVisible();
@@ -513,6 +546,10 @@ test('PWA assets and unvisited lessons are available offline', async ({ page, co
   await expect(page.getByRole('heading', { name: 'Phương trình bậc hai', exact: true })).toBeVisible();
   await page.goto('/formulas');
   await expect(page.locator('.katex').first()).toBeVisible();
+  await page.goto('/canvas');
+  await expect(page.getByRole('heading', { name: 'Không gian toán học vô hạn' })).toBeVisible();
+  await page.getByRole('button', { name: 'Thêm văn bản' }).click();
+  await expect(page.locator('.canvas-object-text')).toBeVisible();
   await page.goto('/notebook');
   await page.getByRole('textbox', { name: 'Nội dung sổ tay' }).fill('Ghi chú khi không có mạng');
   await page.reload();
