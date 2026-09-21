@@ -287,11 +287,11 @@ Implemented proof of concept in:
 - One `THREE.InstancedMesh` renders all currently disclosed nodes.
 - One `THREE.BufferGeometry` renders all edges as batched `lineSegments`.
 - Domain and concept positions are deterministic so reloads do not reshuffle the user's mental map.
-- A force relaxation pass combines:
-  - pairwise repulsion,
-  - spring forces on graph relations,
-  - domain anchors.
-- Current CPU layout is intentionally small-data friendly. At thousands of nodes, replace the layout function with a Worker/Wasm Barnes-Hut solver while leaving the renderer unchanged.
+- Force layout now runs in a dedicated Web Worker and returns positions through a transferable `Float32Array`.
+- Repulsion uses a uniform 3D spatial hash so layout work is local rather than a naive all-pairs scan.
+- Spring forces still preserve graph relations and deterministic domain anchors.
+- Existing node positions are pinned when ontology micro-nodes expand, preserving spatial memory instead of reshuffling the universe.
+- If Worker startup/execution fails, the exact same deterministic layout engine runs as a synchronous fallback.
 - Clicking an instance uses `instanceId` to map GPU instance -> graph node.
 - GSAP animates the real Three camera to the selected node.
 - Concept selection expands ontology atoms as micro-nodes.
@@ -300,18 +300,21 @@ Implemented proof of concept in:
 ### Scale path
 
 ```text
-0-300 nodes:
-  main-thread deterministic force relaxation
+0-1,000 disclosed nodes:
+  Web Worker deterministic relaxation
+  spatial-hash local repulsion
+  transferable Float32Array positions
+  camera-radius disclosure in InstancedMesh
 
-300-5,000 nodes:
-  Web Worker + Barnes-Hut octree
-  transfer Float32Array positions
+1,000-10,000 graph nodes:
+  keep Worker boundary
+  upgrade repulsion to Barnes-Hut/octree when profiling proves necessary
+  progressive graph disclosure / LOD
 
-5,000-100,000 visible points:
-  InstancedMesh / Points
+10,000-100,000 stored knowledge entities:
   server-side graph culling
-  level-of-detail disclosure
-  GPU picking or spatial index
+  InstancedMesh / Points for visible subsets
+  GPU picking or worker spatial queries
 
 Physics simulation:
   WebGPU compute buffers, never React state per particle
@@ -424,23 +427,31 @@ PRIVACY RULES:
 
 ## Rollout plan
 
-### Phase 0 — Current PoC
+### Phase 0 — Completed foundation
 - R3F + Three renderer
 - InstancedMesh nodes
 - batched edges
-- deterministic force layout
 - GSAP fly-through
 - ontology expansion
 - KaTeX HUD
 - WebGPU capability indicator
 
-### Phase 1 — Spatial graph production hardening
+### Phase 1 — In progress / partially completed
+Completed:
 - graph-layout Web Worker
-- octree/Barnes-Hut
-- LOD/culling by camera distance
-- GPU/worker picking for very large scenes
+- transferable Float32Array position buffers
+- deterministic synchronous fallback
+- spatial-hash layout acceleration
+- camera-radius node disclosure
+- mobile quality profile
+- reduced-motion hardening
+- shared deterministic retrieval for Search/AI/Cosmos
+
+Still justified next:
 - persisted camera bookmarks
+- profiling-driven Barnes-Hut/octree only when graph size requires it
 - discovery events
+- worker/GPU picking for very large visible sets
 
 ### Phase 2 — WebGPU Math & Physics Lab
 - Wasm tensor/numerical kernel
