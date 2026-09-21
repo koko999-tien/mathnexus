@@ -1,5 +1,5 @@
-import { MATH_CONCEPTS, MATH_DOMAINS, type MathDomainId } from '../data/mathKnowledge';
-import { MATH_ATOMS, ONTOLOGY_KIND_META } from '../data/mathOntology';
+import { MATH_CONCEPTS, MATH_DOMAINS, type MathDomainId } from '../data/mathKnowledge.ts';
+import { MATH_ATOMS, ONTOLOGY_KIND_META } from '../data/mathOntology.ts';
 
 export type CosmosNodeKind = 'domain' | 'concept' | 'atom';
 export type CosmosEdgeKind = 'contains' | 'prerequisite' | 'decomposes' | 'depends';
