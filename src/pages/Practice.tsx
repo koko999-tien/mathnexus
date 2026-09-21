@@ -54,6 +54,7 @@ export default function Practice() {
     const next = new URLSearchParams(params);
     if (nextMode === 'review' || nextMode === 'goal') next.set('mode', nextMode);
     else next.delete('mode');
+    if (nextMode === 'goal') next.delete('concept');
     setParams(next, { replace: true });
   };
 
