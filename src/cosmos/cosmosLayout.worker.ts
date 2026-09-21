@@ -24,5 +24,3 @@ self.onmessage = (event: MessageEvent<LayoutRequest>) => {
     });
   }
 };
-
-export {};
