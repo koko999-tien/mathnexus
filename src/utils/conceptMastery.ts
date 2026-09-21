@@ -38,17 +38,18 @@ export function conceptMastery(progress: ProgressData, conceptId: string): Conce
     : 1;
 
   const evidenceValues: Array<{ value: number; weight: number }> = [];
-  if (lessonIds.length) evidenceValues.push({ value: completedLessons / lessonIds.length * 100, weight: 0.45 });
+  const hasDirectEvidence = completedLessons > 0 || attempts > 0;
+  if (lessonIds.length && completedLessons > 0) evidenceValues.push({ value: completedLessons / lessonIds.length * 100, weight: 0.45 });
   if (questionIds.length && attempts) {
     const breadth = attemptedQuestionIds.length / questionIds.length;
     const repetition = Math.min(1, attempts / Math.max(2, questionIds.length * 2));
     const practiceValue = (accuracy || 0) * (0.7 + 0.3 * breadth);
     evidenceValues.push({ value: practiceValue, weight: 0.45 + repetition * 0.1 });
   }
-  if (concept.prerequisites.length) evidenceValues.push({ value: prerequisiteCoverage * 100, weight: 0.15 });
+  if (hasDirectEvidence && concept.prerequisites.length) evidenceValues.push({ value: prerequisiteCoverage * 100, weight: 0.15 });
 
   const weightSum = evidenceValues.reduce((sum, item) => sum + item.weight, 0);
-  const score = weightSum
+  const score = hasDirectEvidence && weightSum
     ? clamp(evidenceValues.reduce((sum, item) => sum + item.value * item.weight, 0) / weightSum)
     : null;
 
@@ -58,8 +59,8 @@ export function conceptMastery(progress: ProgressData, conceptId: string): Conce
     confidence += attemptedQuestionIds.length / questionIds.length * 25;
     confidence += Math.min(1, attempts / Math.max(2, questionIds.length * 3)) * 25;
   }
-  if (concept.prerequisites.length) confidence += prerequisiteCoverage * 5;
-  confidence = clamp(confidence);
+  if (hasDirectEvidence && concept.prerequisites.length) confidence += prerequisiteCoverage * 5;
+  confidence = hasDirectEvidence ? clamp(confidence) : 0;
 
   let state: MasteryState = 'unassessed';
   if (score !== null) {
