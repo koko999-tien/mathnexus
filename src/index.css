@@ -635,3 +635,62 @@ svg { flex-shrink: 0; }
   .analysis-row { grid-template-columns: 1fr; gap: 3px; }
   .analysis-row strong { text-align: left; }
 }
+
+
+/* Calculus lab */
+.calculus-layout { display: grid; grid-template-columns: minmax(300px, .82fr) minmax(0, 1.45fr); gap: 16px; align-items: start; }
+.calculus-input-panel { position: sticky; top: 18px; }
+.calculus-panel-title { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 16px; }
+.calculus-panel-title > svg { flex-shrink: 0; color: var(--color-accent); }
+.calculus-panel-title strong { display: block; font-size: 12px; }
+.calculus-panel-title span { display: block; margin-top: 2px; color: var(--color-muted); font-size: 9px; line-height: 1.45; }
+.expression-examples { display: flex; flex-wrap: wrap; gap: 7px; margin: 10px 0 13px; }
+.expression-examples button { padding: 6px 9px; border: 1px solid var(--color-line); border-radius: 999px; background: var(--color-bg); color: var(--color-muted); font: inherit; font-size: 9px; cursor: pointer; transition: border-color .18s, color .18s, background .18s; }
+.expression-examples button:hover { border-color: var(--color-sage); color: var(--color-ink); background: var(--color-panel); }
+.expression-status { display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; gap: 7px; padding: 10px 11px; border: 1px solid #dbe8ce; border-radius: 9px; background: #edf4e4; color: #557146; font-size: 9px; }
+.expression-status code { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; color: inherit; }
+.calculus-control-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; margin-top: 16px; }
+.calculus-control-grid .field { margin: 0; }
+.syntax-guide { margin-top: 16px; padding: 12px; border: 1px dashed var(--color-line); border-radius: 10px; background: var(--color-bg); }
+.syntax-guide strong { display: block; font-size: 10px; }
+.syntax-guide p { margin: 5px 0 0; color: var(--color-muted); font-size: 9px; line-height: 1.6; }
+.syntax-guide code { color: var(--color-accent); }
+
+.calculus-results { min-width: 0; }
+.calculus-metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
+.calculus-metric { min-width: 0; display: flex; align-items: flex-start; gap: 10px; padding: 14px; border: 1px solid var(--color-line); border-radius: 11px; background: var(--color-panel); }
+.calculus-metric > div { min-width: 0; }
+.calculus-metric small { display: block; color: var(--color-muted); font-size: 8px; text-transform: uppercase; letter-spacing: .6px; }
+.calculus-metric strong { display: block; margin-top: 5px; font-size: 18px; line-height: 1.15; overflow-wrap: anywhere; }
+.calculus-metric p { margin: 5px 0 0; color: var(--color-muted); font-size: 8px; line-height: 1.4; }
+.calculus-detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.calculus-result-panel { min-width: 0; }
+.calculus-equation { margin: 2px 0 12px; padding: 13px; border: 1px solid var(--color-line); border-radius: 10px; background: var(--color-bg); color: var(--color-accent); font-size: 13px; font-weight: 650; line-height: 1.55; overflow-wrap: anywhere; }
+.calculus-empty { margin: 0; padding: 16px; border: 1px dashed var(--color-line); border-radius: 10px; background: var(--color-bg); color: var(--color-muted); font-size: 10px; line-height: 1.6; }
+.calculus-samples { margin-top: 12px; }
+.sample-table { overflow: hidden; border: 1px solid var(--color-line); border-radius: 10px; }
+.sample-row { display: grid; grid-template-columns: 1fr 1fr; }
+.sample-row + .sample-row { border-top: 1px solid var(--color-line); }
+.sample-row > span, .sample-row > strong { padding: 9px 12px; font-size: 10px; }
+.sample-row > strong { border-left: 1px solid var(--color-line); text-align: right; }
+.sample-head { background: var(--color-bg); color: var(--color-muted); text-transform: uppercase; letter-spacing: .55px; }
+.sample-head > span:last-child { border-left: 1px solid var(--color-line); text-align: right; }
+
+.dark .expression-status { background: #2c402a; border-color: #3f583a; color: #bdd7a6; }
+
+@media (max-width: 1180px) {
+  .calculus-layout { grid-template-columns: 1fr; }
+  .calculus-input-panel { position: static; }
+}
+@media (max-width: 900px) {
+  .calculus-metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 700px) {
+  .calculus-detail-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 520px) {
+  .calculus-control-grid { grid-template-columns: 1fr; }
+  .calculus-metric-grid { grid-template-columns: 1fr; }
+  .expression-status { grid-template-columns: auto 1fr; }
+  .expression-status code { grid-column: 1 / -1; text-align: left; }
+}
