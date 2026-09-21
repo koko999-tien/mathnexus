@@ -39,9 +39,8 @@ export default defineConfig({
       ],
       runtimeCaching: [
         {
-          urlPattern: ({ url }) =>
-            /\/(?:MathCosmos|react-three-fiber\.esm)-[^/]+\.js$/.test(url.pathname),
-          handler: 'StaleWhileRevalidate',
+          urlPattern: /\/assets\/(?:MathCosmos|react-three-fiber\.esm)-[^/]+\.js$/,
+          handler: 'CacheFirst',
           options: {
             cacheName: 'mathnexus-cosmos-runtime-v1',
             cacheableResponse: { statuses: [0, 200] },
