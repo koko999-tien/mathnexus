@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { Canvas, type ThreeEvent, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Stars } from '@react-three/drei';
-import gsap from 'gsap';
 import * as THREE from 'three';
+import { OrbitControls as ThreeOrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { SpatialHash3D } from './spatialIndex';
 import type { CosmosEdge, CosmosNode } from './cosmosGraph';
 
@@ -39,30 +38,123 @@ export function MathCosmosGraph({
       <pointLight position={[24, 28, 20]} intensity={95} distance={120} decay={2} color="#b8d9ff" />
       {!mobile && <pointLight position={[-24, -16, -18]} intensity={70} distance={100} decay={2} color="#ffb88c" />}
 
-      <Stars
+      <StarField
+        count={mobile ? 850 : 2200}
         radius={115}
         depth={55}
-        count={mobile ? 850 : 2200}
-        factor={mobile ? 1.6 : 2.2}
-        saturation={0.15}
-        fade
-        speed={reduceMotion ? 0 : 0.18}
+        size={mobile ? 0.34 : 0.46}
+        reduceMotion={reduceMotion}
       />
       <EdgeField nodes={nodes} edges={edges} />
       <NodeInstances nodes={nodes} selectedId={selectedId} onSelect={onSelect} quality={quality} />
       {selected && <SelectionHalo node={selected} reduceMotion={reduceMotion} />}
       <CameraFlyRig selected={selected} reduceMotion={reduceMotion} />
-      <OrbitControls
-        makeDefault
-        enableDamping
-        dampingFactor={0.055}
-        enablePan={false}
-        minDistance={4}
-        maxDistance={125}
-        target={selected ? selected.position : [0, 0, 0]}
-      />
+      <LightweightOrbitControls target={selected ? selected.position : [0, 0, 0]} />
     </Canvas>
   </div>;
+}
+
+function seededRandom(seed: number) {
+  let state = seed >>> 0;
+  return () => {
+    state = (1664525 * state + 1013904223) >>> 0;
+    return state / 4294967296;
+  };
+}
+
+function StarField({
+  count,
+  radius,
+  depth,
+  size,
+  reduceMotion,
+}: {
+  count: number;
+  radius: number;
+  depth: number;
+  size: number;
+  reduceMotion: boolean;
+}) {
+  const ref = useRef<THREE.Points>(null);
+  const positions = useMemo(() => {
+    const random = seededRandom(0x4d415448);
+    const values = new Float32Array(count * 3);
+    const innerRadius = Math.max(8, radius - depth);
+
+    for (let index = 0; index < count; index += 1) {
+      const u = random();
+      const v = random();
+      const distance = innerRadius + random() * depth;
+      const theta = 2 * Math.PI * u;
+      const phi = Math.acos(2 * v - 1);
+      const offset = index * 3;
+
+      values[offset] = distance * Math.sin(phi) * Math.cos(theta);
+      values[offset + 1] = distance * Math.cos(phi);
+      values[offset + 2] = distance * Math.sin(phi) * Math.sin(theta);
+    }
+
+    return values;
+  }, [count, depth, radius]);
+
+  useFrame((_, delta) => {
+    if (!ref.current || reduceMotion) return;
+    ref.current.rotation.y += delta * 0.006;
+    ref.current.rotation.x += delta * 0.0015;
+  });
+
+  return <points ref={ref} frustumCulled={false}>
+    <bufferGeometry>
+      <bufferAttribute attach="attributes-position" args={[positions, 3]} />
+    </bufferGeometry>
+    <pointsMaterial
+      color="#d8e7ff"
+      size={size}
+      sizeAttenuation
+      transparent
+      opacity={0.72}
+      depthWrite={false}
+      blending={THREE.AdditiveBlending}
+    />
+  </points>;
+}
+
+function LightweightOrbitControls({
+  target,
+}: {
+  target: readonly [number, number, number];
+}) {
+  const { camera, gl } = useThree();
+  const controlsRef = useRef<ThreeOrbitControls | null>(null);
+
+  useEffect(() => {
+    const controls = new ThreeOrbitControls(camera, gl.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.055;
+    controls.enablePan = false;
+    controls.minDistance = 4;
+    controls.maxDistance = 125;
+    controls.target.set(...target);
+    controls.update();
+    controlsRef.current = controls;
+
+    return () => {
+      controls.dispose();
+      controlsRef.current = null;
+    };
+  }, [camera, gl]);
+
+  useEffect(() => {
+    const controls = controlsRef.current;
+    if (!controls) return;
+    controls.target.set(...target);
+  }, [target]);
+
+  useFrame(() => {
+    controlsRef.current?.update();
+  });
+
+  return null;
 }
 
 function NodeInstances({
@@ -202,9 +294,19 @@ function SelectionHalo({ node, reduceMotion }: { node: CosmosNode; reduceMotion:
 
 function CameraFlyRig({ selected, reduceMotion }: { selected?: CosmosNode; reduceMotion: boolean }) {
   const { camera } = useThree();
+  const animationRef = useRef<{
+    from: THREE.Vector3;
+    to: THREE.Vector3;
+    target: THREE.Vector3;
+    elapsed: number;
+    duration: number;
+  } | null>(null);
 
   useEffect(() => {
-    if (!selected) return;
+    if (!selected) {
+      animationRef.current = null;
+      return;
+    }
 
     const target = new THREE.Vector3(...selected.position);
     const direction = camera.position.clone().sub(target);
@@ -213,21 +315,38 @@ function CameraFlyRig({ selected, reduceMotion }: { selected?: CosmosNode; reduc
 
     const distance = selected.kind === 'domain' ? 12 : selected.kind === 'concept' ? 7.5 : 4.2;
     const destination = target.clone().add(direction.multiplyScalar(distance));
-    const duration = reduceMotion ? 0.01 : selected.kind === 'domain' ? 1.55 : 1.15;
 
-    const timeline = gsap.timeline();
-    timeline.to(camera.position, {
-      x: destination.x,
-      y: destination.y,
-      z: destination.z,
-      duration,
-      ease: 'power3.inOut',
-      onUpdate: () => camera.lookAt(target),
-      overwrite: true,
-    });
+    if (reduceMotion) {
+      camera.position.copy(destination);
+      camera.lookAt(target);
+      animationRef.current = null;
+      return;
+    }
 
-    return () => { timeline.kill(); };
+    animationRef.current = {
+      from: camera.position.clone(),
+      to: destination,
+      target,
+      elapsed: 0,
+      duration: selected.kind === 'domain' ? 1.55 : 1.15,
+    };
   }, [camera, reduceMotion, selected]);
+
+  useFrame((_, delta) => {
+    const animation = animationRef.current;
+    if (!animation) return;
+
+    animation.elapsed = Math.min(animation.duration, animation.elapsed + delta);
+    const progress = animation.duration > 0 ? animation.elapsed / animation.duration : 1;
+    const eased = progress < 0.5
+      ? 4 * progress * progress * progress
+      : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+
+    camera.position.lerpVectors(animation.from, animation.to, eased);
+    camera.lookAt(animation.target);
+
+    if (progress >= 1) animationRef.current = null;
+  });
 
   return null;
 }
