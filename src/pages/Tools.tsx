@@ -1,8 +1,10 @@
 import { useId, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Calculator, Grid2X2, Sigma, TrendingUp } from 'lucide-react';
+import { Calculator, Grid2X2, Gauge, ShieldCheck, Sigma, TrendingUp } from 'lucide-react';
 import { gcd, lcm, isPrime, nCr, nPr, solveQuadratic, formatNumber } from '../utils/math';
 import { arithmeticSequence, descriptiveStatistics, geometricSequence, invertMatrix2, parseNumberList, solveLinearSystem2, vector2 } from '../utils/advancedMath';
+import { formatHighPrecision, highPrecisionArithmeticSequence, highPrecisionGeometricSequence, highPrecisionLinearSystem2, highPrecisionMatrix2Inverse, highPrecisionPercentage, highPrecisionQuadratic } from '../utils/precisionMath';
+import { getPrecisionPolicy, type MathPrecisionMode } from '../utils/precisionPolicy';
 
 const real = (value: string) => value.trim() === '' ? NaN : Number(value);
 const integer = (value: number) => Number.isSafeInteger(value);
@@ -21,6 +23,7 @@ export default function Tools() {
   const [sequenceKind, setSequenceKind] = useState<'arithmetic' | 'geometric'>('arithmetic');
   const [sequence, setSequence] = useState(['3', '2', '5']);
   const [vectors, setVectors] = useState(['1', '2', '3', '4']);
+  const [precisionMode, setPrecisionMode] = useState<Exclude<MathPrecisionMode, 'visual'>>('standard');
 
   const [ga, gb] = gcdValues.map(real);
   const [pa, pb] = percent.map(real);
@@ -41,9 +44,26 @@ export default function Tools() {
   const stats = statsValues ? descriptiveStatistics(statsValues) : null;
   const sequenceResult = sequenceKind === 'arithmetic' ? arithmeticSequence(s1, sdq, sn) : geometricSequence(s1, sdq, sn);
   const vectorResult = vector2(vax, vay, vbx, vby);
+  const highPrecision = precisionMode === 'highPrecision';
+  const precisionPolicy = getPrecisionPolicy(precisionMode);
+  const precisePercent = highPrecision ? highPrecisionPercentage(percent[0], percent[1]) : null;
+  const preciseQuadratic = highPrecision ? highPrecisionQuadratic(quad[0], quad[1], quad[2]) : null;
+  const preciseLinear = highPrecision ? highPrecisionLinearSystem2(linear[0], linear[1], linear[2], linear[3], linear[4], linear[5]) : null;
+  const preciseMatrix = highPrecision ? highPrecisionMatrix2Inverse(matrix[0], matrix[1], matrix[2], matrix[3]) : null;
+  const preciseSequence = highPrecision
+    ? sequenceKind === 'arithmetic'
+      ? highPrecisionArithmeticSequence(sequence[0], sequence[1], Number(sequence[2]))
+      : highPrecisionGeometricSequence(sequence[0], sequence[1], Number(sequence[2]))
+    : null;
 
   return <section className="page-enter">
     <div className="page-header"><p className="eyebrow">MATH WORKBENCH</p><h1>Công cụ toán học</h1><p>Tính, kiểm chứng và phân tích nhiều lớp toán học trong cùng một nơi — từ số học đến đại số tuyến tính, thống kê và vector.</p></div>
+
+    <div className="panel precision-control" aria-label="Chính sách độ chính xác số">
+      <div className="precision-control-copy"><span className="small-icon green"><ShieldCheck size={17} /></span><div><strong>Numerical Trust Layer</strong><small>{precisionPolicy.description}</small></div></div>
+      <label className="precision-mode-field"><span>Chế độ</span><select aria-label="Chế độ độ chính xác" value={precisionMode} onChange={event => setPrecisionMode(event.target.value as Exclude<MathPrecisionMode, 'visual'>)}><option value="standard">Standard · Float64</option><option value="highPrecision">High Precision · Decimal 50</option></select></label>
+      <div className="precision-policy-meta"><Gauge size={14} /><span><strong>{precisionPolicy.arithmetic}</strong><small>Áp dụng cho %, phương trình, hệ 2×2, ma trận và cấp số.</small></span></div>
+    </div>
 
     <div className="tool-section-heading"><div><p className="eyebrow">SỐ HỌC & ĐẠI SỐ</p><h2>Nền tảng tính toán</h2></div><span>6 công cụ</span></div>
     <div className="tools-grid">
