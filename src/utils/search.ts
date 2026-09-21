@@ -72,7 +72,7 @@ export function scoreSearch(fields: SearchFields, query: string) {
     else if (keywords.includes(token)) tokenScore = Math.max(tokenScore, 12);
 
     if (detail.includes(token)) tokenScore = Math.max(tokenScore, 9);
-    if (content.includes(token)) tokenScore = Math.max(tokenScore, 5);
+    if (content.includes(token)) tokenScore = Math.max(tokenScore, /^\d+$/.test(token) ? 1 : 5);
 
     if (tokenScore > 0) {
       matched += 1;
@@ -81,6 +81,7 @@ export function scoreSearch(fields: SearchFields, query: string) {
   }
 
   if (!matched) return 0;
+  if (tokens.length >= 3 && matched < 2) return 0;
 
   const coverage = matched / tokens.length;
   score += Math.round(coverage * 35);
@@ -92,5 +93,12 @@ export function scoreSearch(fields: SearchFields, query: string) {
 }
 
 export function matchesSearch(text: string, query: string) {
-  return scoreSearch({ title: text }, query) > 0;
+  const normalizedText = normalizeSearch(text);
+  const normalizedQuery = normalizeSearch(query);
+  if (!normalizedQuery) return true;
+
+  const tokens = tokenizeSearch(query);
+  if (!tokens.length) return normalizedText.includes(normalizedQuery);
+
+  return tokens.every(token => normalizedText.includes(token));
 }
