@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { PointerEvent as ReactPointerEvent, WheelEvent as ReactWheelEvent } from 'react';
+import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode, WheelEvent as ReactWheelEvent } from 'react';
 import { Link } from 'react-router-dom';
 import {
   BookOpen, CircleDot, Download, Hand, Layers3, Link as LinkIcon, Maximize2,
@@ -52,6 +52,7 @@ export default function MathCanvas() {
   const [saved, setSaved] = useState(true);
   const [arrowStart, setArrowStart] = useState<CanvasPoint | null>(null);
   const stageRef = useRef<HTMLDivElement>(null);
+  const latestCanvasRef = useRef(canvas);
   const panRef = useRef<{ pointerId: number; x: number; y: number; vx: number; vy: number } | null>(null);
   const dragRef = useRef<{
     pointerId: number;
@@ -61,6 +62,7 @@ export default function MathCanvas() {
   const drawRef = useRef<{ pointerId: number; id: string; points: CanvasPoint[] } | null>(null);
 
   useEffect(() => {
+    latestCanvasRef.current = canvas;
     setSaved(false);
     const timer = window.setTimeout(() => {
       setSaved(saveCanvasState({ ...canvas, updatedAt: now() }).ok);
@@ -69,8 +71,9 @@ export default function MathCanvas() {
   }, [canvas]);
 
   useEffect(() => () => {
-    saveCanvasState({ ...canvas, updatedAt: now() });
-  }, [canvas]);
+    const latest = latestCanvasRef.current;
+    saveCanvasState({ ...latest, updatedAt: now() });
+  }, []);
 
   const selected = useMemo(
     () => canvas.objects.filter(object => selectedIds.includes(object.id)),
@@ -215,7 +218,7 @@ export default function MathCanvas() {
     try { event.currentTarget.releasePointerCapture(event.pointerId); } catch { /* capture may already be released */ }
   };
 
-  const beginObjectDrag = (event: ReactPointerEvent<HTMLElement>, object: MathCanvasObject) => {
+  const beginObjectDrag = (event: ReactPointerEvent<Element>, object: MathCanvasObject) => {
     if (tool !== 'select' || event.button !== 0) return;
     event.stopPropagation();
 
@@ -354,7 +357,7 @@ export default function MathCanvas() {
           '--canvas-zoom': canvas.viewport.zoom,
           '--canvas-grid-x': canvas.viewport.x + 'px',
           '--canvas-grid-y': canvas.viewport.y + 'px',
-        } as React.CSSProperties}
+        } as CSSProperties}
       >
         <div
           className="math-canvas-world"
@@ -368,13 +371,30 @@ export default function MathCanvas() {
               </marker>
             </defs>
             {canvas.objects.map(object => {
+              const selectVector = (event: ReactPointerEvent<Element>) => {
+                event.stopPropagation();
+                if (event.shiftKey) {
+                  setSelectedIds(current => current.includes(object.id)
+                    ? current.filter(id => id !== object.id)
+                    : [...current, object.id]
+                  );
+                  return;
+                }
+                if (!selectedIds.includes(object.id)) setSelectedIds([object.id]);
+                beginObjectDrag(event, object);
+              };
+
               if (object.type === 'stroke') {
                 const d = object.points.map((point, index) => `${index ? 'L' : 'M'} ${point.x} ${point.y}`).join(' ');
-                return <path key={object.id} d={d} className={selectedIds.includes(object.id) ? 'canvas-stroke selected' : 'canvas-stroke'} />;
+                return <g key={object.id} className={selectedIds.includes(object.id) ? 'canvas-stroke-group selected' : 'canvas-stroke-group'}>
+                  <path d={d} className="canvas-stroke" />
+                  <path d={d} className="canvas-vector-hit" onPointerDown={selectVector} />
+                </g>;
               }
               if (object.type === 'arrow') {
                 return <g key={object.id} className={selectedIds.includes(object.id) ? 'canvas-arrow selected' : 'canvas-arrow'}>
                   <line x1={object.x} y1={object.y} x2={object.x2} y2={object.y2} markerEnd="url(#canvas-arrow-head)" />
+                  <line x1={object.x} y1={object.y} x2={object.x2} y2={object.y2} className="canvas-vector-hit" onPointerDown={selectVector} />
                   {object.label && <text x={(object.x + object.x2) / 2} y={(object.y + object.y2) / 2 - 7}>{object.label}</text>}
                 </g>;
               }
@@ -456,7 +476,7 @@ export default function MathCanvas() {
   </section>;
 }
 
-function ToolButton({ label, icon, active, onClick }: { label: string; icon: React.ReactNode; active?: boolean; onClick: () => void }) {
+function ToolButton({ label, icon, active, onClick }: { label: string; icon: ReactNode; active?: boolean; onClick: () => void }) {
   return <button type="button" className={'canvas-icon-button ' + (active ? 'active' : '')} onClick={onClick} aria-label={label} title={label}>{icon}</button>;
 }
 
