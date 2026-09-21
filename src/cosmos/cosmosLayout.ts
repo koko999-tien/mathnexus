@@ -139,7 +139,7 @@ export function layoutCosmosPositions(
   }
 
   const output = new Float32Array(nodes.length * 3);
-  nodes.forEach((node, index) => {
+  nodes.forEach((_node, index) => {
     const position = points[index].position;
     output[index * 3] = position[0];
     output[index * 3 + 1] = position[1];
