@@ -38,6 +38,18 @@ test('search without accents opens lessons and completion survives reload', asyn
   await expect(page.locator('.stat-card').filter({ hasText: 'Ngày học liên tiếp' })).toContainText('1');
 });
 
+test('natural-language search ranks relevant knowledge and can hand the question to AI', async ({ page }) => {
+  const query = 'mình đang yếu đạo hàm nên học gì trước';
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Tìm kiếm', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('textbox').fill(query);
+  await expect(dialog.locator('.search-result').first()).toContainText('Đạo hàm');
+  await dialog.getByRole('link', { name: new RegExp('Hỏi MathNexus AI') }).click();
+  await expect(page).toHaveURL(/\/ai\?q=/);
+  await expect(page.getByRole('textbox', { name: 'Câu hỏi cho trợ lý' })).toHaveValue(query);
+});
+
 test('library filters have a useful empty state and can be cleared', async ({ page }) => {
   await page.goto('/library');
   await page.getByRole('textbox', { name: 'Tìm bài học' }).fill('khongcotrongthuvien');
@@ -108,13 +120,19 @@ test('notes, personal goals and exported backup are usable', async ({ page }) =>
 });
 
 test('AI distinguishes server responses from local fallback', async ({ page }) => {
-  await page.route('**/api/gemini', route => route.fulfill({ status: 503, json: { code: 'MISSING_API_KEY' } }));
+  await page.route('**/api/gemini', async route => {
+    const requestBody = route.request().postDataJSON() as { message?: string };
+    if (requestBody.message === '2+2 bằng mấy?') {
+      return route.fulfill({ status: 200, json: { text: 'Đáp án là $2+2=4$.' } });
+    }
+    return route.fulfill({ status: 503, json: { code: 'MISSING_API_KEY' } });
+  });
+
   await page.goto('/ai');
   await page.getByRole('button', { name: 'Số phức là gì?' }).click();
   await expect(page.getByText('Tra cứu cục bộ · Không phải câu trả lời từ Gemini')).toBeVisible();
   await expect(page.locator('.chat-links').getByRole('link', { name: 'Số phức', exact: true })).toBeVisible();
-  await page.unroute('**/api/gemini');
-  await page.route('**/api/gemini', route => route.fulfill({ status: 200, json: { text: 'Đáp án là $2+2=4$.' } }));
+
   await page.getByRole('textbox', { name: 'Câu hỏi cho trợ lý' }).fill('2+2 bằng mấy?');
   await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
   await expect(page.locator('.chat-message').last()).toContainText('Đáp án là');
