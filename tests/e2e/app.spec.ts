@@ -142,7 +142,8 @@ test('N-body gravity lab runs a real CPU simulation with deterministic controls'
   await expect(canvas).toBeVisible();
   await expect(canvas).toHaveAttribute('data-backend', 'cpu');
   await expect(canvas).toHaveAttribute('data-quality', info.project.name === 'desktop-chromium' ? 'desktop' : 'mobile');
-  await expect(page.locator('.gravity-runtime')).toContainText('CPU engine · Float64');
+  await expect(page.locator('.gravity-runtime')).toContainText('Standard · IEEE-754 Float64 · CPU simulation state');
+  await expect(page.locator('.gravity-runtime')).toContainText('Visual · Float32 / GPU-oriented display buffers · Float32 render buffer');
   await expect(page.getByText('Energy drift', { exact: true })).toBeVisible();
 
   await page.getByRole('button', { name: 'Tạm dừng mô phỏng' }).click();
@@ -359,6 +360,25 @@ test('advanced math workbench solves linear algebra, statistics and sequences', 
   await sequence.getByLabel('Loại cấp số').selectOption('geometric');
   await expect(sequence.locator('output')).toContainText('uₙ = 48');
   await expect(sequence.locator('output')).toContainText('Sₙ = 93');
+
+  await page.getByLabel('Chế độ độ chính xác').selectOption('highPrecision');
+  await expect(page.getByText('decimal.js · 50 significant digits')).toBeVisible();
+
+  const percent = page.getByRole('region', { name: 'Tỷ lệ phần trăm' });
+  await percent.getByLabel('a', { exact: true }).fill('0.1');
+  await percent.getByLabel('b', { exact: true }).fill('0.3');
+  await expect(percent.locator('output')).toContainText('33.333333333333333333333333333333');
+  await expect(percent.locator('.precision-result-tag')).toContainText('High Precision');
+
+  await system.getByLabel('a₁').fill('1');
+  await system.getByLabel('b₁').fill('1');
+  await system.getByLabel('c₁').fill('2');
+  await system.getByLabel('a₂').fill('1');
+  await system.getByLabel('b₂').fill('1.0000000000000000000000001');
+  await system.getByLabel('c₂').fill('2.0000000000000000000000001');
+  await expect(system.locator('output')).toContainText('det = 1e-25');
+  await expect(system.locator('output')).toContainText('x = 1');
+  await expect(system.locator('output')).toContainText('y = 1');
 });
 
 test('function laboratory exposes mathematical analysis and tangent lines', async ({ page }) => {
@@ -382,6 +402,8 @@ test('function laboratory exposes mathematical analysis and tangent lines', asyn
 test('calculus lab parses free expressions and computes core numerical calculus', async ({ page }) => {
   await page.goto('/calculus');
   await expect(page.getByRole('heading', { name: 'Phòng thí nghiệm giải tích' })).toBeVisible();
+  await expect(page.locator('.precision-page-disclosure')).toContainText('Standard · IEEE-754 Float64');
+  await expect(page.locator('.precision-page-disclosure')).toContainText('giải tích số');
 
   await page.getByLabel('Biểu thức f(x)').fill('x^2 - 2');
   await page.getByLabel('Điểm khảo sát x₀').fill('1.5');
