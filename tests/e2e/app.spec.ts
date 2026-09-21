@@ -196,6 +196,47 @@ test('interactive graph draws immediately and validates math inputs', async ({ p
   await expect(combination.locator('output')).toContainText('0 ≤ k ≤ n ≤ 170');
 });
 
+
+test('advanced math workbench solves linear algebra, statistics and sequences', async ({ page }) => {
+  await page.goto('/tools');
+
+  const system = page.getByRole('region', { name: 'Hệ phương trình 2×2' });
+  await expect(system.locator('output')).toContainText('x = 2');
+  await expect(system.locator('output')).toContainText('y = 3');
+
+  const matrix = page.getByRole('region', { name: 'Ma trận 2×2' });
+  await expect(matrix.locator('output')).toContainText('det(A) = 5');
+
+  const stats = page.getByRole('region', { name: 'Thống kê mô tả' });
+  await stats.getByLabel('Dữ liệu').fill('1, 2, 3, 4');
+  await expect(stats.locator('output')).toContainText('trung bình = 2,5');
+  await expect(stats.locator('output')).toContainText('trung vị = 2,5');
+
+  const sequence = page.getByRole('region', { name: 'Cấp số' });
+  await expect(sequence.locator('output')).toContainText('uₙ = 11');
+  await expect(sequence.locator('output')).toContainText('Sₙ = 35');
+  await sequence.getByLabel('Loại cấp số').selectOption('geometric');
+  await expect(sequence.locator('output')).toContainText('uₙ = 48');
+  await expect(sequence.locator('output')).toContainText('Sₙ = 93');
+});
+
+test('function laboratory exposes mathematical analysis and tangent lines', async ({ page }) => {
+  await page.goto('/graph');
+  await expect(page.locator('.function-analysis')).toContainText('16');
+  await expect(page.locator('.function-analysis')).toContainText('(1; -4)');
+  await expect(page.locator('.function-analysis')).toContainText('-1, 3');
+  await expect(page.locator('[data-testid="tangent-path"]')).toHaveAttribute('d', /^M/);
+  await expect(page.locator('.graph-probe')).toContainText('f′(x) =');
+  await expect(page.locator('.graph-probe')).toContainText('2');
+
+  await page.getByLabel('Họ hàm').selectOption('log');
+  await page.getByLabel('Hệ số b', { exact: true }).fill('1');
+  await page.getByLabel('Giá trị x').fill('1');
+  await expect(page.locator('.function-analysis')).toContainText('Tiệm cận đứng');
+  await expect(page.locator('.function-analysis')).toContainText('x = 0');
+  await expect(page.locator('[data-testid="tangent-path"]')).toHaveAttribute('d', /^M/);
+});
+
 test('notes, personal goals and exported backup are usable', async ({ page }) => {
   await page.goto('/notebook');
   await page.getByRole('textbox', { name: 'Nội dung sổ tay' }).fill('Đạo hàm của x² bằng 2x.');
