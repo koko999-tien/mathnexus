@@ -56,7 +56,7 @@ test('dashboard recommendations and knowledge map adapt to learning history', as
 test('knowledge map exposes prerequisite depth, gaps and learning paths', async ({ page }) => {
   await page.goto('/map?concept=derivative-definition');
   await expect(page.getByRole('heading', { name: 'Bản đồ cấu trúc toán học' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Định nghĩa đạo hàm' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Định nghĩa đạo hàm', exact: true })).toBeVisible();
 
   const prerequisites = page.locator('.concept-relations').filter({ hasText: 'Cần biết trước' });
   await expect(prerequisites).toBeVisible();
@@ -65,8 +65,31 @@ test('knowledge map exposes prerequisite depth, gaps and learning paths', async 
   await expect(page.locator('.learning-path-card')).toContainText('Đường học tới “Định nghĩa đạo hàm”');
 
   await prerequisites.getByRole('button', { name: 'Tính liên tục', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Tính liên tục' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Tính liên tục', exact: true })).toBeVisible();
   await expect(page.getByText('Nút kiến thức chưa có tài nguyên riêng')).toBeVisible();
+});
+
+
+
+test('deep ontology exposes definitions, misconceptions and evidence mastery', async ({ page }) => {
+  await page.goto('/map?concept=derivative-definition');
+  await expect(page.getByText('DEEP ONTOLOGY')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Bên trong “Định nghĩa đạo hàm”' })).toBeVisible();
+  await expect(page.getByText('Mức thành thạo theo bằng chứng')).toBeVisible();
+  await expect(page.getByText('Độ sâu nội dung')).toBeVisible();
+
+  await page.locator('.ontology-atom-list').getByRole('button', { name: /Liên tục không suy ra khả vi/ }).click();
+  await expect(page.locator('.atom-inspector')).toContainText('Liên tục không suy ra khả vi');
+  await expect(page.locator('.atom-inspector')).toContainText('Đây là lỗi tư duy cần chủ động kiểm tra');
+
+  await page.locator('.ontology-atom-list').getByRole('button', { name: /Đạo hàm từ định nghĩa/ }).click();
+  await expect(page.locator('.atom-inspector')).toContainText('Đạo hàm từ định nghĩa');
+  await expect(page.locator('.ontology-practice-link')).toBeVisible();
+
+  await page.goto('/progress');
+  await expect(page.getByRole('heading', { name: 'Bản đồ bằng chứng học tập' })).toBeVisible();
+  await expect(page.getByText('Chưa đánh giá').first()).toBeVisible();
+  await expect(page.getByRole('link', { name: /Mở bản đồ toán học/ })).toBeVisible();
 });
 
 
@@ -305,7 +328,8 @@ test('AI shows local fallback when the server is unavailable', async ({ page }) 
   await page.getByRole('button', { name: 'Số phức là gì?' }).click();
   await expect(page.getByText('Tra cứu cục bộ · Không phải câu trả lời từ Gemini')).toBeVisible();
   await expect(page.locator('.chat-links a[href="/lesson/cplx"]')).toBeVisible();
-  await expect(page.locator('.chat-links a[href*="concept=complex-numbers"]')).toBeVisible();
+  await expect(page.locator('.chat-links a[href="/map?concept=complex-numbers"]')).toBeVisible();
+  await expect(page.locator('.chat-links a[href*="concept=complex-numbers&atom="]').first()).toBeVisible();
 });
 
 test('AI renders a successful Gemini math response', async ({ browser }) => {

@@ -2,9 +2,10 @@ import { LESSONS } from '../data/lessons';
 import { BOOKS } from '../data/books';
 import { FORMS } from '../data/formulas';
 import { MATH_CONCEPTS, MATH_DOMAINS } from '../data/mathKnowledge';
+import { MATH_ATOMS, ONTOLOGY_KIND_META } from '../data/mathOntology';
 import { scoreSearch } from './search';
 
-export type KnowledgeKind = 'concept' | 'lesson' | 'formula' | 'book';
+export type KnowledgeKind = 'atom' | 'concept' | 'lesson' | 'formula' | 'book';
 
 export interface KnowledgeHit {
   kind: KnowledgeKind;
@@ -24,6 +25,16 @@ const conceptTitle = (id: string) => MATH_CONCEPTS.find(item => item.id === id)?
 const domainTitle = (id: string) => MATH_DOMAINS.find(item => item.id === id)?.name || id;
 
 const KNOWLEDGE = [
+  ...MATH_ATOMS.map(item => ({
+    kind: 'atom' as const,
+    type: ONTOLOGY_KIND_META[item.kind].label,
+    title: item.title,
+    detail: `${conceptTitle(item.conceptId)} · ${ONTOLOGY_KIND_META[item.kind].label}`,
+    to: `/map?concept=${encodeURIComponent(item.conceptId)}&atom=${encodeURIComponent(item.id)}`,
+    keywords: `${item.tags?.join(' ') || ''} ${item.kind} ${ONTOLOGY_KIND_META[item.kind].label} ${conceptTitle(item.conceptId)}`,
+    content: `${item.summary} ${item.body || ''} ${item.formula || ''}`,
+    context: `[${ONTOLOGY_KIND_META[item.kind].label}] ${item.title} · thuộc ${conceptTitle(item.conceptId)}\n${item.summary}${item.body ? `\n${item.body}` : ''}${item.formula ? `\nBiểu thức: ${item.formula}` : ''}`,
+  })),
   ...MATH_CONCEPTS.map(item => ({
     kind: 'concept' as const,
     type: 'Khái niệm',
@@ -91,11 +102,11 @@ export function searchKnowledge(query: string, limit = 12): KnowledgeHit[] {
 
 export function buildKnowledgeContext(query: string, limit = 5) {
   const ranked = searchKnowledge(query, 20);
-  const counts: Record<KnowledgeKind, number> = { concept: 0, lesson: 0, formula: 0, book: 0 };
+  const counts: Record<KnowledgeKind, number> = { atom: 0, concept: 0, lesson: 0, formula: 0, book: 0 };
   const selected: KnowledgeHit[] = [];
 
   for (const item of ranked) {
-    if (counts[item.kind] >= (item.kind === 'concept' ? 2 : 2)) continue;
+    if (counts[item.kind] >= (item.kind === 'atom' ? 3 : 2)) continue;
     selected.push(item);
     counts[item.kind] += 1;
     if (selected.length >= limit) break;
