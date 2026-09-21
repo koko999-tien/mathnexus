@@ -4,6 +4,7 @@ import { FORMS } from '../data/formulas.ts';
 import { MATH_CONCEPTS, MATH_DOMAINS } from '../data/mathKnowledge.ts';
 import { MATH_ATOMS, ONTOLOGY_KIND_META } from '../data/mathOntology.ts';
 import { rankRetrieval, type RetrievalDocument } from './retrievalEngine.ts';
+import { normalizeSearch } from './search.ts';
 
 export type KnowledgeKind = 'atom' | 'concept' | 'lesson' | 'formula' | 'book';
 
@@ -200,6 +201,8 @@ export function searchKnowledge(query: string, limit = 12): KnowledgeHit[] {
   if (!trimmed) return [];
 
   const { distances, domains } = retrievalContext(trimmed);
+  const normalized = normalizeSearch(trimmed);
+  const learningPathIntent = /hoc gi truoc|nen hoc|dang yeu|yeu |bat dau|tien quyet|nen bat dau/.test(normalized);
 
   return rankRetrieval(KNOWLEDGE, trimmed, {
     limit: Math.max(1, limit),
@@ -210,14 +213,21 @@ export function searchKnowledge(query: string, limit = 12): KnowledgeHit[] {
       formula: 1,
       book: 0.94,
     },
+    allowAdjustedWithoutLexical: true,
     scoreAdjust(document) {
       const conceptId = document.payload.conceptId;
       if (!conceptId) return 0;
       const distance = distances.get(conceptId);
       if (distance === 0) return 34;
-      if (distance === 1) return 17;
-      if (distance === 2) return 7;
-      return document.payload.domainId && domains.has(document.payload.domainId) ? 3 : 0;
+      if (distance === 1) {
+        if (learningPathIntent && document.kind === 'concept') return 92;
+        return document.kind === 'concept' ? 28 : 17;
+      }
+      if (distance === 2) {
+        if (learningPathIntent && document.kind === 'concept') return 42;
+        return document.kind === 'concept' ? 12 : 7;
+      }
+      return document.payload.domainId && domains.has(document.payload.domainId) && document.kind === 'concept' ? 3 : 0;
     },
   }).map(hit => ({
     kind: hit.document.payload.kind,
