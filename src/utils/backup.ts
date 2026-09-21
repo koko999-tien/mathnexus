@@ -55,7 +55,7 @@ export function createBackupSnapshot(): MathNexusBackupV2 {
     version: BACKUP_VERSION,
     exportedAt: new Date().toISOString(),
     progress: getProgress(),
-    notes: load<string>('notes', ''),
+    notes: (() => { const value = load<unknown>('notes', ''); return typeof value === 'string' ? value : ''; })(),
     learningGoal: getLearningGoal(),
     exploration: getExplorationSummary(),
     canvas: loadCanvasState(),
@@ -108,7 +108,7 @@ export function parseBackupSnapshot(text: string): ParsedBackup {
 export function restoreBackupSnapshot(snapshot: ParsedBackup): { ok: true } | { ok: false; error: string } {
   const previous = {
     progress: getProgress(),
-    notes: load<string>('notes', ''),
+    notes: (() => { const value = load<unknown>('notes', ''); return typeof value === 'string' ? value : ''; })(),
     learningGoal: getLearningGoal(),
     exploration: getExplorationSummary(),
     canvas: loadCanvasState(),
