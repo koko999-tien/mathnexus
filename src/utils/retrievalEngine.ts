@@ -69,7 +69,7 @@ export function rankRetrieval<T>(
         reasons: lexicalScore > 0 ? matchReasons(document, trimmed) : ['structural-boost'],
       };
     })
-    .filter((item): item is RetrievalHit<T> => Boolean(item) && item.score > minScore)
+    .filter((item): item is RetrievalHit<T> => item !== null && item.score > minScore)
     .sort((a, b) =>
       b.score - a.score ||
       b.lexicalScore - a.lexicalScore ||
