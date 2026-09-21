@@ -931,3 +931,148 @@ Still next:
 - optional visual event bus;
 - rate-limited non-random intellectual-persistence effects;
 - only after those foundations, consider opt-in sync.
+
+
+---
+
+## Numerical Trust Layer — Precision Policy status
+
+MathNexus now separates **visual precision**, **general numerical precision**, and **high-precision decimal arithmetic** instead of presenting every computed number as if it had the same mathematical status.
+
+### Precision modes
+
+```text
+VISUAL
+  arithmetic: Float32 / GPU-oriented display buffers
+  purpose: coordinates, particles, rendering
+  claim: visual approximation only
+
+STANDARD
+  arithmetic: IEEE-754 Float64
+  purpose: numerical calculus, statistics, simulation state,
+           general scientific computation
+  claim: floating-point numerical approximation
+
+HIGH PRECISION
+  arithmetic: decimal.js
+  precision: 50 significant digits
+  purpose: selected decimal algebra where binary rounding or cancellation
+           materially changes the result
+  claim: high-precision decimal numerical result, not symbolic proof
+```
+
+### Current implementation
+
+The shared policy lives in:
+
+- `src/utils/precisionPolicy.ts`
+- `src/utils/precisionMath.ts`
+- `src/components/ui/PrecisionBadge.tsx`
+
+The Math Workbench exposes a user-visible Standard / High Precision selector.
+
+High Precision is currently implemented only for operations with a tested Decimal backend:
+
+- percentages;
+- quadratic equations;
+- 2×2 linear systems;
+- 2×2 matrix inversion;
+- arithmetic sequences;
+- geometric sequences.
+
+Other tools remain on their existing numerical backend. They are **not** relabeled as High Precision merely because decimal.js is installed.
+
+### Why this distinction matters
+
+Consider:
+
+```text
+x + y = 2
+x + 1.0000000000000000000000001 y
+  = 2.0000000000000000000000001
+```
+
+When parsed as JavaScript `Number`, the perturbation at the 25th decimal place is rounded away. The two rows become indistinguishable and the Float64 solver can classify the system as dependent.
+
+The Decimal 50-digit backend preserves the perturbation:
+
+```text
+det = 1e-25
+x = 1
+y = 1
+```
+
+The product UI therefore exposes the arithmetic policy rather than silently pretending both calculations have identical evidentiary strength.
+
+### Calculus policy
+
+Calculus Lab remains a **Standard / Float64 numerical** system.
+
+Its:
+
+- finite-difference derivatives;
+- Simpson integration;
+- root finding;
+- tangent estimation;
+
+are numerical approximations. High Precision decimal arithmetic is not automatically useful for transcendental-expression calculus and is not enabled there merely for branding.
+
+Symbolic differentiation/integration would be a separate capability and must not be implied by the precision selector.
+
+### Simulation policy
+
+The N-body Gravity Lab intentionally uses two numerical representations:
+
+```text
+Simulation truth state:
+  Float64Array
+  leapfrog integration
+  energy/center-of-mass diagnostics
+
+Visual transfer state:
+  Float32Array
+  Three.js/WebGL particle positions
+```
+
+The Float32 render buffer is a visualization artifact. It is never used as the authoritative state for gravitational integration.
+
+### Math Cosmos policy
+
+Cosmos node positions are **Visual** coordinates. They encode spatial organization for navigation and memory, not exact mathematical quantities.
+
+### Exactness boundaries
+
+High Precision does **not** mean:
+
+- symbolic exactness;
+- proof;
+- arbitrary precision for every function;
+- exact transcendental constants;
+- immunity to ill-conditioned algorithms.
+
+It means the supported operation is evaluated with decimal.js under the declared 50-significant-digit policy.
+
+### Safety and input limits
+
+The Decimal layer bounds:
+
+- raw decimal input length;
+- exponent magnitude;
+- sequence size;
+- precision configuration.
+
+This prevents “high precision” from becoming an unbounded browser-compute surface.
+
+### Future work
+
+Only add broader high-precision or Wasm kernels where a demonstrated numerical need exists.
+
+Potential justified extensions:
+
+1. high-precision polynomial evaluation;
+2. condition-number reporting for linear algebra;
+3. arbitrary-precision integer/combinatorics path;
+4. Wasm tensor kernels for larger systems;
+5. interval/error-bound arithmetic for selected numerical methods.
+
+Do not migrate rendering, ordinary graph coordinates, or all simulation state to Decimal. Different computational layers have different precision requirements.
