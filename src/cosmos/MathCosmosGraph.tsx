@@ -3,6 +3,7 @@ import { Canvas, type ThreeEvent, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls, Stars } from '@react-three/drei';
 import gsap from 'gsap';
 import * as THREE from 'three';
+import { SpatialHash3D } from './spatialIndex';
 import type { CosmosEdge, CosmosNode } from './cosmosGraph';
 
 interface MathCosmosGraphProps {
@@ -11,28 +12,45 @@ interface MathCosmosGraphProps {
   selectedId: string | null;
   onSelect: (node: CosmosNode) => void;
   reduceMotion?: boolean;
+  quality?: 'mobile' | 'desktop';
 }
 
-export function MathCosmosGraph({ nodes, edges, selectedId, onSelect, reduceMotion = false }: MathCosmosGraphProps) {
+export function MathCosmosGraph({
+  nodes,
+  edges,
+  selectedId,
+  onSelect,
+  reduceMotion = false,
+  quality = 'desktop',
+}: MathCosmosGraphProps) {
   const selected = nodes.find(node => node.id === selectedId);
+  const mobile = quality === 'mobile';
 
   return <div className="math-cosmos-canvas" data-testid="math-cosmos-canvas">
     <Canvas
-      dpr={[1, 1.5]}
+      dpr={mobile ? [0.75, 1] : [1, 1.5]}
       camera={{ position: [0, 8, 58], fov: 54, near: 0.1, far: 500 }}
-      gl={{ antialias: true, powerPreference: 'high-performance' }}
+      gl={{ antialias: !mobile, powerPreference: 'high-performance' }}
       fallback={<div className="cosmos-webgl-fallback">Thiết bị này chưa cung cấp WebGL ổn định. Bản đồ 2D vẫn dùng được ở mục Bản đồ toán học.</div>}
     >
       <color attach="background" args={['#05070d']} />
       <fog attach="fog" args={['#05070d', 58, 130]} />
       <ambientLight intensity={0.75} />
       <pointLight position={[24, 28, 20]} intensity={95} distance={120} decay={2} color="#b8d9ff" />
-      <pointLight position={[-24, -16, -18]} intensity={70} distance={100} decay={2} color="#ffb88c" />
+      {!mobile && <pointLight position={[-24, -16, -18]} intensity={70} distance={100} decay={2} color="#ffb88c" />}
 
-      <Stars radius={115} depth={55} count={2200} factor={2.2} saturation={0.15} fade speed={0.18} />
+      <Stars
+        radius={115}
+        depth={55}
+        count={mobile ? 850 : 2200}
+        factor={mobile ? 1.6 : 2.2}
+        saturation={0.15}
+        fade
+        speed={reduceMotion ? 0 : 0.18}
+      />
       <EdgeField nodes={nodes} edges={edges} />
-      <NodeInstances nodes={nodes} selectedId={selectedId} onSelect={onSelect} />
-      {selected && <SelectionHalo node={selected} />}
+      <NodeInstances nodes={nodes} selectedId={selectedId} onSelect={onSelect} quality={quality} />
+      {selected && <SelectionHalo node={selected} reduceMotion={reduceMotion} />}
       <CameraFlyRig selected={selected} reduceMotion={reduceMotion} />
       <OrbitControls
         makeDefault
@@ -47,40 +65,87 @@ export function MathCosmosGraph({ nodes, edges, selectedId, onSelect, reduceMoti
   </div>;
 }
 
-function NodeInstances({ nodes, selectedId, onSelect }: { nodes: CosmosNode[]; selectedId: string | null; onSelect: (node: CosmosNode) => void }) {
+function NodeInstances({
+  nodes,
+  selectedId,
+  onSelect,
+  quality,
+}: {
+  nodes: CosmosNode[];
+  selectedId: string | null;
+  onSelect: (node: CosmosNode) => void;
+  quality: 'mobile' | 'desktop';
+}) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
+  const visibleNodeIndexesRef = useRef<number[]>([]);
+  const lastCameraRef = useRef(new THREE.Vector3(Number.POSITIVE_INFINITY, 0, 0));
+  const frameRef = useRef(0);
   const dummy = useMemo(() => new THREE.Object3D(), []);
+  const spatial = useMemo(() => new SpatialHash3D(nodes, 14), [nodes]);
+  const { camera } = useThree();
+  const radius = quality === 'mobile' ? 58 : 84;
 
-  useLayoutEffect(() => {
+  const writeInstances = (cameraPosition: THREE.Vector3) => {
     const mesh = meshRef.current;
     if (!mesh) return;
 
-    nodes.forEach((node, index) => {
+    const nearby = spatial.queryRadius(
+      [cameraPosition.x, cameraPosition.y, cameraPosition.z],
+      radius,
+    );
+
+    const required = nodes
+      .map((node, index) => node.kind === 'domain' || node.id === selectedId ? index : -1)
+      .filter(index => index >= 0);
+
+    const visible = [...new Set([...nearby, ...required])].sort((a, b) => a - b);
+    visibleNodeIndexesRef.current = visible;
+    mesh.count = visible.length;
+
+    visible.forEach((nodeIndex, instanceIndex) => {
+      const node = nodes[nodeIndex];
       dummy.position.set(...node.position);
       const selectedScale = node.id === selectedId ? 1.22 : 1;
       dummy.scale.setScalar(node.radius * selectedScale);
       dummy.rotation.set(0, 0, 0);
       dummy.updateMatrix();
-      mesh.setMatrixAt(index, dummy.matrix);
-      mesh.setColorAt(index, new THREE.Color(node.color));
+      mesh.setMatrixAt(instanceIndex, dummy.matrix);
+      mesh.setColorAt(instanceIndex, new THREE.Color(node.color));
     });
 
-    mesh.instanceMatrix.setUsage(THREE.StaticDrawUsage);
+    mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     mesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     mesh.computeBoundingSphere();
-  }, [dummy, nodes, selectedId]);
+  };
+
+  useLayoutEffect(() => {
+    lastCameraRef.current.copy(camera.position);
+    writeInstances(camera.position);
+  // writeInstances is intentionally derived from the current graph snapshot.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [camera, dummy, nodes, selectedId, spatial, radius]);
+
+  useFrame(() => {
+    frameRef.current += 1;
+    if (frameRef.current % 12 !== 0) return;
+
+    if (camera.position.distanceToSquared(lastCameraRef.current) < 16) return;
+    lastCameraRef.current.copy(camera.position);
+    writeInstances(camera.position);
+  });
 
   const selectInstance = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation();
     if (event.instanceId == null) return;
-    const node = nodes[event.instanceId];
+    const nodeIndex = visibleNodeIndexesRef.current[event.instanceId];
+    const node = nodes[nodeIndex];
     if (node) onSelect(node);
   };
 
   return <instancedMesh
     ref={meshRef}
-    args={[undefined, undefined, nodes.length]}
+    args={[undefined, undefined, Math.max(1, nodes.length)]}
     onClick={selectInstance}
     onPointerOver={() => { document.body.style.cursor = 'pointer'; }}
     onPointerOut={() => { document.body.style.cursor = ''; }}
@@ -121,11 +186,11 @@ function EdgeField({ nodes, edges }: { nodes: CosmosNode[]; edges: CosmosEdge[] 
   </lineSegments>;
 }
 
-function SelectionHalo({ node }: { node: CosmosNode }) {
+function SelectionHalo({ node, reduceMotion }: { node: CosmosNode; reduceMotion: boolean }) {
   const ref = useRef<THREE.Mesh>(null);
 
   useFrame(({ clock }) => {
-    if (!ref.current) return;
+    if (!ref.current || reduceMotion) return;
     const pulse = 1 + Math.sin(clock.elapsedTime * 2.4) * 0.07;
     ref.current.scale.setScalar(pulse);
     ref.current.rotation.z += 0.004;
