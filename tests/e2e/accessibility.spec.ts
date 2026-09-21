@@ -131,7 +131,7 @@ test('skip link and client-side route changes put keyboard focus on main content
   test.skip(info.project.name !== 'desktop-chromium', 'Keyboard focus behavior is verified on desktop Chromium.');
 
   await page.goto('/');
-  await page.locator('body').click({ position: { x: 2, y: 2 } });
+  await expect.poll(() => page.evaluate(() => document.activeElement === document.body)).toBe(true);
   await page.keyboard.press('Tab');
 
   const skipLink = page.getByRole('link', { name: 'Đi đến nội dung chính' });
