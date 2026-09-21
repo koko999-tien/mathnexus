@@ -70,6 +70,24 @@ test('knowledge map exposes prerequisite depth, gaps and learning paths', async 
 });
 
 
+
+test('deep ontology exposes definitions, misconceptions and evidence mastery', async ({ page }) => {
+  await page.goto('/map?concept=derivative-definition');
+  await expect(page.getByText('DEEP ONTOLOGY')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Bên trong “Định nghĩa đạo hàm”' })).toBeVisible();
+  await expect(page.getByText('Mức thành thạo theo bằng chứng')).toBeVisible();
+  await expect(page.getByText('Độ sâu nội dung')).toBeVisible();
+
+  await page.locator('.ontology-atom-list').getByRole('button', { name: /Liên tục không suy ra khả vi/ }).click();
+  await expect(page.locator('.atom-inspector')).toContainText('Liên tục không suy ra khả vi');
+  await expect(page.locator('.atom-inspector')).toContainText('Đây là lỗi tư duy cần chủ động kiểm tra');
+
+  await page.locator('.ontology-atom-list').getByRole('button', { name: /Đạo hàm từ định nghĩa/ }).click();
+  await expect(page.locator('.atom-inspector')).toContainText('Đạo hàm từ định nghĩa');
+  await expect(page.locator('.ontology-practice-link')).toBeVisible();
+});
+
+
 test('search without accents opens lessons and completion survives reload', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Tìm kiếm', exact: true }).click();
