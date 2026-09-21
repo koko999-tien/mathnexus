@@ -5,7 +5,8 @@ import { ChatText } from '../components/ui/ChatText';
 import { MATH_CONCEPTS, MATH_DOMAINS } from '../data/mathKnowledge';
 import { MATH_ATOMS } from '../data/mathOntology';
 import { MathCosmosGraph } from '../cosmos/MathCosmosGraph';
-import { buildCosmosGraph, cosmosNodeById, cosmosSearch, type CosmosNode } from '../cosmos/cosmosGraph';
+import { cosmosNodeById, cosmosSearch, type CosmosNode } from '../cosmos/cosmosGraph';
+import { useCosmosGraph } from '../cosmos/useCosmosGraph';
 
 const QUICK_JUMPS = [
   ['concept:taylor', 'Taylor'],
@@ -20,16 +21,24 @@ export default function MathCosmos() {
   const [selectedId, setSelectedId] = useState<string | null>('concept:derivative-definition');
   const [query, setQuery] = useState('');
   const [reduceMotion, setReduceMotion] = useState(false);
+  const [mobileQuality, setMobileQuality] = useState(false);
 
   useEffect(() => {
     const media = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const update = () => setReduceMotion(media.matches);
-    update();
-    media.addEventListener('change', update);
-    return () => media.removeEventListener('change', update);
+    const compact = window.matchMedia('(max-width: 720px), (pointer: coarse)');
+    const updateMotion = () => setReduceMotion(media.matches);
+    const updateQuality = () => setMobileQuality(compact.matches);
+    updateMotion();
+    updateQuality();
+    media.addEventListener('change', updateMotion);
+    compact.addEventListener('change', updateQuality);
+    return () => {
+      media.removeEventListener('change', updateMotion);
+      compact.removeEventListener('change', updateQuality);
+    };
   }, []);
 
-  const data = useMemo(() => buildCosmosGraph(expandedConceptId), [expandedConceptId]);
+  const { data, mode: layoutMode, durationMs: layoutDurationMs } = useCosmosGraph(expandedConceptId);
   const selected = cosmosNodeById(data, selectedId) || data.nodes.find(node => node.kind === 'domain');
   const results = useMemo(() => cosmosSearch(data, query), [data, query]);
   const webgpu = typeof navigator !== 'undefined' && 'gpu' in navigator;
@@ -56,7 +65,8 @@ export default function MathCosmos() {
       </div>
       <div className="cosmos-runtime-badges">
         <span><Box size={14} />InstancedMesh</span>
-        <span><Cpu size={14} />{webgpu ? 'WebGPU sẵn sàng' : 'WebGL2 fallback'}</span>
+        <span><Cpu size={14} />{webgpu ? 'WebGPU detected' : 'WebGL2 fallback'}</span>
+        <span><Network size={14} />{layoutMode === 'worker' ? 'Worker layout' : layoutMode === 'fallback' ? 'Layout fallback' : 'Đang bố trí'}{layoutDurationMs !== null ? ' · ' + layoutDurationMs.toFixed(1) + ' ms' : ''}</span>
         <span><Layers3 size={14} />{data.nodes.length} node đang render</span>
       </div>
     </div>
@@ -68,6 +78,7 @@ export default function MathCosmos() {
         selectedId={selected?.id || null}
         onSelect={selectNode}
         reduceMotion={reduceMotion}
+        quality={mobileQuality ? 'mobile' : 'desktop'}
       />
 
       <div className="cosmos-search-panel">
@@ -122,7 +133,7 @@ export default function MathCosmos() {
       <article className="panel">
         <span className="small-icon lilac"><Cpu size={19} /></span>
         <h2>Renderer hướng tới hàng nghìn node</h2>
-        <p>Node không tạo hàng nghìn mesh React riêng lẻ. Một InstancedMesh chia sẻ geometry/material, còn edge được gom thành một line buffer để giảm draw call.</p>
+        <p>Node dùng một InstancedMesh chung. Force-layout chạy trong Web Worker, repulsion dùng spatial hash và renderer giảm node theo vùng camera để giữ main thread nhẹ hơn.</p>
       </article>
     </div>
   </section>;

@@ -94,11 +94,14 @@ test('deep ontology exposes definitions, misconceptions and evidence mastery', a
 
 
 
-test('Math Cosmos exposes the 3D knowledge universe and spatial node search', async ({ page }) => {
+test('Math Cosmos exposes the 3D knowledge universe and spatial node search', async ({ page }, info) => {
   await page.goto('/cosmos');
   await expect(page.getByRole('heading', { name: 'Vũ trụ tri thức toán học 3D' })).toBeVisible();
-  await expect(page.getByTestId('math-cosmos-canvas')).toBeVisible();
+  const canvas = page.getByTestId('math-cosmos-canvas');
+  await expect(canvas).toBeVisible();
+  await expect(canvas).toHaveAttribute('data-quality', info.project.name === 'desktop-chromium' ? 'desktop' : 'mobile');
   await expect(page.getByText('InstancedMesh', { exact: true })).toBeVisible();
+  await expect(page.locator('.cosmos-runtime-badges')).toContainText(/Worker layout|Layout fallback/);
 
   await page.getByLabel('Tìm node trong Math Cosmos').fill('Taylor');
   const searchPanel = page.locator('.cosmos-search-panel');
@@ -110,6 +113,21 @@ test('Math Cosmos exposes the 3D knowledge universe and spatial node search', as
   await page.getByRole('button', { name: 'Số phức', exact: true }).click();
   await expect(page.locator('.cosmos-hud')).toContainText('Số phức');
   await expect(page.locator('.cosmos-runtime-badges')).toContainText('node đang render');
+});
+
+test('Math Cosmos degrades to deterministic layout fallback and honors reduced motion', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop-chromium', 'One browser is sufficient to verify forced Worker fallback.');
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.addInitScript(() => {
+    Object.defineProperty(window, 'Worker', { configurable: true, value: undefined });
+  });
+  await page.goto('/cosmos');
+
+  const canvas = page.getByTestId('math-cosmos-canvas');
+  await expect(canvas).toHaveAttribute('data-reduced-motion', 'true');
+  await expect(page.locator('.cosmos-runtime-badges')).toContainText('Layout fallback');
+  await expect(page.locator('.cosmos-hud')).toContainText('Định nghĩa đạo hàm');
 });
 
 test('search without accents opens lessons and completion survives reload', async ({ page }) => {

@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { MATH_ATOMS } from '../../src/data/mathOntology.ts';
 import { MATH_CONCEPTS, MATH_DOMAINS } from '../../src/data/mathKnowledge.ts';
 import { buildCosmosGraph, cosmosSearch } from '../../src/cosmos/cosmosGraph.ts';
+import { positionsToMap } from '../../src/cosmos/cosmosLayout.ts';
+import { SpatialHash3D } from '../../src/cosmos/spatialIndex.ts';
 
 test('Math Cosmos graph is deterministic and contains every macro domain and concept', () => {
   const a = buildCosmosGraph(null);
@@ -34,4 +36,29 @@ test('Cosmos search ranks semantic title matches', () => {
 
   const derivative = cosmosSearch(graph, 'tỷ số sai phân');
   assert.ok(derivative.some(node => node.id === 'atom:derivative-limit'));
+});
+
+
+test('expanding ontology preserves existing spatial memory', () => {
+  const base = buildCosmosGraph(null);
+  const previous = positionsToMap(base.nodes);
+  const expanded = buildCosmosGraph('derivative-definition', previous);
+
+  for (const node of base.nodes) {
+    const next = expanded.nodes.find(item => item.id === node.id);
+    assert.ok(next, 'existing node should survive expansion: ' + node.id);
+    assert.deepEqual(next.position, node.position, 'existing node moved during micro expansion: ' + node.id);
+  }
+});
+
+test('spatial hash returns nearby nodes without scanning semantic relations', () => {
+  const points = [
+    { position: [0, 0, 0] },
+    { position: [3, 4, 0] },
+    { position: [30, 0, 0] },
+    { position: [-2, 0, 1] },
+  ];
+  const index = new SpatialHash3D(points, 5);
+  assert.deepEqual(index.queryRadius([0, 0, 0], 5).sort((a, b) => a - b), [0, 1, 3]);
+  assert.deepEqual(index.queryRadius([30, 0, 0], 1), [2]);
 });
