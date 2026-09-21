@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import type { ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowRight, BookOpen, Check, CircleDot, GitBranch, LockKeyhole, Network, Route, Sparkles, Wrench } from 'lucide-react';
 import { MATH_CONCEPTS, MATH_DOMAINS, type MathConcept, type MathDomainId } from '../data/mathKnowledge';
@@ -120,7 +121,7 @@ export default function KnowledgeMap() {
   </section>;
 }
 
-function SummaryCard({ icon, value, label }: { icon: React.ReactNode; value: number; label: string }) {
+function SummaryCard({ icon, value, label }: { icon: ReactNode; value: number; label: string }) {
   return <div className="knowledge-summary-card"><span className="small-icon green">{icon}</span><div><strong>{value}</strong><small>{label}</small></div></div>;
 }
 
