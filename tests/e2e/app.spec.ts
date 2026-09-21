@@ -631,3 +631,27 @@ test('goal diagnostic mode samples missing path evidence and clears stale concep
   });
   expect(evidence.length).toBe(1);
 });
+
+
+test('goal diagnostic debrief explains concept evidence after a complete session', async ({ page }) => {
+  await page.goto('/map?concept=taylor');
+  await page.getByRole('button', { name: 'Đặt làm mục tiêu học' }).click();
+  await page.goto('/practice?mode=goal&size=5');
+
+  const panel = page.locator('.practice-panel');
+  await expect(panel).toBeVisible();
+
+  for (let index = 0; index < 5; index++) {
+    await panel.locator('.answer-option').first().click();
+    await panel.getByRole('button', { name: index === 4 ? 'Xem kết quả' : 'Câu tiếp theo' }).click();
+  }
+
+  const debrief = page.locator('.diagnostic-debrief');
+  await expect(debrief).toBeVisible();
+  await expect(debrief.getByRole('heading', { name: 'Bản đồ bằng chứng sau phiên' })).toBeVisible();
+  await expect(debrief).toContainText('Tiến độ mục tiêu');
+  await expect(debrief).toContainText('Concept đã đo');
+  await expect(debrief).toContainText('Confidence');
+  await expect(debrief.locator('.diagnostic-concept-row').first()).toBeVisible();
+  await expect(debrief.getByRole('link', { name: /Ôn đúng điểm yếu|Tiếp tục lộ trình/ })).toBeVisible();
+});
