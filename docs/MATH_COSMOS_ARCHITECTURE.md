@@ -626,3 +626,104 @@ The physics branch now includes:
 Simulation parameters are treated as **learning probes**, not mastery evidence by themselves.
 
 Opening or changing the gravity simulation may support curiosity/discovery metrics later, but it must not automatically mark Newtonian gravity or N-body dynamics as mastered.
+
+
+---
+
+## Exploration State Engine — Phase 9 status
+
+### Terminology
+
+The production system deliberately uses **Exploration State** rather than "emotion detection".
+
+It does not diagnose:
+- frustration;
+- depression;
+- ADHD;
+- intelligence;
+- personality;
+- motivation disorders;
+- any medical or psychological state.
+
+Exploration metrics are behavioral aggregates describing how the user navigates mathematical knowledge.
+
+### Data retained locally
+
+The local summary stores only bounded aggregate data:
+
+```text
+discoveredConceptIds[]
+discoveredAtomIds[]
+conceptVisits{conceptId -> count}
+simulationSessions{simulationId -> count}
+simulationAdjustments{simulationId -> count}
+daily{
+  date -> {
+    actions
+    newConcepts
+    newAtoms
+    revisits
+    simulations
+    adjustments
+  }
+}
+lastActivity
+```
+
+It does **not** store:
+- pointer paths;
+- camera velocity;
+- frame-by-frame motion;
+- raw dwell traces;
+- raw keyboard events;
+- inferred emotions.
+
+### Exploration index
+
+The UI exposes an exploration index as a descriptive, non-grade metric.
+
+It combines bounded dimensions:
+- knowledge breadth;
+- ontology depth;
+- concept revisits;
+- simulation experimentation.
+
+This metric is explicitly separate from:
+- mastery;
+- correctness;
+- grades;
+- cognitive ability.
+
+Opening a concept can increase exploration state but can never mark that concept mastered.
+
+### Recording boundaries
+
+Current meaningful events:
+- opening a Knowledge Graph concept;
+- opening an ontology atom;
+- explicitly selecting a Cosmos concept/atom;
+- starting the Gravity Lab;
+- changing a Gravity Lab parameter.
+
+Not recorded:
+- camera frames;
+- pointer movement;
+- passive viewport motion.
+
+### Phase status
+
+Completed:
+- privacy-conservative local aggregate model;
+- normalization and bounded counters;
+- Knowledge Map integration;
+- Math Cosmos explicit-discovery integration;
+- Gravity Lab session/adjustment integration;
+- separate Progress UI;
+- unit tests for aggregation/privacy;
+- browser test proving exploration does not create mastery/progress.
+
+Still next:
+- explicit user control to clear exploration history independently;
+- optional visual event bus;
+- rate-limited non-random intellectual-persistence effects;
+- only after those foundations, consider opt-in sync.

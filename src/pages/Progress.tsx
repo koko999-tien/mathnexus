@@ -12,6 +12,8 @@ import { practiceCategoryInsights, practiceOverview } from '../utils/practiceIns
 import { allConceptMastery, masteryLabel } from '../utils/conceptMastery';
 import { MATH_CONCEPTS, MATH_DOMAINS } from '../data/mathKnowledge';
 import { ontologyDepthScore } from '../utils/mathOntology';
+import { explorationMetrics } from '../exploration/explorationState';
+import { useExplorationSummary } from '../hooks/useExplorationSummary';
 
 export default function Progress() {
   const p = useProgress();
@@ -30,6 +32,8 @@ export default function Progress() {
   const measuredConcepts = conceptMasteries.filter(item => item.score !== null).sort((a, b) => (a.score || 0) - (b.score || 0) || b.confidence - a.confidence);
   const evidenceCoverage = Math.round(conceptMasteries.filter(item => item.score !== null).length / Math.max(1, MATH_CONCEPTS.length) * 100);
   const conceptSpotlight = [...measuredConcepts.slice(0, 4), ...conceptMasteries.filter(item => item.score === null && ontologyDepthScore(item.conceptId) > 0).slice(0, Math.max(0, 6 - measuredConcepts.slice(0, 4).length))];
+  const exploration = useExplorationSummary();
+  const explorationStats = explorationMetrics(exploration);
 
   const exportData = () => downloadFile(JSON.stringify({ app: 'MathNexus', version: 1, exportedAt: new Date().toISOString(), progress: p, notes: load<string>('notes', '') }, null, 2), 'mathnexus-' + localDate() + '.json', 'application/json');
 
@@ -106,6 +110,38 @@ export default function Progress() {
         </Link>;
       })}</div>
       {!conceptSpotlight.length && <div className="mastery-empty"><Brain size={28} /><div><strong>Chưa có dữ liệu khái niệm</strong><p>Hoàn thành một bài hoặc làm vài câu luyện tập để MathNexus bắt đầu dựng hồ sơ năng lực.</p></div><Link to="/practice" className="text-link">Bắt đầu tạo bằng chứng<ArrowUpRight size={15} /></Link></div>}
+    </div>
+
+    <div className="panel exploration-state-panel">
+      <div className="panel-heading-row">
+        <div>
+          <p className="eyebrow">CURIOSITY ≠ MASTERY</p>
+          <h2 className="panel-title">Khám phá tự chủ</h2>
+          <p className="helper-text">Chỉ số này mô tả mức độ bạn tự mở rộng không gian tri thức. Nó không phải điểm số, không đánh giá trí thông minh và không suy đoán cảm xúc.</p>
+        </div>
+        <Link to="/cosmos" className="button button-light"><Network size={16} />Tiếp tục khám phá</Link>
+      </div>
+
+      <div className="exploration-summary-grid">
+        <div data-testid="exploration-index"><span>Chỉ số khám phá</span><strong>{explorationStats.explorationIndex}</strong><small>/100 · mô tả hành vi khám phá</small></div>
+        <div data-testid="exploration-concepts"><span>Khái niệm đã tự mở</span><strong>{explorationStats.discoveredConcepts}</strong><small>{explorationStats.exploredDomains} lĩnh vực</small></div>
+        <div data-testid="exploration-atoms"><span>Mảnh ontology đã mở</span><strong>{explorationStats.deepAtoms}</strong><small>độ sâu, không phải mastery</small></div>
+        <div data-testid="exploration-simulations"><span>Phiên mô phỏng</span><strong>{explorationStats.simulationSessions}</strong><small>{explorationStats.simulationAdjustments} lần chỉnh tham số</small></div>
+      </div>
+
+      <div className="exploration-dimensions">
+        {[
+          ['Độ rộng tri thức', explorationStats.breadthScore],
+          ['Độ sâu khám phá', explorationStats.depthScore],
+          ['Quay lại khái niệm', explorationStats.revisitScore],
+          ['Thực nghiệm mô phỏng', explorationStats.simulationScore],
+        ].map(([label, value]) => <div className="exploration-dimension" key={String(label)}>
+          <div><strong>{label}</strong><span>{value}%</span></div>
+          <div className="progress-track" role="progressbar" aria-label={String(label)} aria-valuenow={Number(value)} aria-valuemin={0} aria-valuemax={100}><span style={{ width: value + '%' }} /></div>
+        </div>)}
+      </div>
+
+      <p className="exploration-privacy-note">MathNexus chỉ lưu tổng hợp cục bộ như concept đã mở, lần quay lại và phiên mô phỏng. Không lưu đường rê chuột, tốc độ camera hay dùng dữ liệu này để chẩn đoán trạng thái tâm lý.</p>
     </div>
 
     <div className="learning-breakdown">

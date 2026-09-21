@@ -7,6 +7,7 @@ import { MATH_ATOMS } from '../data/mathOntology';
 import { MathCosmosGraph } from '../cosmos/MathCosmosGraph';
 import { cosmosNodeById, cosmosSearch, type CosmosNode } from '../cosmos/cosmosGraph';
 import { useCosmosGraph } from '../cosmos/useCosmosGraph';
+import { recordAtomExploration, recordConceptExploration } from '../exploration/explorationState';
 
 const QUICK_JUMPS = [
   ['concept:taylor', 'Taylor'],
@@ -46,12 +47,17 @@ export default function MathCosmos() {
 
   const selectNode = (node: CosmosNode) => {
     setSelectedId(node.id);
-    if (node.kind === 'concept') setExpandedConceptId(node.entityId);
+    if (node.kind === 'concept') {
+      setExpandedConceptId(node.entityId);
+      recordConceptExploration(node.entityId);
+    }
+    if (node.kind === 'atom') recordAtomExploration(node.entityId);
     if (node.kind === 'domain') setExpandedConceptId(null);
   };
 
   const jumpTo = (id: string) => {
     const conceptId = id.replace('concept:', '');
+    recordConceptExploration(conceptId);
     setExpandedConceptId(conceptId);
     setSelectedId(id);
     setQuery('');

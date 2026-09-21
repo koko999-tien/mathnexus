@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { AlertTriangle, ArrowRight, BookOpen, Check, CircleDot, Gauge, GitBranch, GraduationCap, Layers3, LockKeyhole, Network, Route, Sparkles, Wrench } from 'lucide-react';
@@ -11,6 +11,7 @@ import { conceptProgress, directDependents, learningPathTo } from '../utils/know
 import { atomsForConcept, atomDependencies, ontologyDepthScore } from '../utils/mathOntology';
 import { conceptMastery, masteryLabel } from '../utils/conceptMastery';
 import { ChatText } from '../components/ui/ChatText';
+import { recordAtomExploration, recordConceptExploration } from '../exploration/explorationState';
 
 const STATE_LABEL = {
   covered: 'Đã học',
@@ -31,8 +32,15 @@ export default function KnowledgeMap() {
   const dependents = directDependents(selectedId);
   const atoms = atomsForConcept(selectedId);
   const mastery = conceptMastery(progress, selectedId);
-  const selectedAtom = atoms.find(atom => atom.id === params.get('atom')) || atoms[0];
+  const requestedAtomId = params.get('atom');
+  const selectedAtom = atoms.find(atom => atom.id === requestedAtomId) || atoms[0];
+  const requestedAtomValid = Boolean(requestedAtomId && MATH_ATOMS.some(atom => atom.id === requestedAtomId && atom.conceptId === selectedId));
   const ontologyScore = ontologyDepthScore(selectedId);
+
+  useEffect(() => {
+    recordConceptExploration(selectedId);
+    if (requestedAtomId && requestedAtomValid) recordAtomExploration(requestedAtomId);
+  }, [requestedAtomId, requestedAtomValid, selectedId]);
 
   const selectConcept = (id: string) => {
     const next = new URLSearchParams(params);
