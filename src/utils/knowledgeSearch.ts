@@ -179,6 +179,28 @@ function graphDistances(anchorIds: string[], maxDepth = 2) {
   return distance;
 }
 
+function prerequisiteDistances(anchorIds: string[], maxDepth = 3) {
+  const distance = new Map<string, number>();
+  let frontier = [...anchorIds];
+  frontier.forEach(id => distance.set(id, 0));
+
+  for (let depth = 1; depth <= maxDepth && frontier.length; depth++) {
+    const next: string[] = [];
+    for (const id of frontier) {
+      const concept = MATH_CONCEPTS.find(item => item.id === id);
+      if (!concept) continue;
+      for (const prerequisite of concept.prerequisites) {
+        if (distance.has(prerequisite)) continue;
+        distance.set(prerequisite, depth);
+        next.push(prerequisite);
+      }
+    }
+    frontier = next;
+  }
+
+  return distance;
+}
+
 function retrievalContext(query: string) {
   const anchors = rankRetrieval(CONCEPT_DOCUMENTS, query, {
     limit: 3,
@@ -193,14 +215,14 @@ function retrievalContext(query: string) {
       .filter((domain): domain is string => Boolean(domain)),
   );
 
-  return { distances, domains };
+  return { distances, prerequisiteDistances: prerequisiteDistances(anchorIds), domains };
 }
 
 export function searchKnowledge(query: string, limit = 12): KnowledgeHit[] {
   const trimmed = query.trim();
   if (!trimmed) return [];
 
-  const { distances, domains } = retrievalContext(trimmed);
+  const { distances, prerequisiteDistances: prerequisiteDistance, domains } = retrievalContext(trimmed);
   const normalized = normalizeSearch(trimmed);
   const learningPathIntent = /hoc gi truoc|nen hoc|dang yeu|yeu |bat dau|tien quyet|nen bat dau/.test(normalized);
 
@@ -218,15 +240,15 @@ export function searchKnowledge(query: string, limit = 12): KnowledgeHit[] {
       const conceptId = document.payload.conceptId;
       if (!conceptId) return 0;
       const distance = distances.get(conceptId);
+      const prerequisiteDepth = prerequisiteDistance.get(conceptId);
       if (distance === 0) return 34;
-      if (distance === 1) {
-        if (learningPathIntent && document.kind === 'concept') return 92;
-        return document.kind === 'concept' ? 28 : 17;
+      if (learningPathIntent && document.kind === 'concept' && prerequisiteDepth !== undefined && prerequisiteDepth > 0) {
+        if (prerequisiteDepth === 1) return 125;
+        if (prerequisiteDepth === 2) return 92;
+        return 64;
       }
-      if (distance === 2) {
-        if (learningPathIntent && document.kind === 'concept') return 42;
-        return document.kind === 'concept' ? 12 : 7;
-      }
+      if (distance === 1) return document.kind === 'concept' ? 28 : 17;
+      if (distance === 2) return document.kind === 'concept' ? 12 : 7;
       return document.payload.domainId && domains.has(document.payload.domainId) && document.kind === 'concept' ? 3 : 0;
     },
   }).map(hit => ({
