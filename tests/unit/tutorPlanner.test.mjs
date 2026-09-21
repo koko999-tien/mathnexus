@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { DEFAULT_PROGRESS } from '../../src/utils/storage.ts';
 import { buildTutorPlan, detectTutorMode, tutorModeLabel } from '../../src/utils/tutorPlanner.ts';
 import { searchKnowledge } from '../../src/utils/knowledgeSearch.ts';
-import { normalizeTutor, tutorInstruction } from '../../api/tutorPolicy.js';
+import { normalizeTutor, tutorInstruction, tutorUserContext } from '../../api/tutorPolicy.js';
 
 test('tutor intent detection separates hints, proof, error, visual and direct-solution requests', () => {
   assert.equal(detectTutorMode('Gợi ý cho mình bước đầu tiên thôi'), 'GUIDED_HINT');
@@ -39,14 +39,14 @@ test('server tutor policy whitelists modes and bounds untrusted client context',
   const normalized = normalizeTutor({
     mode: 'INJECT_ANYTHING',
     directSolutionAllowed: false,
-    strategy: 'x'.repeat(5000),
+    strategy: 'THIS_FIELD_MUST_BE_IGNORED'.repeat(100),
     masterySummary: 'y'.repeat(5000),
     anchorConceptIds: ['a'.repeat(200), 'b', 7, 'c', 'd', 'e', 'f', 'g'],
   });
 
   assert.equal(normalized.mode, 'GUIDED_HINT');
   assert.equal(normalized.directSolutionAllowed, false);
-  assert.equal(normalized.strategy.length, 1200);
+  assert.equal('strategy' in normalized, false);
   assert.equal(normalized.masterySummary.length, 1800);
   assert.equal(normalized.anchorConceptIds.length, 6);
   assert.equal(normalized.anchorConceptIds[0].length, 100);
@@ -54,6 +54,9 @@ test('server tutor policy whitelists modes and bounds untrusted client context',
   const instruction = tutorInstruction(normalized);
   assert.match(instruction, /Mode: GUIDED_HINT/);
   assert.match(instruction, /không nên đưa lời giải hoàn chỉnh ngay/);
+  assert.doesNotMatch(instruction, /THIS_FIELD_MUST_BE_IGNORED/);
+  assert.doesNotMatch(instruction, /yyyyyyyyyy/);
+  assert.match(tutorUserContext(normalized), /Bằng chứng mastery/);
 });
 
 test('server direct-solution mode explicitly permits full solutions', () => {
