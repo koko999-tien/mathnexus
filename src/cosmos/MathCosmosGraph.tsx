@@ -163,7 +163,7 @@ function CameraFlyRig({ selected, reduceMotion }: { selected?: CosmosNode; reduc
       overwrite: true,
     });
 
-    return () => timeline.kill();
+    return () => { timeline.kill(); };
   }, [camera, reduceMotion, selected]);
 
   return null;
