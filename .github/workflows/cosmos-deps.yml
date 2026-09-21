@@ -1,0 +1,35 @@
+name: Prepare Math Cosmos Dependencies
+
+on:
+  push:
+    branches: [feat/math-cosmos-poc]
+    paths:
+      - '.github/workflows/cosmos-deps.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  lock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/math-cosmos-poc
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install Math Cosmos runtime dependencies
+        run: npm install three @react-three/fiber @react-three/drei gsap decimal.js
+      - name: Commit package metadata
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          if git diff --cached --quiet; then
+            echo "No package metadata changes"
+          else
+            git commit -m "Install Math Cosmos 3D dependencies"
+            git push origin HEAD:feat/math-cosmos-poc
+          fi
