@@ -45,23 +45,35 @@ export function zoomViewportAt(
 }
 
 export function translateObject<T extends MathCanvasObject>(object: T, dx: number, dy: number): T {
-  const moved = {
-    ...object,
-    x: object.x + dx,
-    y: object.y + dy,
-    updatedAt: new Date().toISOString(),
-  } as T;
+  const updatedAt = new Date().toISOString();
 
   if (object.type === 'arrow') {
-    moved.x2 = object.x2 + dx;
-    moved.y2 = object.y2 + dy;
+    return {
+      ...object,
+      x: object.x + dx,
+      y: object.y + dy,
+      x2: object.x2 + dx,
+      y2: object.y2 + dy,
+      updatedAt,
+    } as T;
   }
 
   if (object.type === 'stroke') {
-    moved.points = object.points.map(point => ({ x: point.x + dx, y: point.y + dy }));
+    return {
+      ...object,
+      x: object.x + dx,
+      y: object.y + dy,
+      points: object.points.map(point => ({ x: point.x + dx, y: point.y + dy })),
+      updatedAt,
+    } as T;
   }
 
-  return moved;
+  return {
+    ...object,
+    x: object.x + dx,
+    y: object.y + dy,
+    updatedAt,
+  } as T;
 }
 
 export function objectBounds(object: MathCanvasObject) {
