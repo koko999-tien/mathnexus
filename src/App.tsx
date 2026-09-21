@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, useRef } from 'react';
 import { BrowserRouter, Link, Routes, Route, useLocation } from 'react-router-dom';
 import { useTheme } from './hooks/useTheme';
 import { Sidebar } from './components/layout/Sidebar';
@@ -40,11 +40,20 @@ function Loader() {
 
 function RouteEffects() {
   const { pathname } = useLocation();
+  const initialPathRef = useRef(true);
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
-    document.getElementById('main-content')?.focus({ preventScroll: true });
+
+    if (initialPathRef.current) {
+      initialPathRef.current = false;
+    } else {
+      document.getElementById('main-content')?.focus({ preventScroll: true });
+    }
+
     document.title = `${NAVIGATION.find(item => item.to === pathname)?.label || 'Khám phá'} · MathNexus`;
   }, [pathname]);
+
   return null;
 }
 
