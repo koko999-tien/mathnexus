@@ -1,7 +1,6 @@
 import { loadCanvasState, normalizeCanvasState, saveCanvasState } from '../canvas/canvasStorage.ts';
 import type { MathCanvasState } from '../canvas/types.ts';
 import {
-  createEmptyExplorationSummary,
   getExplorationSummary,
   normalizeExplorationSummary,
   saveExplorationSummary,
