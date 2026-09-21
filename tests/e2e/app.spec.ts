@@ -308,18 +308,23 @@ test('AI shows local fallback when the server is unavailable', async ({ page }) 
   await expect(page.locator('.chat-links a[href*="concept=complex-numbers"]')).toBeVisible();
 });
 
-test('AI renders a successful Gemini math response', async ({ page, context }) => {
-  await context.route('**/api/gemini', route => route.fulfill({ status: 200, json: { text: 'Đáp án là $2+2=4$.' } }));
-  await page.goto('/ai');
-  await page.evaluate(async () => {
-    const registrations = await navigator.serviceWorker?.getRegistrations?.() || [];
-    await Promise.all(registrations.map(registration => registration.unregister()));
+test('AI renders a successful Gemini math response', async ({ browser }) => {
+  const context = await browser.newContext({
+    baseURL: 'http://127.0.0.1:4173',
+    serviceWorkers: 'block',
   });
-  await page.reload();
-  await page.getByRole('textbox', { name: 'Câu hỏi cho trợ lý' }).fill('2+2 bằng mấy?');
-  await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
-  await expect(page.locator('.chat-message').last()).toContainText('Đáp án là');
-  await expect(page.locator('.chat-message').last().locator('.katex')).toBeVisible();
+  const page = await context.newPage();
+
+  try {
+    await context.route('**/api/gemini', route => route.fulfill({ status: 200, json: { text: 'Đáp án là $2+2=4$.' } }));
+    await page.goto('/ai');
+    await page.getByRole('textbox', { name: 'Câu hỏi cho trợ lý' }).fill('2+2 bằng mấy?');
+    await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+    await expect(page.locator('.chat-message').last()).toContainText('Đáp án là');
+    await expect(page.locator('.chat-message').last().locator('.katex')).toBeVisible();
+  } finally {
+    await context.close();
+  }
 });
 
 test('every route fits the viewport and has no client-side errors', async ({ page }) => {
