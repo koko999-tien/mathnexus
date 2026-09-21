@@ -15,7 +15,7 @@ test('dashboard, theme and complete navigation work at every screen size', async
   if (isMobile) {
     await page.getByRole('button', { name: 'Mở menu' }).click();
     const drawer = page.getByRole('dialog', { name: 'MathNexus', exact: true });
-    await expect(drawer.getByRole('link')).toHaveCount(14);
+    await expect(drawer.getByRole('link')).toHaveCount(15);
     await drawer.getByRole('link', { name: 'Tiến độ học tập' }).click();
     await expect(drawer).not.toBeVisible();
   } else await page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link', { name: 'Tiến độ học tập' }).click();
@@ -128,6 +128,30 @@ test('Math Cosmos degrades to deterministic layout fallback and honors reduced m
   await expect(canvas).toHaveAttribute('data-reduced-motion', 'true');
   await expect(page.locator('.cosmos-runtime-badges')).toContainText('Layout fallback');
   await expect(page.locator('.cosmos-hud')).toContainText('Định nghĩa đạo hàm');
+});
+
+
+test('N-body gravity lab runs a real CPU simulation with deterministic controls', async ({ page }, info) => {
+  await page.goto('/simulations/gravity');
+  await expect(page.getByRole('heading', { name: 'Phòng mô phỏng hấp dẫn N-body' })).toBeVisible();
+
+  const canvas = page.getByTestId('nbody-canvas');
+  await expect(canvas).toBeVisible();
+  await expect(canvas).toHaveAttribute('data-backend', 'cpu');
+  await expect(canvas).toHaveAttribute('data-quality', info.project.name === 'desktop-chromium' ? 'desktop' : 'mobile');
+  await expect(page.locator('.gravity-runtime')).toContainText('CPU engine · Float64');
+  await expect(page.getByText('Energy drift', { exact: true })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Tạm dừng mô phỏng' }).click();
+  await expect(page.getByRole('button', { name: 'Tiếp tục mô phỏng' })).toBeVisible();
+
+  await page.getByLabel('Số vật thể N-body').selectOption('48');
+  await expect(page.locator('.gravity-runtime')).toContainText('48 vật thể');
+
+  await page.getByLabel('Seed mô phỏng').fill('123');
+  await page.getByRole('button', { name: /Reset cùng tham số/ }).click();
+  await expect(page.getByRole('button', { name: 'Tiếp tục mô phỏng' })).toBeVisible();
+  await expect(page.getByRole('link', { name: /ODE cấp một/ })).toHaveAttribute('href', '/map?concept=first-order-ode');
 });
 
 test('search without accents opens lessons and completion survives reload', async ({ page }) => {
@@ -391,7 +415,7 @@ test('AI renders a successful Gemini math response', async ({ browser }) => {
 test('every route fits the viewport and has no client-side errors', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
-  for (const route of ['/library', '/map', '/cosmos', '/books', '/book/unknown', '/think', '/practice', '/graph', '/tools', '/calculus', '/formulas', '/formula/deMoivre', '/ai', '/notebook', '/progress', '/does-not-exist']) {
+  for (const route of ['/library', '/map', '/cosmos', '/books', '/book/unknown', '/think', '/practice', '/graph', '/tools', '/calculus', '/simulations/gravity', '/formulas', '/formula/deMoivre', '/ai', '/notebook', '/progress', '/does-not-exist']) {
     await page.goto(route);
     await expect(page.locator('main')).not.toBeEmpty();
     await expect(page.getByText('Đang mở góc học tập…')).not.toBeVisible();
