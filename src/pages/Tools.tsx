@@ -107,3 +107,34 @@ function ToolPanel({ title, description, labels, values, onChange, children }: {
 function Result({ children }: { children: ReactNode }) {
   return <output className="tool-result" aria-live="polite">{children}</output>;
 }
+
+
+function PrecisionTag({ mode }: { mode: Exclude<MathPrecisionMode, 'visual'> }) {
+  const policy = getPrecisionPolicy(mode);
+  return <span className={'precision-result-tag ' + mode}>{policy.label} · {policy.significantDigits ?? '—'} chữ số</span>;
+}
+
+function formatPreciseQuadratic(result: ReturnType<typeof highPrecisionQuadratic>) {
+  if (!result) return 'Vui lòng nhập ba hệ số thập phân hợp lệ.';
+  if (result.kind === 'infinite') return 'Phương trình có vô số nghiệm.';
+  if (result.kind === 'none') return 'Phương trình vô nghiệm.';
+  if (result.kind === 'complex') return 'Δ = ' + formatHighPrecision(result.discriminant) + ' < 0 · chưa hiển thị nghiệm phức trong công cụ này.';
+  if (result.kind === 'linear') return 'Phương trình bậc nhất: x = ' + formatHighPrecision(result.roots?.[0]);
+  if (result.kind === 'double') return 'Δ = 0 · nghiệm kép x = ' + formatHighPrecision(result.roots?.[0]);
+  return 'Hai nghiệm thực: x₁ = ' + formatHighPrecision(result.roots?.[0]) + ', x₂ = ' + formatHighPrecision(result.roots?.[1]) + ' · Δ = ' + formatHighPrecision(result.discriminant);
+}
+
+function formatPreciseLinear(result: ReturnType<typeof highPrecisionLinearSystem2>) {
+  if (!result) return 'Vui lòng nhập đủ sáu hệ số thập phân hợp lệ.';
+  if (result.kind === 'infinite') return 'det = 0 · hệ có vô số nghiệm.';
+  if (result.kind === 'none') return 'det = 0 · hệ vô nghiệm.';
+  return 'Nghiệm duy nhất: x = ' + formatHighPrecision(result.x) + ', y = ' + formatHighPrecision(result.y) + ' · det = ' + formatHighPrecision(result.determinant);
+}
+
+function formatPreciseMatrix(result: ReturnType<typeof highPrecisionMatrix2Inverse>) {
+  if (!result) return 'Vui lòng nhập bốn phần tử thập phân hợp lệ.';
+  if (!result.inverse) return 'det(A) = 0 · Ma trận suy biến, không có nghịch đảo.';
+  return 'det(A) = ' + formatHighPrecision(result.determinant) + ' · A⁻¹ = [' +
+    formatHighPrecision(result.inverse[0]) + ', ' + formatHighPrecision(result.inverse[1]) + '; ' +
+    formatHighPrecision(result.inverse[2]) + ', ' + formatHighPrecision(result.inverse[3]) + ']';
+}
