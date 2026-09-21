@@ -1,6 +1,6 @@
 const STOP_WORDS = new Set([
   'ai', 'ban', 'bi', 'cai', 'can', 'cho', 'co', 'cua', 'duoc', 'gi', 'hay', 'hoc',
-  'la', 'lam', 'minh', 'mot', 'nao', 'nen', 'nhu', 'o', 'roi', 'sao', 'the', 'thi',
+  'la', 'lam', 'minh', 'mot', 'nao', 'nen', 'nhu', 'o', 'roi', 'sao', 'the', 'thi', 'bang', 'may',
   'toi', 'trong', 've', 'va', 'voi', 'muon', 'giup', 'giai', 'thich',
 ]);
 
@@ -42,6 +42,7 @@ export function scoreSearch(fields: SearchFields, query: string) {
   const content = normalizeSearch(fields.content || '');
   const combined = [title, detail, keywords, content].filter(Boolean).join(' ');
   const tokens = tokenizeSearch(query);
+  if (tokens.length === 1 && /^\d+$/.test(tokens[0])) return 0;
 
   let score = 0;
 
