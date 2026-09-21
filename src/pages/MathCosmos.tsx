@@ -38,7 +38,7 @@ export default function MathCosmos() {
     };
   }, []);
 
-  const { data, mode: layoutMode } = useCosmosGraph(expandedConceptId);
+  const { data, mode: layoutMode, durationMs: layoutDurationMs } = useCosmosGraph(expandedConceptId);
   const selected = cosmosNodeById(data, selectedId) || data.nodes.find(node => node.kind === 'domain');
   const results = useMemo(() => cosmosSearch(data, query), [data, query]);
   const webgpu = typeof navigator !== 'undefined' && 'gpu' in navigator;
@@ -66,7 +66,7 @@ export default function MathCosmos() {
       <div className="cosmos-runtime-badges">
         <span><Box size={14} />InstancedMesh</span>
         <span><Cpu size={14} />{webgpu ? 'WebGPU detected' : 'WebGL2 fallback'}</span>
-        <span><Network size={14} />{layoutMode === 'worker' ? 'Worker layout' : layoutMode === 'fallback' ? 'Layout fallback' : 'Đang bố trí'}</span>
+        <span><Network size={14} />{layoutMode === 'worker' ? 'Worker layout' : layoutMode === 'fallback' ? 'Layout fallback' : 'Đang bố trí'}{layoutDurationMs !== null ? ' · ' + layoutDurationMs.toFixed(1) + ' ms' : ''}</span>
         <span><Layers3 size={14} />{data.nodes.length} node đang render</span>
       </div>
     </div>
