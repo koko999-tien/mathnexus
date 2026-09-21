@@ -26,6 +26,7 @@ const Formulas = lazy(() => import('./pages/Formulas'));
 const FormulaDetail = lazy(() => import('./pages/FormulaDetail'));
 const AI = lazy(() => import('./pages/AI'));
 const Notebook = lazy(() => import('./pages/Notebook'));
+const MathCanvas = lazy(() => import('./pages/MathCanvas'));
 const Progress = lazy(() => import('./pages/Progress'));
 
 function Loader() {
@@ -80,6 +81,7 @@ export default function App() {
                 <Route path="/formula/:id" element={<FormulaDetail />} />
                 <Route path="/ai" element={<AI />} />
                 <Route path="/notebook" element={<Notebook />} />
+                <Route path="/canvas" element={<MathCanvas />} />
                 <Route path="/progress" element={<Progress />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
