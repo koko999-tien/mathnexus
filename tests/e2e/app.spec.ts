@@ -422,33 +422,66 @@ test('notes, personal goals and exported backup are usable', async ({ page }) =>
   await expect(page.locator('.stat-card').filter({ hasText: 'Mục tiêu hôm nay' })).toContainText('0/3');
 });
 
-test('AI shows local fallback when the server is unavailable', async ({ page }) => {
+test('AI shows Socratic local fallback when the server is unavailable', async ({ page }) => {
   await page.route('**/api/gemini', route => route.fulfill({ status: 503, json: { code: 'MISSING_API_KEY' } }));
   await page.goto('/ai');
-  await page.getByRole('button', { name: 'Số phức là gì?' }).click();
-  await expect(page.getByText('Tra cứu cục bộ · Không phải câu trả lời từ Gemini')).toBeVisible();
+  await page.getByRole('button', { name: 'Giải thích trực quan số phức' }).click();
+  await expect(page.getByText(/Tra cứu cục bộ · Trực quan/)).toBeVisible();
+  await expect(page.locator('.chat-message').last()).toContainText('Cách tiếp cận Trực quan');
   await expect(page.locator('.chat-links a[href="/lesson/cplx"]')).toBeVisible();
   await expect(page.locator('.chat-links a[href="/map?concept=complex-numbers"]')).toBeVisible();
   await expect(page.locator('.chat-links a[href*="concept=complex-numbers&atom="]').first()).toBeVisible();
 });
 
-test('AI renders a successful Gemini math response', async ({ browser }) => {
+test('AI sends validated tutor strategy and renders a successful Gemini response', async ({ browser }) => {
   const context = await browser.newContext({
     baseURL: 'http://127.0.0.1:4173',
     serviceWorkers: 'block',
   });
   const page = await context.newPage();
+  const requests = [];
 
   try {
-    await context.route('**/api/gemini', route => route.fulfill({ status: 200, json: { text: 'Đáp án là $2+2=4$.' } }));
+    await context.route('**/api/gemini', route => {
+      requests.push(route.request().postDataJSON());
+      return route.fulfill({ status: 200, json: { text: 'Đáp án là $2+2=4$.', tutorMode: 'DIRECT_SOLUTION' } });
+    });
     await page.goto('/ai');
+    await page.getByLabel('Chế độ gia sư').selectOption('DIRECT_SOLUTION');
     await page.getByRole('textbox', { name: 'Câu hỏi cho trợ lý' }).fill('2+2 bằng mấy?');
     await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+
     await expect(page.locator('.chat-message').last()).toContainText('Đáp án là');
     await expect(page.locator('.chat-message').last().locator('.katex')).toBeVisible();
+    await expect(page.locator('.chat-message').last()).toContainText('Lời giải đầy đủ');
+
+    expect(requests).toHaveLength(1);
+    expect(requests[0].tutor.mode).toBe('DIRECT_SOLUTION');
+    expect(requests[0].tutor.directSolutionAllowed).toBe(true);
+    expect(typeof requests[0].tutor.masterySummary).toBe('string');
+    expect(Array.isArray(requests[0].tutor.anchorConceptIds)).toBe(true);
   } finally {
     await context.close();
   }
+});
+
+test('AI auto mode sends prerequisite-aware discovery strategy', async ({ page }) => {
+  let requestBody;
+  await page.route('**/api/gemini', route => {
+    requestBody = route.request().postDataJSON();
+    return route.fulfill({ status: 200, json: { text: 'Mình sẽ kiểm tra nền tảng trước.' } });
+  });
+
+  await page.goto('/ai');
+  await page.getByLabel('Chế độ gia sư').selectOption('AUTO');
+  await page.getByRole('textbox', { name: 'Câu hỏi cho trợ lý' }).fill('Mình yếu đạo hàm, nên học gì trước?');
+  await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+
+  await expect(page.locator('.chat-message').last()).toContainText('Khám phá');
+  expect(requestBody.tutor.mode).toBe('DISCOVER');
+  expect(requestBody.tutor.directSolutionAllowed).toBe(false);
+  expect(requestBody.tutor.anchorConceptIds.length).toBeGreaterThan(0);
+  expect(requestBody.appContext).toContain('MathNexus');
 });
 
 test('every route fits the viewport and has no client-side errors', async ({ page }) => {
