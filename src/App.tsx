@@ -18,6 +18,7 @@ const Think = lazy(() => import('./pages/Think'));
 const Practice = lazy(() => import('./pages/Practice'));
 const Graph = lazy(() => import('./pages/Graph'));
 const Tools = lazy(() => import('./pages/Tools'));
+const Calculus = lazy(() => import('./pages/Calculus'));
 const Formulas = lazy(() => import('./pages/Formulas'));
 const FormulaDetail = lazy(() => import('./pages/FormulaDetail'));
 const AI = lazy(() => import('./pages/AI'));
@@ -68,6 +69,7 @@ export default function App() {
                 <Route path="/practice" element={<Practice />} />
                 <Route path="/graph" element={<Graph />} />
                 <Route path="/tools" element={<Tools />} />
+                <Route path="/calculus" element={<Calculus />} />
                 <Route path="/formulas" element={<Formulas />} />
                 <Route path="/formula/:id" element={<FormulaDetail />} />
                 <Route path="/ai" element={<AI />} />
