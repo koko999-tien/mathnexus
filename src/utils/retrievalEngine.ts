@@ -18,6 +18,7 @@ export interface RetrievalOptions<T> {
   kindWeights?: Record<string, number>;
   scoreAdjust?: (document: RetrievalDocument<T>, query: string) => number;
   minScore?: number;
+  allowAdjustedWithoutLexical?: boolean;
 }
 
 function matchReasons(document: RetrievalDocument<unknown>, query: string) {
@@ -55,17 +56,17 @@ export function rankRetrieval<T>(
   return documents
     .map(document => {
       const lexicalScore = scoreSearch(document, trimmed);
-      if (lexicalScore <= 0) return null;
+      const adjustment = options.scoreAdjust?.(document, trimmed) ?? 0;
+      if (lexicalScore <= 0 && !(options.allowAdjustedWithoutLexical && adjustment > 0)) return null;
 
       const weight = kindWeights[document.kind] ?? 1;
-      const adjustment = options.scoreAdjust?.(document, trimmed) ?? 0;
       const score = Math.round((lexicalScore * weight + adjustment) * 100) / 100;
 
       return {
         document,
         lexicalScore,
         score,
-        reasons: matchReasons(document, trimmed),
+        reasons: lexicalScore > 0 ? matchReasons(document, trimmed) : ['structural-boost'],
       };
     })
     .filter((item): item is RetrievalHit<T> => Boolean(item) && item.score > minScore)
