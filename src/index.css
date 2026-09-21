@@ -566,3 +566,33 @@ svg { flex-shrink: 0; }
   .practice-insight-grid { grid-template-columns: 1fr; }
   .question-tags { margin-top: 20px; }
 }
+
+
+/* Practice mastery guidance */
+.mastery-panel { margin-bottom: 20px; }
+.mastery-panel .panel-heading-row { align-items: flex-start; gap: 16px; }
+.mastery-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 18px; }
+.mastery-row { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 12px; padding: 14px; border: 1px solid var(--color-line); border-radius: 11px; background: var(--color-bg); color: var(--color-ink); text-decoration: none; transition: border-color .18s, transform .18s, background .18s; }
+.mastery-row:hover { transform: translateY(-2px); border-color: var(--color-sage); background: var(--color-panel); }
+.mastery-copy { min-width: 0; }
+.mastery-copy strong { display: block; font-size: 12px; }
+.mastery-copy span { display: block; margin-top: 4px; color: var(--color-muted); font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mastery-score { min-width: 82px; text-align: right; }
+.mastery-score strong { display: block; font-size: 18px; line-height: 1; }
+.mastery-score small { display: block; margin-top: 4px; color: var(--color-muted); font-size: 8px; white-space: nowrap; }
+.mastery-empty { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px; margin-top: 18px; padding: 16px; border: 1px dashed var(--color-line); border-radius: 11px; background: var(--color-bg); }
+.mastery-empty > svg { color: var(--color-accent); }
+.mastery-empty strong { font-size: 12px; }
+.mastery-empty p { margin: 4px 0 0; color: var(--color-muted); font-size: 10px; }
+
+@media (max-width: 760px) {
+  .mastery-grid { grid-template-columns: 1fr; }
+  .mastery-panel .panel-heading-row { flex-direction: column; }
+  .mastery-panel .panel-heading-row .button { width: 100%; justify-content: center; }
+}
+@media (max-width: 520px) {
+  .mastery-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .mastery-row > svg { display: none; }
+  .mastery-empty { grid-template-columns: auto minmax(0, 1fr); }
+  .mastery-empty .text-link { grid-column: 1 / -1; }
+}
