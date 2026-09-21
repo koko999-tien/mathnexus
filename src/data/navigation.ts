@@ -11,6 +11,7 @@ export const NAVIGATION = [
   { to: '/graph', icon: ChartSpline, label: 'Đồ thị hàm số', group: 'Công cụ học tập' },
   { to: '/tools', icon: Calculator, label: 'Công cụ toán học', group: 'Công cụ học tập' },
   { to: '/calculus', icon: Activity, label: 'Phòng giải tích', group: 'Công cụ học tập' },
+  { to: '/simulations/gravity', icon: CircleDot, label: 'Mô phỏng hấp dẫn', group: 'Công cụ học tập' },
   { to: '/formulas', icon: Sigma, label: 'Công thức', group: 'Công cụ học tập' },
   { to: '/ai', icon: Sparkles, label: 'Trợ lý AI', group: 'Công cụ học tập' },
   { to: '/notebook', icon: NotebookPen, label: 'Sổ tay của tôi', group: 'Cá nhân' },

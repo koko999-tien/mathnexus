@@ -479,3 +479,87 @@ Still justified next:
 - opt-in adaptive feedback
 - intellectual-persistence rewards
 - frontier recommendation engine
+
+
+---
+
+## Simulation Engine Foundation — Phase 4/5 status
+
+### Engine boundary
+
+The first production simulation path now uses a small explicit contract:
+
+```text
+ParticleSimulationEngine
+  backend
+  particleCount
+  step(dt)
+  writePositions(Float32Array)
+  getMetrics()
+  reset(seed)
+  dispose()
+```
+
+Current backend:
+
+```text
+CpuNBodyEngine
+  internal position/velocity/acceleration/mass state: Float64Array
+  renderer transfer buffer: Float32Array
+  integrator: leapfrog / velocity Verlet
+  singularity control: Plummer-style softening
+  deterministic initialization: seeded PRNG
+```
+
+React owns only user-facing controls such as pause, speed, body count and seed. Particle positions are never copied into React state per frame.
+
+### Numerical policy
+
+The current gravity laboratory uses dimensionless simulation units. It does **not** claim SI-scale astrophysical fidelity.
+
+The CPU engine:
+- evaluates all pair gravity directly;
+- uses Float64 internal state;
+- splits large render-frame intervals into bounded substeps;
+- exposes total, kinetic and potential energy diagnostics;
+- exposes center-of-mass drift;
+- caps the public body count to a range suitable for the O(N²) CPU backend.
+
+The renderer receives only a Float32 position buffer because visual precision requirements differ from numerical-state requirements.
+
+### WebGPU status
+
+WebGPU compute for N-body is **not implemented yet**.
+
+The presence of browser WebGPU support is not treated as a simulation backend. A future `WebGpuNBodyEngine` must satisfy the same external engine contract and pass equivalent numerical/fallback tests before automatic backend selection is enabled.
+
+### Knowledge integration
+
+The gravity lab links into the existing graph through:
+- vectors;
+- derivative concepts;
+- first-order differential equations;
+- Calculus Lab.
+
+A dedicated Classical Mechanics / Newtonian Gravity domain expansion is deferred to the subsequent graph-integration phase rather than inventing a disconnected second ontology.
+
+### Phase status
+
+Completed:
+- SimulationEngine contract;
+- deterministic CPU N-body engine;
+- TypedArray state;
+- leapfrog integration;
+- pause/resume/reset/speed controls;
+- seed/body-count/softening controls;
+- performance timing;
+- energy-drift diagnostics;
+- mobile rendering reduction;
+- Knowledge Graph links.
+
+Still next:
+- WebGPU compute backend;
+- backend selector with verified feature detection;
+- simulation-to-concept events;
+- Newtonian gravity / classical mechanics ontology expansion;
+- additional simulations only after the engine boundary proves reusable.
