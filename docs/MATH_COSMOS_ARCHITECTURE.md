@@ -1,0 +1,470 @@
+# Math Cosmos — Ultimate System Architecture
+
+> Math Cosmos is the spatial, simulation-first evolution layer for MathNexus. The existing Knowledge Graph, Ontology, mastery evidence, practice engine and AI context remain the learning core. Math Cosmos adds a 3D universe, WebGPU simulation layer, spatial canvas and curiosity-driven orchestration on top.
+
+## PART 1 — Ultimate System Architecture
+
+### Technology stack
+
+| Layer | Choice | Why |
+| --- | --- | --- |
+| Web shell | React 19 + TypeScript + Vite | Already proven in MathNexus; fast lazy-loaded feature islands and PWA support. |
+| 3D scene graph | Three.js + React-Three-Fiber + Drei | React composition with direct access to Three primitives; supports InstancedMesh, custom shaders and later WebGPU renderer migration. |
+| Camera / spatial transitions | GSAP | Deterministic cinematic camera fly-through with interruption/overwrite control. |
+| Math typography | KaTeX | Fast, safe formula rendering already integrated in MathNexus. |
+| High precision client math | decimal.js | Decimal arithmetic for scales where IEEE-754 float rounding is inappropriate. |
+| Numerical / tensor Wasm kernel | Rust + wasm-bindgen + nalgebra | Deterministic high-performance numerical kernels off the main thread. |
+| GPU compute | WebGPU compute pipelines | N-body, PDE grids, fractals, particle systems and geometry deformation; WebGL2 remains a visual fallback. |
+| Worker orchestration | Web Workers + Comlink-style RPC | Keeps graph layout and simulation computation away from the React/main thread. |
+| Infinite spatial canvas | Yjs CRDT + tile/chunk spatial index | Persistent zoomable canvas that can later become collaborative without central edit locks. |
+| Graph database | Neo4j | Native concept/theorem/prerequisite/path traversal. |
+| Relational store | PostgreSQL | Users, progress, mastery evidence, discovery events, canvas metadata and permissions. |
+| Vector database | Qdrant | Semantic retrieval for definitions, historical notes, proofs, examples and user-owned notes. |
+| Object storage | S3-compatible storage | Canvas snapshots, simulation checkpoints, media and generated assets. |
+| AI orchestrator | TypeScript/Node service + model gateway | Combines graph retrieval, vector retrieval, mastery context and Socratic policy before calling models. |
+| Realtime/event layer | Redis Streams / NATS JetStream | Discovery events, simulation collaboration, mastery updates and reward events. |
+| Observability | OpenTelemetry + traces/metrics/logs | Correlates render, Wasm, retrieval and model latency. |
+
+### Performance principles
+
+1. Render nodes with **InstancedMesh**, not one React component / draw call per node.
+2. Render relation edges as batched BufferGeometry line segments.
+3. Calculate large force layouts in a Worker/Wasm Barnes-Hut solver, then stream position buffers to the renderer.
+4. Separate visual coordinates from canonical graph data. The database never stores camera-specific truth as concept truth.
+5. Keep simulation state in typed arrays. Move bulk numeric kernels into Wasm/WebGPU.
+6. Prefer progressive disclosure: Domain -> Concept -> Knowledge Atom. Do not render every ontology atom at once.
+7. Adaptive quality budget: lower DPR, particles and simulation resolution before dropping interaction FPS.
+8. Never block the knowledge UI on WebGPU. WebGL2/2D views remain fallbacks.
+
+### Architecture diagram
+
+```mermaid
+flowchart TB
+  subgraph Client["Browser / Math Cosmos Client"]
+    Shell["React 19 App Shell"]
+    Cosmos["R3F / Three.js 3D Cosmos\nInstancedMesh + batched edges"]
+    Canvas["Infinite Math Canvas\nYjs + spatial chunks"]
+    HUD["HUD / KaTeX / Socratic UI"]
+    Signals["Curiosity & interaction signals\nlocal aggregation"]
+    Worker["Web Worker Runtime"]
+    Wasm["Rust WebAssembly Math Kernel"]
+    GPU["WebGPU Compute + Renderer\nWebGL2 fallback"]
+
+    Shell --> Cosmos
+    Shell --> Canvas
+    Shell --> HUD
+    Cosmos --> Signals
+    Canvas --> Signals
+    Cosmos <--> Worker
+    Canvas <--> Worker
+    Worker <--> Wasm
+    Worker <--> GPU
+  end
+
+  subgraph Edge["API / Realtime Edge"]
+    Gateway["API Gateway / Auth / Rate limits"]
+    Events["Event Stream\nRedis Streams / NATS"]
+    Realtime["Realtime Session Gateway"]
+  end
+
+  subgraph AI["Socratic AI & Retrieval"]
+    Tutor["Socratic Tutor Orchestrator"]
+    Planner["Learning-path Planner"]
+    GraphRAG["Graph Retriever"]
+    VectorRAG["Vector Retriever"]
+    Safety["Prompt / policy / citation guard"]
+    Model["Model Gateway"]
+  end
+
+  subgraph Data["Multi-model Data Layer"]
+    Neo4j[("Neo4j\nKnowledge Graph")]
+    Postgres[("PostgreSQL\nUsers + Progress + Evidence")]
+    Qdrant[("Qdrant\nSemantic Vectors")]
+    Objects[("Object Storage\nCanvas + Sim Assets")]
+  end
+
+  Shell <--> Gateway
+  HUD <--> Gateway
+  Signals --> Gateway
+  Canvas <--> Realtime
+  Gateway --> Events
+  Gateway <--> Tutor
+  Gateway <--> Planner
+  Tutor --> GraphRAG
+  Tutor --> VectorRAG
+  Tutor --> Safety --> Model
+  Planner --> GraphRAG
+  GraphRAG <--> Neo4j
+  VectorRAG <--> Qdrant
+  Tutor <--> Postgres
+  Planner <--> Postgres
+  Events --> Postgres
+  Realtime <--> Objects
+  Canvas <--> Objects
+```
+
+### Runtime boundary
+
+- **React** owns UI state, accessibility, routing and progressive disclosure.
+- **Three/R3F** owns scene rendering and picking.
+- **Worker/Wasm** owns expensive deterministic math and layout.
+- **WebGPU** owns massively parallel numeric work.
+- **Server graph/vector services** own knowledge retrieval, not browser-side hidden truth.
+- **AI** receives retrieved evidence and mastery context; it does not become the source of mathematical truth.
+
+---
+
+## PART 2 — Multi-model Database Schema
+
+### Neo4j knowledge model
+
+Core node labels:
+
+```text
+(:Domain)
+(:Concept)
+(:Definition)
+(:Theorem)
+(:Lemma)
+(:Proof)
+(:Formula)
+(:Example)
+(:Counterexample)
+(:Exercise)
+(:Application)
+(:HistoricalContext)
+```
+
+Core relationships:
+
+```text
+(:Domain)-[:CONTAINS]->(:Concept)
+(:Concept)-[:PREREQUISITE_OF]->(:Concept)
+(:Definition)-[:DEFINES]->(:Concept)
+(:Theorem)-[:ABOUT]->(:Concept)
+(:Lemma)-[:SUPPORTS]->(:Theorem)
+(:Proof)-[:PROVES]->(:Theorem)
+(:Proof)-[:USES]->(:Definition|:Lemma|:Theorem)
+(:Example)-[:ILLUSTRATES]->(:Concept|:Theorem)
+(:Counterexample)-[:REFUTES]->(:Misconception)
+(:Exercise)-[:ASSESSES]->(:Concept)
+(:Concept)-[:RELATES_TO {weight, relationType}]->(:Concept)
+(:Concept)-[:APPLIES_IN]->(:Application)
+```
+
+Example:
+
+```cypher
+MERGE (fib:Concept {id: "fibonacci"})
+SET fib.title = "Fibonacci Sequence"
+
+MERGE (phi:Concept {id: "golden-ratio"})
+SET phi.title = "Golden Ratio"
+
+MERGE (fib)-[:RELATES_TO {
+  relationType: "asymptotic_ratio",
+  weight: 0.94,
+  explanation: "F(n+1)/F(n) approaches phi"
+}]->(phi)
+```
+
+### PostgreSQL user/progression model
+
+```sql
+CREATE TABLE user_profile (
+  user_id uuid PRIMARY KEY,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  locale text NOT NULL DEFAULT 'vi'
+);
+
+CREATE TABLE discovery_event (
+  id uuid PRIMARY KEY,
+  user_id uuid NOT NULL REFERENCES user_profile(user_id),
+  concept_id text NOT NULL,
+  event_type text NOT NULL,
+  dwell_ms integer,
+  camera_distance numeric,
+  exploration_depth integer,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE mastery_evidence (
+  id uuid PRIMARY KEY,
+  user_id uuid NOT NULL REFERENCES user_profile(user_id),
+  concept_id text NOT NULL,
+  evidence_type text NOT NULL,
+  source_id text,
+  correctness numeric,
+  confidence numeric NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE passion_metric_snapshot (
+  user_id uuid NOT NULL REFERENCES user_profile(user_id),
+  window_start timestamptz NOT NULL,
+  curiosity_score numeric NOT NULL,
+  persistence_score numeric NOT NULL,
+  novelty_score numeric NOT NULL,
+  flow_estimate numeric NOT NULL,
+  PRIMARY KEY (user_id, window_start)
+);
+
+CREATE TABLE universe_state (
+  user_id uuid PRIMARY KEY REFERENCES user_profile(user_id),
+  discovered_concepts jsonb NOT NULL DEFAULT '[]',
+  pinned_concepts jsonb NOT NULL DEFAULT '[]',
+  camera_bookmarks jsonb NOT NULL DEFAULT '[]',
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE spatial_canvas (
+  canvas_id uuid PRIMARY KEY,
+  user_id uuid NOT NULL REFERENCES user_profile(user_id),
+  title text NOT NULL,
+  yjs_state_object_key text NOT NULL,
+  viewport jsonb NOT NULL,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+```
+
+### Qdrant vector collections
+
+```text
+Collection: math_knowledge
+payload:
+  entity_id
+  entity_type
+  concept_id
+  domain_id
+  title
+  source
+  difficulty
+  verified
+  language
+
+vectors:
+  semantic_embedding
+
+Collection: user_notes
+payload:
+  user_id
+  canvas_id
+  note_id
+  concept_links[]
+```
+
+### Discovery flow: Fibonacci -> Golden Ratio
+
+1. User flies to **Fibonacci** and spends meaningful time rotating/exploring the node.
+2. Client emits a batched `DISCOVER_CONCEPT(fibonacci)` event.
+3. Event service stores the discovery row in PostgreSQL.
+4. Graph planner asks Neo4j for high-value adjacent concepts not yet discovered.
+5. Neo4j returns **Golden Ratio** through the `asymptotic_ratio` relation.
+6. `universe_state.discovered_concepts` adds Fibonacci and marks Golden Ratio as a visible frontier, not automatically "learned".
+7. Passion Metric receives curiosity/persistence evidence but **does not change mastery score**.
+8. 3D client animates a new relation filament from Fibonacci toward Golden Ratio.
+9. If the user opens the relation, RAG fetches:
+   - graph relation explanation,
+   - verified theorem/history chunks from Qdrant,
+   - user's prior notes,
+   - current mastery evidence.
+10. Socratic tutor asks a guiding question such as: “Nếu chia hai số Fibonacci liên tiếp, bạn dự đoán tỉ số sẽ đi về đâu?”
+
+This separation is deliberate: **discovery != mastery**.
+
+---
+
+## PART 3 — Production-ready 3D Graph Core
+
+Implemented proof of concept in:
+
+- `src/cosmos/cosmosGraph.ts`
+- `src/cosmos/MathCosmosGraph.tsx`
+- `src/pages/MathCosmos.tsx`
+
+### Rendering strategy
+
+- One `THREE.InstancedMesh` renders all currently disclosed nodes.
+- One `THREE.BufferGeometry` renders all edges as batched `lineSegments`.
+- Domain and concept positions are deterministic so reloads do not reshuffle the user's mental map.
+- A force relaxation pass combines:
+  - pairwise repulsion,
+  - spring forces on graph relations,
+  - domain anchors.
+- Current CPU layout is intentionally small-data friendly. At thousands of nodes, replace the layout function with a Worker/Wasm Barnes-Hut solver while leaving the renderer unchanged.
+- Clicking an instance uses `instanceId` to map GPU instance -> graph node.
+- GSAP animates the real Three camera to the selected node.
+- Concept selection expands ontology atoms as micro-nodes.
+- HUD formulas use the existing safe KaTeX path.
+
+### Scale path
+
+```text
+0-300 nodes:
+  main-thread deterministic force relaxation
+
+300-5,000 nodes:
+  Web Worker + Barnes-Hut octree
+  transfer Float32Array positions
+
+5,000-100,000 visible points:
+  InstancedMesh / Points
+  server-side graph culling
+  level-of-detail disclosure
+  GPU picking or spatial index
+
+Physics simulation:
+  WebGPU compute buffers, never React state per particle
+```
+
+---
+
+## PART 4 — Cognitive / Passion Engine Pseudocode
+
+The engine should estimate **interaction state**, not claim to diagnose emotion. Raw micro-interactions should be aggregated locally where possible and users should be able to disable adaptive effects.
+
+```text
+STATE:
+  rolling_window = last 90 seconds
+  curiosity = 0
+  persistence = 0
+  novelty = 0
+  friction = 0
+  flow_estimate = 0
+
+ON interaction(event):
+  add event to rolling_window
+  discard events older than 90 seconds
+
+  signals = {
+    deliberate_exploration:
+      normalized(unique_nodes_opened + relation_expansions),
+
+    depth:
+      normalized(max_ontology_depth_reached),
+
+    persistence:
+      normalized(retries_after_error + return_to_hard_node),
+
+    self_directed_questions:
+      normalized(user_questions_not_triggered_by_system),
+
+    rapid_failure_loop:
+      normalized(repeated_wrong_attempts_with_short_latency),
+
+    frantic_navigation:
+      normalized(high_camera_velocity + rapid_backtracking),
+
+    disengagement:
+      normalized(long_idle_after_error),
+
+    hint_dependency:
+      normalized(hint_requests_without_intermediate_attempts)
+  }
+
+  curiosity =
+    0.30 * signals.deliberate_exploration +
+    0.25 * signals.depth +
+    0.25 * signals.self_directed_questions +
+    0.20 * novelty_of_recent_concepts
+
+  persistence =
+    0.55 * signals.persistence +
+    0.25 * sustained_time_on_hard_concept +
+    0.20 * recovery_after_failure
+
+  friction =
+    0.40 * signals.rapid_failure_loop +
+    0.30 * signals.frantic_navigation +
+    0.30 * signals.disengagement
+
+  flow_estimate =
+    clamp(
+      0.35 * curiosity +
+      0.35 * persistence +
+      0.20 * challenge_skill_balance -
+      0.30 * friction
+    )
+
+  IF friction > 0.72 for 20 seconds:
+    reduce_visual_noise()
+    suppress_reward_particles()
+    offer_one_socratic_hint()
+    do_not_lower_mastery_threshold()
+
+  IF persistence > 0.80
+     AND hard_concept_solved
+     AND no_reward_in_last_10_minutes:
+
+    dispatch_visual_event(
+      type = "SUPERNOVA",
+      position = solved_node.position,
+      intensity = map(persistence, 0.8..1.0 -> 0.6..1.0),
+      duration_ms = 1800
+    )
+
+    increment_passion_metric(
+      reason = "intellectual_persistence",
+      bounded_delta = small_positive_value
+    )
+
+  IF curiosity > 0.78 AND current_domain_exhausted:
+    reveal_frontier_nodes(
+      rank_by = graph_relevance * novelty * prerequisite_readiness
+    )
+
+PRIVACY RULES:
+  never infer clinical or mental-health status
+  never store raw pointer paths by default
+  aggregate interaction features on-device
+  expire fine-grained event data quickly
+  passion score must not affect grades/mastery truth
+  user can disable adaptive visual feedback
+```
+
+## Rollout plan
+
+### Phase 0 — Current PoC
+- R3F + Three renderer
+- InstancedMesh nodes
+- batched edges
+- deterministic force layout
+- GSAP fly-through
+- ontology expansion
+- KaTeX HUD
+- WebGPU capability indicator
+
+### Phase 1 — Spatial graph production hardening
+- graph-layout Web Worker
+- octree/Barnes-Hut
+- LOD/culling by camera distance
+- GPU/worker picking for very large scenes
+- persisted camera bookmarks
+- discovery events
+
+### Phase 2 — WebGPU Math & Physics Lab
+- Wasm tensor/numerical kernel
+- N-body compute pipeline
+- Mandelbrot/Julia/biological fractal compute
+- geodesic/GR visual sandbox
+- adaptive resolution controller
+
+### Phase 3 — Infinite Math Canvas
+- Yjs document
+- spatial chunk index
+- formula blocks, vector drawing and graph embeds
+- references from canvas objects back to graph concepts
+- optional realtime collaboration
+
+### Phase 4 — Socratic Graph-RAG
+- Neo4j prerequisite/path retrieval
+- Qdrant semantic retrieval
+- verified-source ranking
+- mastery-aware Socratic planner
+- answer policy: questions/hints/counterexamples before direct solution
+
+### Phase 5 — Curiosity / Passion loop
+- privacy-preserving local signal aggregation
+- opt-in adaptive feedback
+- intellectual-persistence rewards
+- frontier recommendation engine

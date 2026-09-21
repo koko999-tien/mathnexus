@@ -15,7 +15,7 @@ test('dashboard, theme and complete navigation work at every screen size', async
   if (isMobile) {
     await page.getByRole('button', { name: 'Mở menu' }).click();
     const drawer = page.getByRole('dialog', { name: 'MathNexus', exact: true });
-    await expect(drawer.getByRole('link')).toHaveCount(13);
+    await expect(drawer.getByRole('link')).toHaveCount(14);
     await drawer.getByRole('link', { name: 'Tiến độ học tập' }).click();
     await expect(drawer).not.toBeVisible();
   } else await page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link', { name: 'Tiến độ học tập' }).click();
@@ -92,6 +92,25 @@ test('deep ontology exposes definitions, misconceptions and evidence mastery', a
   await expect(page.getByRole('link', { name: /Mở bản đồ toán học/ })).toBeVisible();
 });
 
+
+
+test('Math Cosmos exposes the 3D knowledge universe and spatial node search', async ({ page }) => {
+  await page.goto('/cosmos');
+  await expect(page.getByRole('heading', { name: 'Vũ trụ tri thức toán học 3D' })).toBeVisible();
+  await expect(page.getByTestId('math-cosmos-canvas')).toBeVisible();
+  await expect(page.getByText('InstancedMesh', { exact: true })).toBeVisible();
+
+  await page.getByLabel('Tìm node trong Math Cosmos').fill('Taylor');
+  const searchPanel = page.locator('.cosmos-search-panel');
+  await searchPanel.getByRole('button', { name: /Chuỗi Taylor/ }).click();
+  await expect(page.locator('.cosmos-hud')).toContainText('Chuỗi Taylor');
+  await expect(page.locator('.cosmos-hud')).toContainText('CONCEPT');
+  await expect(page.locator('.cosmos-hud').getByRole('link', { name: 'Mở cấu trúc đầy đủ' })).toHaveAttribute('href', '/map?concept=taylor');
+
+  await page.getByRole('button', { name: 'Số phức', exact: true }).click();
+  await expect(page.locator('.cosmos-hud')).toContainText('Số phức');
+  await expect(page.locator('.cosmos-runtime-badges')).toContainText('node đang render');
+});
 
 test('search without accents opens lessons and completion survives reload', async ({ page }) => {
   await page.goto('/');
@@ -354,7 +373,7 @@ test('AI renders a successful Gemini math response', async ({ browser }) => {
 test('every route fits the viewport and has no client-side errors', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
-  for (const route of ['/library', '/map', '/books', '/book/unknown', '/think', '/practice', '/graph', '/tools', '/calculus', '/formulas', '/formula/deMoivre', '/ai', '/notebook', '/progress', '/does-not-exist']) {
+  for (const route of ['/library', '/map', '/cosmos', '/books', '/book/unknown', '/think', '/practice', '/graph', '/tools', '/calculus', '/formulas', '/formula/deMoivre', '/ai', '/notebook', '/progress', '/does-not-exist']) {
     await page.goto(route);
     await expect(page.locator('main')).not.toBeEmpty();
     await expect(page.getByText('Đang mở góc học tập…')).not.toBeVisible();
