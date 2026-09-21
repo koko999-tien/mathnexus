@@ -12,7 +12,9 @@
     "test": "node --test tests/unit/*.test.mjs",
     "test:e2e": "playwright test",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "bundle:check": "node scripts/bundle-budget.mjs",
+    "audit:prod": "npm audit --omit=dev --audit-level=high"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",
