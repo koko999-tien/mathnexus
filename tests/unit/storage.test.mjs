@@ -13,7 +13,8 @@ test('legacy and corrupted progress are safely migrated with fresh defaults', ()
   memory.set('mathnexus_progress', JSON.stringify({ lessonsRead: ['quad', 'quad', 3], questionsDone: 2 }));
   assert.deepEqual(getProgress().lessonsRead, ['quad']);
   assert.equal(getProgress().questionsCorrect, 0);
-  assert.deepEqual(getProgress().activity, {});\n  assert.deepEqual(getProgress().practice, {});
+  assert.deepEqual(getProgress().activity, {});
+  assert.deepEqual(getProgress().practice, {});
   assert.equal(normalizeProgress({ dailyGoal: 999, questionsDone: -3 }).dailyGoal, 50);
   assert.equal(normalizeProgress({ questionsDone: -3 }).questionsDone, 0);
   getProgress().lessonsRead.push('should-not-leak');
