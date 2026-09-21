@@ -3,6 +3,7 @@ const STABLE_FALLBACK_MODELS = ['gemini-3.7-flash', 'gemini-3.6-flash'];
 const REQUEST_BUDGET_MS = 24000;
 const ATTEMPT_TIMEOUT_MS = 7000;
 const RETRY_DELAY_MS = 650;
+const TUTOR_MODES = new Set(['DISCOVER','GUIDED_HINT','CONCEPT_EXPLANATION','PROOF_GUIDANCE','ERROR_DIAGNOSIS','VISUAL_INTUITION','DIRECT_SOLUTION']);
 
 const SYSTEM_PROMPT = `
 Bạn là MathNexus AI, trợ lý học toán cho người Việt.
@@ -10,7 +11,9 @@ Bạn là MathNexus AI, trợ lý học toán cho người Việt.
 Nguyên tắc:
 - Trả lời bằng tiếng Việt trừ khi người dùng yêu cầu ngôn ngữ khác.
 - Ưu tiên giải thích rõ bản chất, sau đó mới đến công thức.
-- Với bài toán, trình bày từng bước và tự kiểm tra kết quả trước khi trả lời.
+- Với bài toán, tự kiểm tra kết quả trước khi trả lời.
+- Mặc định hỗ trợ học bằng câu hỏi dẫn dắt/gợi ý; không cố tình giữ đáp án nếu người dùng đã yêu cầu lời giải đầy đủ.
+- Không tuyên bố biết cảm xúc, bệnh lý, trí thông minh hay năng lực của người dùng từ hành vi học tập.
 - Nếu có "Ngữ cảnh MathNexus", hãy dùng nó làm nguồn ngữ cảnh cho nội dung trong ứng dụng.
 - Không bịa rằng MathNexus có bài học, sách hay công thức nếu ngữ cảnh không cung cấp.
 - Khi câu hỏi thiếu dữ kiện, nêu giả định ngắn gọn thay vì bịa dữ kiện.
@@ -53,12 +56,61 @@ function normalizeHistory(history) {
     }));
 }
 
+
+function normalizeTutor(tutor) {
+  if (!tutor || typeof tutor !== 'object' || Array.isArray(tutor)) return null;
+
+  const mode = TUTOR_MODES.has(tutor.mode) ? tutor.mode : 'GUIDED_HINT';
+  const strategy = typeof tutor.strategy === 'string' ? tutor.strategy.trim().slice(0, 1200) : '';
+  const masterySummary = typeof tutor.masterySummary === 'string' ? tutor.masterySummary.trim().slice(0, 1800) : '';
+  const anchorConceptIds = Array.isArray(tutor.anchorConceptIds)
+    ? tutor.anchorConceptIds.filter(id => typeof id === 'string').slice(0, 6).map(id => id.slice(0, 100))
+    : [];
+
+  return {
+    mode,
+    directSolutionAllowed: tutor.directSolutionAllowed === true || mode === 'DIRECT_SOLUTION',
+    strategy,
+    masterySummary,
+    anchorConceptIds,
+  };
+}
+
+function tutorInstruction(tutor) {
+  if (!tutor) return '';
+
+  const modeRules = {
+    DISCOVER: 'Xác định mục tiêu và tiên quyết. Hỏi một câu kiểm tra nền tảng rồi đề xuất bước học tiếp theo.',
+    GUIDED_HINT: 'Đưa đúng một gợi ý có ích và một câu hỏi tiếp theo. Không đưa toàn bộ lời giải trong lượt đầu trừ khi người dùng yêu cầu trực tiếp.',
+    CONCEPT_EXPLANATION: 'Giải thích trực giác trước, sau đó định nghĩa/công thức, một ví dụ ngắn và một câu hỏi kiểm tra hiểu.',
+    PROOF_GUIDANCE: 'Tách giả thiết, kết luận và công cụ. Gợi ý bước/lemma tiếp theo; chỉ đưa chứng minh đầy đủ khi được yêu cầu rõ.',
+    ERROR_DIAGNOSIS: 'Chỉ ra bước sai đầu tiên, giải thích vì sao, giữ lại phần đúng và yêu cầu sửa một bước cụ thể.',
+    VISUAL_INTUITION: 'Ưu tiên hình dung, đồ thị, chuyển động hoặc phản ví dụ trực quan trước ký hiệu.',
+    DIRECT_SOLUTION: 'Đưa lời giải đầy đủ từng bước vì người dùng yêu cầu, nêu ý chính và tự kiểm tra kết quả.',
+  };
+
+  const directRule = tutor.directSolutionAllowed
+    ? 'Lượt này được phép đưa đáp án/lời giải đầy đủ nếu phù hợp.'
+    : 'Lượt này không nên đưa lời giải hoàn chỉnh ngay; ưu tiên dẫn dắt từng bước.';
+
+  return [
+    'Chiến lược gia sư cho lượt này:',
+    `- Mode: ${tutor.mode}`,
+    `- Quy tắc: ${modeRules[tutor.mode]}`,
+    `- Direct solution: ${directRule}`,
+    tutor.strategy ? `- Planner strategy: ${tutor.strategy}` : '',
+    tutor.masterySummary ? `- Bằng chứng học tập cục bộ: ${tutor.masterySummary}` : '',
+    tutor.anchorConceptIds.length ? `- Concept neo: ${tutor.anchorConceptIds.join(', ')}` : '',
+    '- Chỉ dùng mastery như bằng chứng học tập có giới hạn; nếu thiếu bằng chứng, nói là chưa đánh giá thay vì suy đoán.',
+  ].filter(Boolean).join('\n');
+}
+
 function timeoutSignal(deadline) {
   const remaining = Math.max(1, deadline - Date.now());
   return AbortSignal.timeout(Math.max(500, Math.min(ATTEMPT_TIMEOUT_MS, remaining)));
 }
 
-async function callGemini({ apiKey, model, contents, signal }) {
+async function callGemini({ apiKey, model, contents, signal, systemPrompt }) {
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
 
   let geminiResponse;
@@ -72,7 +124,7 @@ async function callGemini({ apiKey, model, contents, signal }) {
       },
       body: JSON.stringify({
         systemInstruction: {
-          parts: [{ text: SYSTEM_PROMPT }],
+          parts: [{ text: systemPrompt || SYSTEM_PROMPT }],
         },
         contents,
         generationConfig: {
@@ -200,6 +252,7 @@ export default async function handler(request, response) {
 
   const message = typeof body.message === 'string' ? body.message.trim() : '';
   const appContext = typeof body.appContext === 'string' ? body.appContext.trim().slice(0, 12000) : '';
+  const tutor = normalizeTutor(body.tutor);
 
   if (!message) {
     return response.status(400).json({ error: 'Message is required', code: 'EMPTY_MESSAGE' });
@@ -212,6 +265,8 @@ export default async function handler(request, response) {
   const userText = appContext
     ? `Ngữ cảnh MathNexus:\n${appContext}\n\nCâu hỏi của người dùng:\n${message}`
     : message;
+
+  const dynamicSystemPrompt = [SYSTEM_PROMPT, tutorInstruction(tutor)].filter(Boolean).join('\n\n');
 
   const contents = [
     ...normalizeHistory(body.history),
@@ -242,6 +297,7 @@ export default async function handler(request, response) {
         model,
         contents,
         signal: timeoutSignal(deadline),
+        systemPrompt: dynamicSystemPrompt,
       });
 
       attempts.push({ model, attempt, code: result.ok ? 'OK' : String(result.code || result.status) });
@@ -251,6 +307,7 @@ export default async function handler(request, response) {
           text: result.text,
           model: result.model,
           fallbackUsed: model !== configuredModel,
+          tutorMode: tutor?.mode || null,
         });
       }
 
