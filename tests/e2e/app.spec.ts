@@ -5,6 +5,7 @@ test('dashboard, theme and complete navigation work at every screen size', async
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Một ngày mới');
+  await expect(page.getByRole('heading', { name: 'Kế hoạch hôm nay' })).toBeVisible();
   await page.screenshot({ path: info.outputPath('dashboard.png'), fullPage: true });
   await page.getByRole('button', { name: 'Bật giao diện tối' }).click();
   await expect(page.locator('html')).toHaveClass('dark');
@@ -20,6 +21,35 @@ test('dashboard, theme and complete navigation work at every screen size', async
   } else await page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link', { name: 'Tiến độ học tập' }).click();
   await expect(page.getByRole('heading', { name: 'Tiến độ học tập', exact: true })).toBeVisible();
   expect(errors).toEqual([]);
+});
+
+
+test('dashboard recommendations and knowledge map adapt to learning history', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    localStorage.setItem('mathnexus_progress', JSON.stringify({
+      lessonsRead: ['der'],
+      questionsDone: 0,
+      booksOpened: [],
+      streak: 0,
+      lastDate: '',
+      dailyGoal: 5,
+      displayName: 'Bạn học Toán',
+      questionsCorrect: 0,
+      lastLesson: 'der',
+      activity: {},
+    }));
+  });
+  await page.reload();
+
+  await expect(page.getByRole('heading', { name: 'Nên học gì tiếp?' })).toBeVisible();
+  const recommendations = page.locator('.lesson-grid').first();
+  await expect(recommendations.getByRole('link', { name: /Giới hạn/ })).toBeVisible();
+
+  await page.goto('/progress');
+  await expect(page.getByRole('heading', { name: 'Theo chuyên đề' })).toBeVisible();
+  await expect(page.getByRole('progressbar', { name: 'Tiến độ Giải tích' })).toHaveAttribute('aria-valuenow', '25');
+  await expect(page.getByText('14 ngày gần đây')).toBeVisible();
 });
 
 test('search without accents opens lessons and completion survives reload', async ({ page }) => {
@@ -119,20 +149,17 @@ test('notes, personal goals and exported backup are usable', async ({ page }) =>
   await expect(page.locator('.stat-card').filter({ hasText: 'Mục tiêu hôm nay' })).toContainText('0/3');
 });
 
-test('AI distinguishes server responses from local fallback', async ({ page }) => {
-  await page.route('**/api/gemini', async route => {
-    const requestBody = route.request().postDataJSON() as { message?: string };
-    if (requestBody.message === '2+2 bằng mấy?') {
-      return route.fulfill({ status: 200, json: { text: 'Đáp án là $2+2=4$.' } });
-    }
-    return route.fulfill({ status: 503, json: { code: 'MISSING_API_KEY' } });
-  });
-
+test('AI shows local fallback when the server is unavailable', async ({ page }) => {
+  await page.route('**/api/gemini', route => route.fulfill({ status: 503, json: { code: 'MISSING_API_KEY' } }));
   await page.goto('/ai');
   await page.getByRole('button', { name: 'Số phức là gì?' }).click();
   await expect(page.getByText('Tra cứu cục bộ · Không phải câu trả lời từ Gemini')).toBeVisible();
   await expect(page.locator('.chat-links').getByRole('link', { name: 'Số phức', exact: true })).toBeVisible();
+});
 
+test('AI renders a successful Gemini math response', async ({ page }) => {
+  await page.route('**/api/gemini', route => route.fulfill({ status: 200, json: { text: 'Đáp án là $2+2=4$.' } }));
+  await page.goto('/ai');
   await page.getByRole('textbox', { name: 'Câu hỏi cho trợ lý' }).fill('2+2 bằng mấy?');
   await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
   await expect(page.locator('.chat-message').last()).toContainText('Đáp án là');
