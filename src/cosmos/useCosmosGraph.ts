@@ -8,6 +8,7 @@ interface WorkerResult {
   requestId: number;
   positions?: Float32Array;
   error?: string;
+  durationMs?: number;
 }
 
 function alignNewAtomsToPreviousParent(graph: CosmosGraphData, previous: PositionMap): CosmosGraphData {
@@ -52,24 +53,29 @@ export function useCosmosGraph(expandedConceptId?: string | null) {
 
   const [data, setData] = useState<CosmosGraphData>(topology);
   const [mode, setMode] = useState<CosmosLayoutMode>('pending');
+  const [durationMs, setDurationMs] = useState<number | null>(null);
 
   useEffect(() => {
     const requestId = ++requestRef.current;
     const previous = previousRef.current;
     setData(topology);
     setMode('pending');
+    setDurationMs(null);
 
-    const commit = (positions: Float32Array, nextMode: CosmosLayoutMode) => {
+    const commit = (positions: Float32Array, nextMode: CosmosLayoutMode, measuredMs: number) => {
       if (requestRef.current !== requestId) return;
       const nodes = applyLayoutPositions(topology.nodes, positions);
       previousRef.current = positionsToMap(nodes);
       setData({ nodes, edges: topology.edges });
       setMode(nextMode);
+      setDurationMs(Math.max(0, measuredMs));
     };
 
     const fallback = () => {
       try {
-        commit(layoutCosmosPositions(topology.nodes, topology.edges, previous), 'fallback');
+        const startedAt = performance.now();
+        const positions = layoutCosmosPositions(topology.nodes, topology.edges, previous);
+        commit(positions, 'fallback', performance.now() - startedAt);
       } catch {
         setData(topology);
         setMode('fallback');
@@ -104,7 +110,7 @@ export function useCosmosGraph(expandedConceptId?: string | null) {
         return;
       }
 
-      commit(event.data.positions, 'worker');
+      commit(event.data.positions, 'worker', event.data.durationMs ?? 0);
     };
 
     worker.onerror = () => {
@@ -126,5 +132,5 @@ export function useCosmosGraph(expandedConceptId?: string | null) {
     };
   }, [topology]);
 
-  return { data, mode };
+  return { data, mode, durationMs };
 }
