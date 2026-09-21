@@ -578,3 +578,30 @@ test('PWA assets and unvisited lessons are available offline', async ({ page, co
   await expect(page.getByRole('textbox', { name: 'Nội dung sổ tay' })).toHaveValue('Ghi chú khi không có mạng');
   await context.setOffline(false);
 });
+
+
+test('learning goal persists from Knowledge Map to Dashboard and can be cleared', async ({ page }) => {
+  await page.goto('/map?concept=taylor');
+  await expect(page.getByRole('heading', { name: 'Chuỗi Taylor', exact: true })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Đặt làm mục tiêu học' }).click();
+  await expect(page.getByRole('button', { name: 'Bỏ mục tiêu này' })).toBeVisible();
+
+  const storedGoal = await page.evaluate(() => JSON.parse(localStorage.getItem('mathnexus_learning_goal_v1') || 'null'));
+  expect(storedGoal?.targetConceptId).toBe('taylor');
+
+  await page.goto('/');
+  const goalCard = page.locator('.learning-goal-focus');
+  await expect(goalCard).toBeVisible();
+  await expect(goalCard).toContainText('Chuỗi Taylor');
+  await expect(goalCard).toContainText('0%');
+  await expect(goalCard.getByRole('link', { name: /Học “Hệ số và biểu diễn số”/ })).toHaveAttribute('href', '/lesson/frac');
+
+  await page.reload();
+  await expect(page.locator('.learning-goal-focus')).toContainText('Chuỗi Taylor');
+
+  await page.goto('/map?concept=taylor');
+  await page.getByRole('button', { name: 'Bỏ mục tiêu này' }).click();
+  await page.goto('/');
+  await expect(page.locator('.learning-goal-focus')).toHaveCount(0);
+});
