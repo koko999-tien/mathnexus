@@ -196,6 +196,52 @@ export function buildLearningGoalState(progress: ProgressData, input: LearningGo
   };
 }
 
+export interface GoalDiagnosticPlan {
+  targetConceptId: string;
+  targetTitle: string;
+  conceptIds: string[];
+  questionIds: string[];
+}
+
+export function buildGoalDiagnosticPlan(progress: ProgressData, input: LearningGoal | null): GoalDiagnosticPlan | null {
+  const state = buildLearningGoalState(progress, input);
+  if (!state) return null;
+  if (state.status === 'complete') {
+    return {
+      targetConceptId: state.target.id,
+      targetTitle: state.target.title,
+      conceptIds: [],
+      questionIds: [],
+    };
+  }
+
+  const conceptIds = state.steps
+    .filter(step => !step.satisfied && step.questionCount > 0)
+    .map(step => step.concept.id);
+
+  const questionsByConcept = new Map<string, string[]>();
+  for (const conceptId of conceptIds) questionsByConcept.set(conceptId, []);
+  for (const [questionId, conceptId] of Object.entries(QUIZ_CONCEPT_MAP)) {
+    questionsByConcept.get(conceptId)?.push(questionId);
+  }
+
+  const maxBreadth = Math.max(0, ...[...questionsByConcept.values()].map(ids => ids.length));
+  const questionIds: string[] = [];
+  for (let round = 0; round < maxBreadth; round++) {
+    for (const conceptId of conceptIds) {
+      const questionId = questionsByConcept.get(conceptId)?.[round];
+      if (questionId) questionIds.push(questionId);
+    }
+  }
+
+  return {
+    targetConceptId: state.target.id,
+    targetTitle: state.target.title,
+    conceptIds,
+    questionIds,
+  };
+}
+
 export function learningGoalTargets() {
   return MATH_CONCEPTS;
 }
