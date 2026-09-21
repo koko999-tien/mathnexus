@@ -357,6 +357,8 @@ export default function MathCanvas() {
           '--canvas-zoom': canvas.viewport.zoom,
           '--canvas-grid-x': canvas.viewport.x + 'px',
           '--canvas-grid-y': canvas.viewport.y + 'px',
+          '--canvas-grid-size': (24 * canvas.viewport.zoom) + 'px',
+          '--canvas-grid-major': (120 * canvas.viewport.zoom) + 'px',
         } as CSSProperties}
       >
         <div
@@ -364,7 +366,7 @@ export default function MathCanvas() {
           data-canvas-layer="world"
           style={{ transform: `translate(${canvas.viewport.x}px, ${canvas.viewport.y}px) scale(${canvas.viewport.zoom})` }}
         >
-          <svg className="canvas-vector-layer" data-canvas-layer="world" aria-hidden="true">
+          <svg className="canvas-vector-layer" data-canvas-layer="world" viewBox="-50000 -50000 100000 100000" aria-hidden="true">
             <defs>
               <marker id="canvas-arrow-head" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
                 <path d="M0,0 L8,4 L0,8 z" />
