@@ -26,7 +26,7 @@ export function MathCosmosGraph({
   const selected = nodes.find(node => node.id === selectedId);
   const mobile = quality === 'mobile';
 
-  return <div className="math-cosmos-canvas" data-testid="math-cosmos-canvas">
+  return <div className="math-cosmos-canvas" data-testid="math-cosmos-canvas" data-quality={quality} data-reduced-motion={reduceMotion ? "true" : "false"}>
     <Canvas
       dpr={mobile ? [0.75, 1] : [1, 1.5]}
       camera={{ position: [0, 8, 58], fov: 54, near: 0.1, far: 500 }}
