@@ -56,7 +56,7 @@ test('dashboard recommendations and knowledge map adapt to learning history', as
 test('knowledge map exposes prerequisite depth, gaps and learning paths', async ({ page }) => {
   await page.goto('/map?concept=derivative-definition');
   await expect(page.getByRole('heading', { name: 'Bản đồ cấu trúc toán học' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Định nghĩa đạo hàm' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Định nghĩa đạo hàm', exact: true })).toBeVisible();
 
   const prerequisites = page.locator('.concept-relations').filter({ hasText: 'Cần biết trước' });
   await expect(prerequisites).toBeVisible();
@@ -323,7 +323,8 @@ test('AI shows local fallback when the server is unavailable', async ({ page }) 
   await page.getByRole('button', { name: 'Số phức là gì?' }).click();
   await expect(page.getByText('Tra cứu cục bộ · Không phải câu trả lời từ Gemini')).toBeVisible();
   await expect(page.locator('.chat-links a[href="/lesson/cplx"]')).toBeVisible();
-  await expect(page.locator('.chat-links a[href*="concept=complex-numbers"]')).toBeVisible();
+  await expect(page.locator('.chat-links a[href="/map?concept=complex-numbers"]')).toBeVisible();
+  await expect(page.locator('.chat-links a[href*="concept=complex-numbers&atom="]').first()).toBeVisible();
 });
 
 test('AI renders a successful Gemini math response', async ({ browser }) => {
