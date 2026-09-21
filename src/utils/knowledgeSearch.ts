@@ -1,9 +1,10 @@
 import { LESSONS } from '../data/lessons';
 import { BOOKS } from '../data/books';
 import { FORMS } from '../data/formulas';
+import { MATH_CONCEPTS, MATH_DOMAINS } from '../data/mathKnowledge';
 import { scoreSearch } from './search';
 
-export type KnowledgeKind = 'lesson' | 'formula' | 'book';
+export type KnowledgeKind = 'concept' | 'lesson' | 'formula' | 'book';
 
 export interface KnowledgeHit {
   kind: KnowledgeKind;
@@ -19,7 +20,20 @@ function stripHtml(text: string) {
   return text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
+const conceptTitle = (id: string) => MATH_CONCEPTS.find(item => item.id === id)?.title || id;
+const domainTitle = (id: string) => MATH_DOMAINS.find(item => item.id === id)?.name || id;
+
 const KNOWLEDGE = [
+  ...MATH_CONCEPTS.map(item => ({
+    kind: 'concept' as const,
+    type: 'Khái niệm',
+    title: item.title,
+    detail: `${domainTitle(item.domain)} · ${item.level}`,
+    to: `/map?concept=${encodeURIComponent(item.id)}`,
+    keywords: `${item.tags.join(' ')} ${domainTitle(item.domain)} tiên quyết prerequisite khái niệm`,
+    content: `${item.description} ${item.prerequisites.map(conceptTitle).join(' ')}`,
+    context: `[Khái niệm] ${item.title} (${domainTitle(item.domain)} · ${item.level})\nMô tả: ${item.description}\nTiên quyết trực tiếp: ${item.prerequisites.length ? item.prerequisites.map(conceptTitle).join(', ') : 'Không có'}\nKhái niệm này nằm ở tầng cấu trúc của MathNexus và có thể dùng để xác định lộ trình học.`,
+  })),
   ...LESSONS.map(item => ({
     kind: 'lesson' as const,
     type: 'Bài học',
@@ -77,11 +91,11 @@ export function searchKnowledge(query: string, limit = 12): KnowledgeHit[] {
 
 export function buildKnowledgeContext(query: string, limit = 5) {
   const ranked = searchKnowledge(query, 20);
-  const counts: Record<KnowledgeKind, number> = { lesson: 0, formula: 0, book: 0 };
+  const counts: Record<KnowledgeKind, number> = { concept: 0, lesson: 0, formula: 0, book: 0 };
   const selected: KnowledgeHit[] = [];
 
   for (const item of ranked) {
-    if (counts[item.kind] >= 2) continue;
+    if (counts[item.kind] >= (item.kind === 'concept' ? 2 : 2)) continue;
     selected.push(item);
     counts[item.kind] += 1;
     if (selected.length >= limit) break;
