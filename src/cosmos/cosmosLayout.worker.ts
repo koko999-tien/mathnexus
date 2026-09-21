@@ -13,8 +13,10 @@ self.onmessage = (event: MessageEvent<LayoutRequest>) => {
   const { requestId, nodes, edges, previous } = event.data;
 
   try {
+    const startedAt = performance.now();
     const positions = layoutCosmosPositions(nodes, edges, previous);
-    self.postMessage({ requestId, positions }, [positions.buffer]);
+    const durationMs = performance.now() - startedAt;
+    self.postMessage({ requestId, positions, durationMs }, [positions.buffer]);
   } catch (error) {
     self.postMessage({
       requestId,
