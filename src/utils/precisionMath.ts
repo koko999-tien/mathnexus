@@ -39,8 +39,8 @@ function decimalConstructor(significantDigits = HIGH_PRECISION_DIGITS) {
   return Decimal.clone({
     precision,
     rounding: Decimal.ROUND_HALF_EVEN,
-    toExpNeg: -100,
-    toExpPos: 100,
+    toExpNeg: -20,
+    toExpPos: 20,
   });
 }
 
