@@ -11,6 +11,7 @@ import NotFound from './pages/NotFound';
 
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Library = lazy(() => import('./pages/Library'));
+const LibraryReader = lazy(() => import('./pages/LibraryReader'));
 const KnowledgeMap = lazy(() => import('./pages/KnowledgeMap'));
 const MathCosmos = lazy(() => import('./pages/MathCosmos'));
 const Lesson = lazy(() => import('./pages/Lesson'));
@@ -75,6 +76,7 @@ export default function App() {
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/library" element={<Library />} />
+                <Route path="/library/read" element={<LibraryReader />} />
                 <Route path="/map" element={<KnowledgeMap />} />
                 <Route path="/cosmos" element={<MathCosmos />} />
                 <Route path="/lesson/:id" element={<Lesson />} />

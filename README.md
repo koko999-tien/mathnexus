@@ -41,6 +41,22 @@ GEMINI_MODEL=gemini-3.8-flash
 
 Không đặt API key trong biến có tiền tố `VITE_`, vì giá trị đó sẽ bị đóng gói xuống trình duyệt.
 
+## Thư viện kiến thức
+
+Trang `/library` có ba nguồn:
+
+- **Bài học MathNexus**: nội dung nội bộ, đọc trực tiếp trong ứng dụng.
+- **Wikipedia**: tìm bằng MediaWiki API và đọc bản chữ của bài viết ngay trong MathNexus; hỗ trợ tiếng Việt và tiếng Anh.
+- **Open Library + Internet Archive**: tìm sách theo tên, tác giả hoặc chủ đề; hiển thị bìa, năm xuất bản, tác giả, chủ đề và trạng thái đọc/mượn khi nguồn cung cấp.
+
+Endpoint:
+
+```
+api/library.js
+```
+
+Các API trên không cần key. Open Library khuyến nghị dùng Web API ở lưu lượng thấp cho tra cứu thời gian thực; MathNexus dùng cache serverless và không dùng API này để tải dữ liệu hàng loạt.
+
 ## Mathematics Discovery
 
 Trang Tổng quan dùng endpoint:
@@ -102,6 +118,8 @@ Output: `dist/`
 - Crossref REST API
 - Semantic Scholar Academic Graph API
 - YouTube RSS feeds
+- MediaWiki / Wikipedia API
+- Open Library API + Internet Archive reading links
 - PWA-ready
 
 ## Features
@@ -112,6 +130,7 @@ Output: `dist/`
 - Research Shelf lưu paper/nguồn/video cục bộ và xuất các paper đã giữ thành BibTeX.
 - Có lối tra cứu trực tiếp sang arXiv, Google Scholar và YouTube từ cùng truy vấn.
 - Cửa sổ YouTube Search độc lập trên trang chính, dùng tìm kiếm trực tiếp của YouTube và RSS công khai.
+- Thư viện kiến thức gồm bài học nội bộ, Wikipedia có chế độ đọc trong ứng dụng và tìm sách từ Open Library/Internet Archive.
 - Bài học toán từ THCS đến Đại học.
 - Knowledge Graph và Math Cosmos 3D.
 - Tủ sách và công thức có giải thích.
