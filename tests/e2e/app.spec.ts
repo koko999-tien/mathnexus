@@ -379,6 +379,20 @@ test('library filters have a useful empty state and can be cleared', async ({ pa
   await expect(page.getByLabel('Cấp học')).toHaveValue('THCS');
 });
 
+test('knowledge library connects mathematical domains to concepts and local material', async ({ page }) => {
+  await page.goto('/library');
+
+  const domains = page.getByRole('group', { name: 'Lĩnh vực toán học' });
+  await domains.getByRole('button', { name: 'Giải tích', exact: true }).click();
+
+  await expect(domains.getByRole('button', { name: 'Giải tích', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByText('Giới hạn', { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Định nghĩa đạo hàm' })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Analysis I/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Wikipedia về Giải tích' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Sách về Giải tích' })).toBeVisible();
+});
+
 test('knowledge library can search Wikipedia, read an article, and browse open books', async ({ page, browserName }) => {
   test.skip(browserName === 'webkit', 'WebKit service-worker routing does not consistently expose mocked /api/library requests in this integration test.');
   await page.route('**/api/library**', async route => {
@@ -470,8 +484,14 @@ test('knowledge library can search Wikipedia, read an article, and browse open b
 
   await page.goto('/library?tab=openlibrary&q=calculus');
   await expect(page.getByRole('heading', { name: 'Calculus Made Clear' })).toBeVisible({ timeout: 10_000 });
-  await expect(page.getByRole('link', { name: 'Đọc online' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Đọc trong MathNexus' })).toBeVisible();
   await expect(page.getByRole('link', { name: /Open Library/ })).toBeVisible();
+
+  await page.getByRole('link', { name: 'Đọc trong MathNexus' }).click();
+  await expect(page).toHaveURL(/\/library\/book/);
+  const bookFrame = page.getByTitle('Đọc Calculus Made Clear');
+  await expect(bookFrame).toBeVisible();
+  await expect(bookFrame).toHaveAttribute('src', /archive\.org\/embed\/calculusmadeclear/);
 });
 
 test('quiz scores a complete session once per answer and persists results', async ({ page }) => {
