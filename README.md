@@ -50,6 +50,8 @@ Trang `/library` có ba nguồn:
 - **Open Library + Internet Archive**: tìm sách theo tên, tác giả hoặc chủ đề; hiển thị bìa, năm xuất bản, tác giả, chủ đề và trạng thái đọc/mượn khi nguồn cung cấp.
 - **Danh mục theo lĩnh vực**: 11 lĩnh vực trong bản đồ kiến thức được nối với khái niệm, bài học, sách gợi ý, truy vấn Wikipedia và truy vấn Open Library tương ứng.
 - **Đọc sách số hóa trong MathNexus**: các bản public-domain/open-access có Internet Archive identifier có thể mở bằng Internet Archive BookReader ngay trong route `/library/book`.
+- **Không gian đọc sách**: route `/library/book-info` lấy metadata Work/Edition từ Open Library, lưu trạng thái đọc, tiến độ, ghi chú và đánh dấu trong localStorage.
+- **Tìm trong sách**: với bản số hóa có OCR, MathNexus dùng Search Inside API của Open Library/Internet Archive theo thao tác trực tiếp của người dùng. Đây là API thử nghiệm nên giao diện có fallback khi nguồn không hỗ trợ.
 
 Endpoint:
 
@@ -132,7 +134,7 @@ Output: `dist/`
 - Research Shelf lưu paper/nguồn/video cục bộ và xuất các paper đã giữ thành BibTeX.
 - Có lối tra cứu trực tiếp sang arXiv, Google Scholar và YouTube từ cùng truy vấn.
 - Cửa sổ YouTube Search độc lập trên trang chính, dùng tìm kiếm trực tiếp của YouTube và RSS công khai.
-- Thư viện kiến thức gồm danh mục theo 11 lĩnh vực, bài học nội bộ, Wikipedia có chế độ đọc trong ứng dụng và sách từ Open Library/Internet Archive; bản số hóa công khai có thể đọc ngay trong MathNexus.
+- Thư viện kiến thức gồm danh mục theo 11 lĩnh vực, bài học nội bộ, Wikipedia, Open Library/Internet Archive, danh sách sách đang đọc, tiến độ, ghi chú, đánh dấu và tìm OCR trong các bản số hóa hỗ trợ.
 - Bài học toán từ THCS đến Đại học.
 - Knowledge Graph và Math Cosmos 3D.
 - Tủ sách và công thức có giải thích.
