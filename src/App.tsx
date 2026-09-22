@@ -13,6 +13,7 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Library = lazy(() => import('./pages/Library'));
 const LibraryReader = lazy(() => import('./pages/LibraryReader'));
 const LibraryBookReader = lazy(() => import('./pages/LibraryBookReader'));
+const LibraryBookDetail = lazy(() => import('./pages/LibraryBookDetail'));
 const KnowledgeMap = lazy(() => import('./pages/KnowledgeMap'));
 const MathCosmos = lazy(() => import('./pages/MathCosmos'));
 const Lesson = lazy(() => import('./pages/Lesson'));
@@ -79,6 +80,7 @@ export default function App() {
                 <Route path="/library" element={<Library />} />
                 <Route path="/library/read" element={<LibraryReader />} />
                 <Route path="/library/book" element={<LibraryBookReader />} />
+                <Route path="/library/book-info" element={<LibraryBookDetail />} />
                 <Route path="/map" element={<KnowledgeMap />} />
                 <Route path="/cosmos" element={<MathCosmos />} />
                 <Route path="/lesson/:id" element={<Lesson />} />
