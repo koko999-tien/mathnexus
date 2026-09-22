@@ -241,7 +241,7 @@ export default function AI() {
 
       const localContext = context.text || 'Thư viện chưa tìm thấy nội dung liên quan. Bạn có thể thử hỏi theo tên khái niệm, chủ đề hoặc mục tiêu học.';
       const localGoal = turnGoalContext
-        ? `\n\n**Mục tiêu đang theo:** ${turnGoalContext.targetTitle} · ${turnGoalContext.progressPercent}% theo evidence.`
+        ? `\n\n**Mục tiêu đang theo:** ${turnGoalContext.targetTitle} · ${turnGoalContext.progressPercent}% theo dữ liệu học tập.`
         : '';
       setMessages(current => [
         ...current,
@@ -263,13 +263,13 @@ export default function AI() {
 
   return <section className="page-enter">
     <div className="page-header">
-      <p className="eyebrow">SOCRATIC TUTOR · KNOWLEDGE GRAPH + MASTERY</p>
-      <h1>Trợ lý MathNexus</h1>
-      <p>Trợ lý chọn chiến lược theo câu hỏi, tri thức liên quan và bằng chứng học tập hiện có. Mặc định ưu tiên dẫn dắt; bạn vẫn có thể yêu cầu lời giải đầy đủ.</p>
+      <p className="eyebrow">TRỢ LÝ TOÁN HỌC</p>
+      <h1>Hỏi đáp toán học</h1>
+      <p>Trợ lý dùng câu hỏi, nội dung liên quan và tiến độ học hiện có để chọn cách trả lời. Mặc định sẽ gợi ý từng bước; bạn vẫn có thể yêu cầu lời giải đầy đủ.</p>
     </div>
 
     {goalContext && <div className="helper-text mb-3" role="status">
-      Đang dùng mục tiêu bạn đã đặt làm ngữ cảnh: <strong>{goalContext.targetTitle}</strong> · {goalContext.progressPercent}% theo evidence · <Link to={'/map?concept=' + encodeURIComponent(goalContext.targetConceptId)}>xem trên Knowledge Graph</Link>
+      Đang dùng mục tiêu bạn đã đặt: <strong>{goalContext.targetTitle}</strong> · {goalContext.progressPercent}% theo dữ liệu học tập · <Link to={'/map?concept=' + encodeURIComponent(goalContext.targetConceptId)}>xem trên bản đồ kiến thức</Link>
     </div>}
 
     <div className="tutor-mode-bar">
@@ -286,7 +286,7 @@ export default function AI() {
         </select>
       </label>
       <small>{tutorPreference === 'AUTO'
-        ? 'MathNexus tự phân loại ý định mỗi lượt.'
+        ? 'Tự chọn cách hỗ trợ phù hợp với câu hỏi.'
         : 'Chế độ thủ công được ưu tiên cho các lượt tiếp theo.'}</small>
     </div>
 
@@ -296,7 +296,7 @@ export default function AI() {
 
     <div className="chat-panel">
       <div className="chat-header">
-        <span><Sparkles size={18} />MathNexus AI · Socratic Gemini</span>
+        <span><Sparkles size={18} />Trợ lý MathNexus · Gemini</span>
         <button className="icon-button" aria-label="Xóa cuộc trò chuyện" disabled={loading} onClick={clearConversation}><Trash2 size={17} /></button>
       </div>
 
@@ -316,7 +316,7 @@ export default function AI() {
         </div>)}
 
         {loading && <div className="chat-message bot" role="status">
-          <span className="chat-source"><Sparkles size={13} />Gemini đang tra cứu và lập chiến lược{activeTutorMode ? ` · ${tutorModeLabel(activeTutorMode)}` : ''}…</span>
+          <span className="chat-source"><Sparkles size={13} />Gemini đang xử lý câu hỏi{activeTutorMode ? ` · ${tutorModeLabel(activeTutorMode)}` : ''}…</span>
           <button className="text-link" onClick={() => {
             controllerRef.current?.abort();
             busy.current = false;
@@ -340,6 +340,6 @@ export default function AI() {
       </form>
     </div>
 
-    <p className="helper-text mt-3">Các liên kết dưới câu trả lời là nội dung MathNexus được truy xuất làm bằng chứng/ngữ cảnh. Mastery chỉ dùng để điều chỉnh cách dẫn dắt, không tự suy diễn năng lực nếu chưa có dữ liệu.</p>
+    <p className="helper-text mt-3">Các liên kết dưới câu trả lời là tài liệu MathNexus đã dùng để tham chiếu. Tiến độ học chỉ dùng để điều chỉnh cách hỗ trợ và không được dùng để tự suy đoán năng lực khi chưa có đủ dữ liệu.</p>
   </section>;
 }
