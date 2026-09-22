@@ -163,5 +163,5 @@ test('mobile navigation dialog has a name and keeps content reachable', async ({
   await drawer.getByRole('link', { name: 'Luyện tập' }).click();
   await expect(drawer).not.toBeVisible();
   await expect(page.locator('#main-content')).toBeFocused();
-  await expect(page.getByRole('heading', { level: 1, name: 'Luyện tập thích ứng' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Luyện tập theo kết quả trước' })).toBeVisible();
 });

@@ -62,7 +62,7 @@ export default function KnowledgeMap() {
 
   return <section className="page-enter">
     <div className="page-header">
-      <p className="eyebrow">MATH KNOWLEDGE GRAPH</p>
+      <p className="eyebrow">BẢN ĐỒ KIẾN THỨC</p>
       <h1>Bản đồ cấu trúc toán học</h1>
       <p>Không xem toán như một danh sách bài rời. Mỗi khái niệm nằm trong một mạng tiên quyết: biết gì trước, đang đứng ở đâu và từ đây có thể đi tiếp tới đâu.</p>
     </div>
@@ -70,9 +70,9 @@ export default function KnowledgeMap() {
     <div className="knowledge-summary">
       <SummaryCard icon={<Network size={19} />} value={MATH_CONCEPTS.length} label="khái niệm" />
       <SummaryCard icon={<GitBranch size={19} />} value={MATH_DOMAINS.length} label="lĩnh vực" />
-      <SummaryCard icon={<Check size={19} />} value={progressItems.filter(item => item.covered).length} label="đã có bằng chứng học" />
+      <SummaryCard icon={<Check size={19} />} value={progressItems.filter(item => item.covered).length} label="đã có dữ liệu học" />
       <SummaryCard icon={<Sparkles size={19} />} value={progressItems.filter(item => item.state === 'ready').length} label="đang sẵn sàng học" />
-      <SummaryCard icon={<Layers3 size={19} />} value={MATH_ATOMS.length} label="mảnh tri thức sâu" />
+      <SummaryCard icon={<Layers3 size={19} />} value={MATH_ATOMS.length} label="mục nội dung chi tiết" />
     </div>
 
     <div className="knowledge-layout">
@@ -121,17 +121,17 @@ export default function KnowledgeMap() {
               {selectedIsGoal ? 'Bỏ mục tiêu này' : 'Đặt làm mục tiêu học'}
             </button>
             {currentGoalConcept && !selectedIsGoal && <Link className="text-link" to={'/map?concept=' + encodeURIComponent(currentGoalConcept.id)}><Flag size={13} />Mục tiêu hiện tại: {currentGoalConcept.title}<ArrowRight size={13} /></Link>}
-            {selectedIsGoal && <span className="helper-text">Learning Goal Engine sẽ theo dõi toàn bộ chuỗi tiên quyết tới nút này trên Dashboard.</span>}
+            {selectedIsGoal && <span className="helper-text">MathNexus sẽ theo dõi chuỗi kiến thức cần học để đi tới mục tiêu này.</span>}
           </div>
 
           <div className="mastery-evidence-card">
             <div className="mastery-evidence-head">
               <span className="small-icon green"><Gauge size={16} /></span>
-              <div><strong>Mức thành thạo theo bằng chứng</strong><small>Không đồng nhất “đã mở bài” với “đã hiểu”.</small></div>
+              <div><strong>Mức độ nắm vững</strong><small>Việc đã mở một bài không có nghĩa là đã hiểu nội dung đó.</small></div>
               <span className={'mastery-state ' + mastery.state}>{masteryLabel(mastery.state)}</span>
             </div>
             <div className="mastery-evidence-metrics">
-              <div><span>Điểm bằng chứng</span><strong>{mastery.score === null ? '—' : mastery.score + '%'}</strong></div>
+              <div><span>Điểm hiện tại</span><strong>{mastery.score === null ? '—' : mastery.score + '%'}</strong></div>
               <div><span>Độ tin cậy</span><strong>{mastery.confidence}%</strong></div>
               <div><span>Độ sâu nội dung</span><strong>{ontologyScore}%</strong></div>
             </div>
@@ -158,7 +158,7 @@ export default function KnowledgeMap() {
 
         <div className="panel ontology-card">
           <div className="ontology-title">
-            <div><p className="eyebrow">DEEP ONTOLOGY</p><h2>Bên trong “{selected.title}”</h2></div>
+            <div><p className="eyebrow">NỘI DUNG CHI TIẾT</p><h2>Bên trong “{selected.title}”</h2></div>
             <span>{atoms.length ? atoms.length + ' mảnh' : 'chưa phân rã'}</span>
           </div>
           {atoms.length ? <>
@@ -175,7 +175,7 @@ export default function KnowledgeMap() {
               </button>)}
             </div>
             {selectedAtom && <AtomInspector atom={selectedAtom} />}
-          </> : <div className="ontology-empty"><AlertTriangle size={18} /><div><strong>Khái niệm này chưa được phân rã học thuật.</strong><p>Graph đã biết vị trí của nó, nhưng MathNexus chưa có định nghĩa/định lý/ví dụ/ngộ nhận ở tầng sâu.</p></div></div>}
+          </> : <div className="ontology-empty"><AlertTriangle size={18} /><div><strong>Khái niệm này chưa có nội dung chi tiết.</strong><p>Khái niệm đã có trong bản đồ, nhưng hiện chưa có đủ định nghĩa, định lý, ví dụ hoặc lỗi thường gặp.</p></div></div>}
         </div>
 
         <div className="panel learning-path-card">
@@ -220,7 +220,7 @@ function ConceptRelations({ title, concepts, onSelect, empty }: { title: string;
 function toolLabel(path: string) {
   if (path === '/calculus') return 'Phòng thí nghiệm giải tích';
   if (path === '/graph') return 'Phòng thí nghiệm hàm số';
-  if (path === '/tools') return 'Math Workbench';
+  if (path === '/tools') return 'Công cụ toán học';
   if (path === '/simulations/gravity') return 'Phòng mô phỏng hấp dẫn N-body';
   return 'Công cụ toán học';
 }

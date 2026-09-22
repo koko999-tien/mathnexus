@@ -12,7 +12,7 @@ export function Navigation({ onNavigate }: { onNavigate?: () => void }) {
   return <nav className="sidebar-nav" aria-label="Điều hướng chính">{NAVIGATION.map(({ to, icon: Icon, label, group }, index) => (
     <Fragment key={to}>
       {(index === 0 || NAVIGATION[index - 1].group !== group) && <p className="nav-group">{group}</p>}
-      <NavLink to={to} end={to === '/'} onClick={onNavigate} className={({ isActive }) => `nav-link ${isActive ? 'is-active' : ''}`}><Icon size={19} strokeWidth={1.7} /><span>{label}</span>{to === '/ai' && <span className="ai-tag">AI</span>}</NavLink>
+      <NavLink to={to} end={to === '/'} onClick={onNavigate} className={({ isActive }) => `nav-link ${isActive ? 'is-active' : ''}`}><Icon size={19} strokeWidth={1.7} /><span>{label}</span></NavLink>
     </Fragment>
   ))}</nav>;
 }

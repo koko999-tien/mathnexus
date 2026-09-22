@@ -88,19 +88,19 @@ export default function Progress() {
     ].map(({ Icon, value, title, tone }) => <div className="stat-card" key={title}><div className="stat-top"><span className={'small-icon ' + tone}><Icon size={20} /></span><strong>{value}</strong></div><h3>{title}</h3></div>)}</div>
 
     <div className="panel mastery-panel">
-      <div className="panel-heading-row"><div><p className="eyebrow">KHÔNG CHỈ HỌC XONG — CẦN BIẾT MÌNH ĐANG VƯỚNG Ở ĐÂU</p><h2 className="panel-title">Độ vững qua luyện tập</h2><p className="helper-text">Được tính từ chính các câu bạn đã làm, không phải từ số bài đã mở.</p></div><Link to={practice.reviewQuestions > 0 ? "/practice?mode=review" : "/practice"} className="button button-light"><Brain size={16} />{practice.reviewQuestions > 0 ? 'Ôn ' + practice.reviewQuestions + ' câu yếu' : 'Bắt đầu luyện'}</Link></div>
+      <div className="panel-heading-row"><div><p className="eyebrow">KẾT QUẢ LUYỆN TẬP</p><h2 className="panel-title">Độ vững qua luyện tập</h2><p className="helper-text">Được tính từ chính các câu bạn đã làm, không phải từ số bài đã mở.</p></div><Link to={practice.reviewQuestions > 0 ? "/practice?mode=review" : "/practice"} className="button button-light"><Brain size={16} />{practice.reviewQuestions > 0 ? 'Ôn ' + practice.reviewQuestions + ' câu yếu' : 'Bắt đầu luyện'}</Link></div>
       {practiceTopics.length ? <div className="mastery-grid">{practiceTopics.map(item => <Link key={item.name} to={item.needsReview > 0 ? '/practice?cat=' + encodeURIComponent(item.name) + '&mode=review' : '/practice?cat=' + encodeURIComponent(item.name)} className="mastery-row">
         <div className="mastery-copy"><strong>{item.name}</strong><span>{item.attempted}/{item.total} câu đã gặp · {item.attempts} lượt làm</span></div>
         <div className="mastery-score"><strong>{item.accuracy === null ? '—' : item.accuracy + '%'}</strong><small>{item.needsReview > 0 ? item.needsReview + ' câu cần ôn' : 'Không có câu yếu'}</small></div>
         <ArrowUpRight size={16} />
-      </Link>)}</div> : <div className="mastery-empty"><Brain size={28} /><div><strong>Chưa có đủ dữ liệu luyện tập</strong><p>Hãy làm vài câu. MathNexus sẽ bắt đầu chỉ ra chuyên đề nào cần quay lại.</p></div><Link to="/practice" className="text-link">Làm phiên đầu tiên<ArrowUpRight size={15} /></Link></div>}
+      </Link>)}</div> : <div className="mastery-empty"><Brain size={28} /><div><strong>Chưa có đủ dữ liệu luyện tập</strong><p>Hãy làm vài câu để xem chuyên đề nào cần ôn lại.</p></div><Link to="/practice" className="text-link">Làm phiên đầu tiên<ArrowUpRight size={15} /></Link></div>}
     </div>
 
     <div className="panel concept-evidence-panel">
-      <div className="panel-heading-row"><div><p className="eyebrow">NĂNG LỰC THEO KHÁI NIỆM, KHÔNG CHỈ THEO CHUYÊN ĐỀ</p><h2 className="panel-title">Bản đồ bằng chứng học tập</h2><p className="helper-text">Điểm chỉ xuất hiện khi có bằng chứng trực tiếp từ bài học hoặc luyện tập. “Chưa đánh giá” không đồng nghĩa với yếu.</p></div><Link to="/map" className="button button-light"><Network size={16} />Mở bản đồ toán học</Link></div>
+      <div className="panel-heading-row"><div><p className="eyebrow">THEO KHÁI NIỆM</p><h2 className="panel-title">Mức độ nắm vững theo khái niệm</h2><p className="helper-text">Điểm chỉ xuất hiện khi có dữ liệu trực tiếp từ bài học hoặc luyện tập. “Chưa đánh giá” không đồng nghĩa với yếu.</p></div><Link to="/map" className="button button-light"><Network size={16} />Mở bản đồ toán học</Link></div>
       <div className="concept-evidence-summary">
-        <div><Gauge size={17} /><span><strong>{evidenceCoverage}%</strong><small>khái niệm đã có bằng chứng</small></span></div>
-        <div><Brain size={17} /><span><strong>{measuredConcepts.length}</strong><small>khái niệm đã đo được</small></span></div>
+        <div><Gauge size={17} /><span><strong>{evidenceCoverage}%</strong><small>khái niệm đã có dữ liệu</small></span></div>
+        <div><Brain size={17} /><span><strong>{measuredConcepts.length}</strong><small>khái niệm đã có kết quả</small></span></div>
         <div><Target size={17} /><span><strong>{measuredConcepts.filter(item => item.state === 'strong' || item.state === 'solid').length}</strong><small>khái niệm khá vững trở lên</small></span></div>
       </div>
       <div className="concept-evidence-grid">{conceptSpotlight.map(item => {
@@ -113,15 +113,15 @@ export default function Progress() {
           <ArrowUpRight size={15} />
         </Link>;
       })}</div>
-      {!conceptSpotlight.length && <div className="mastery-empty"><Brain size={28} /><div><strong>Chưa có dữ liệu khái niệm</strong><p>Hoàn thành một bài hoặc làm vài câu luyện tập để MathNexus bắt đầu dựng hồ sơ năng lực.</p></div><Link to="/practice" className="text-link">Bắt đầu tạo bằng chứng<ArrowUpRight size={15} /></Link></div>}
+      {!conceptSpotlight.length && <div className="mastery-empty"><Brain size={28} /><div><strong>Chưa có dữ liệu theo khái niệm</strong><p>Hoàn thành một bài hoặc làm vài câu luyện tập để xem thống kê theo từng khái niệm.</p></div><Link to="/practice" className="text-link">Bắt đầu luyện tập<ArrowUpRight size={15} /></Link></div>}
     </div>
 
     <div className="panel exploration-state-panel">
       <div className="panel-heading-row">
         <div>
-          <p className="eyebrow">CURIOSITY ≠ MASTERY</p>
-          <h2 className="panel-title">Khám phá tự chủ</h2>
-          <p className="helper-text">Chỉ số này mô tả mức độ bạn tự mở rộng không gian tri thức. Nó không phải điểm số, không đánh giá trí thông minh và không suy đoán cảm xúc.</p>
+          <p className="eyebrow">HOẠT ĐỘNG KHÁM PHÁ</p>
+          <h2 className="panel-title">Hoạt động tự học</h2>
+          <p className="helper-text">Phần này thống kê những khái niệm và mô phỏng bạn đã tự mở. Đây không phải điểm số và không dùng để đánh giá trí thông minh hay cảm xúc.</p>
         </div>
         <Link to="/cosmos" className="button button-light"><Network size={16} />Tiếp tục khám phá</Link>
       </div>
@@ -129,23 +129,23 @@ export default function Progress() {
       <div className="exploration-summary-grid">
         <div data-testid="exploration-index"><span>Chỉ số khám phá</span><strong>{explorationStats.explorationIndex}</strong><small>/100 · mô tả hành vi khám phá</small></div>
         <div data-testid="exploration-concepts"><span>Khái niệm đã tự mở</span><strong>{explorationStats.discoveredConcepts}</strong><small>{explorationStats.exploredDomains} lĩnh vực</small></div>
-        <div data-testid="exploration-atoms"><span>Mảnh ontology đã mở</span><strong>{explorationStats.deepAtoms}</strong><small>độ sâu, không phải mastery</small></div>
+        <div data-testid="exploration-atoms"><span>Nội dung chi tiết đã mở</span><strong>{explorationStats.deepAtoms}</strong><small>chỉ tính hoạt động xem</small></div>
         <div data-testid="exploration-simulations"><span>Phiên mô phỏng</span><strong>{explorationStats.simulationSessions}</strong><small>{explorationStats.simulationAdjustments} lần chỉnh tham số</small></div>
       </div>
 
       <div className="exploration-dimensions">
         {[
-          ['Độ rộng tri thức', explorationStats.breadthScore],
-          ['Độ sâu khám phá', explorationStats.depthScore],
+          ['Số lĩnh vực đã xem', explorationStats.breadthScore],
+          ['Mức chi tiết đã xem', explorationStats.depthScore],
           ['Quay lại khái niệm', explorationStats.revisitScore],
-          ['Thực nghiệm mô phỏng', explorationStats.simulationScore],
+          ['Sử dụng mô phỏng', explorationStats.simulationScore],
         ].map(([label, value]) => <div className="exploration-dimension" key={String(label)}>
           <div><strong>{label}</strong><span>{value}%</span></div>
           <div className="progress-track" role="progressbar" aria-label={String(label)} aria-valuenow={Number(value)} aria-valuemin={0} aria-valuemax={100}><span style={{ width: value + '%' }} /></div>
         </div>)}
       </div>
 
-      <p className="exploration-privacy-note">MathNexus chỉ lưu tổng hợp cục bộ như concept đã mở, lần quay lại và phiên mô phỏng. Không lưu đường rê chuột, tốc độ camera hay dùng dữ liệu này để chẩn đoán trạng thái tâm lý.</p>
+      <p className="exploration-privacy-note">MathNexus chỉ lưu cục bộ các khái niệm đã mở, số lần quay lại và phiên mô phỏng. Không lưu đường rê chuột, tốc độ camera hoặc dùng dữ liệu này để suy đoán trạng thái tâm lý.</p>
     </div>
 
     <div className="learning-breakdown">
@@ -166,7 +166,7 @@ export default function Progress() {
     </div>
       <form className="panel profile-form" onSubmit={saveProfile}><h2 className="panel-title">Góc học tập của bạn</h2><label className="field">Tên hiển thị<input value={name} onChange={event => setName(event.target.value)} maxLength={40} required autoComplete="nickname" /></label><label className="field">Mục tiêu câu hỏi mỗi ngày<input type="number" min="1" max="50" step="1" value={goal} onChange={event => setGoal(event.target.value)} required inputMode="numeric" /></label><button className="button button-dark" type="submit"><Check size={16} />Lưu thay đổi</button></form></div>
 
-    <div className="panel mt-5"><h2 className="panel-title">Những điều bạn đã khám phá</h2>{completed.length ? <div className="completed-lessons">{completed.map(lesson => <Link key={lesson.id} to={'/lesson/' + lesson.id}><Check size={16} /><span>{lesson.t}<small>{lesson.cat} · {lesson.lv}</small></span><ArrowUpRight size={16} /></Link>)}</div> : <div className="empty-state"><BookOpen size={30} /><p>Hành trình đang chờ bài học đầu tiên của bạn.</p><Link to="/library" className="button button-light">Khám phá thư viện</Link></div>}</div>
+    <div className="panel mt-5"><h2 className="panel-title">Những điều bạn đã khám phá</h2>{completed.length ? <div className="completed-lessons">{completed.map(lesson => <Link key={lesson.id} to={'/lesson/' + lesson.id}><Check size={16} /><span>{lesson.t}<small>{lesson.cat} · {lesson.lv}</small></span><ArrowUpRight size={16} /></Link>)}</div> : <div className="empty-state"><BookOpen size={30} /><p>Bạn chưa hoàn thành bài học nào.</p><Link to="/library" className="button button-light">Mở thư viện</Link></div>}</div>
 
     <div className="panel mt-5"><h2 className="panel-title">Dữ liệu luôn trong tay bạn</h2><p className="helper-text mb-4">Tiến độ, sổ tay, mục tiêu học, dữ liệu khám phá và Math Canvas đều được lưu cục bộ. Bản sao lưu v2 mang toàn bộ dữ liệu học tập bền vững sang thiết bị khác.</p><div className="flex flex-wrap gap-3"><button onClick={exportData} className="button button-light"><Download size={16} />Tải bản sao lưu</button><button onClick={() => inputRef.current?.click()} className="button button-light"><Upload size={16} />Khôi phục dữ liệu</button><input ref={inputRef} type="file" accept=".json,application/json" aria-label="Chọn bản sao lưu" className="hidden" onChange={event => void importData(event)} /><button onClick={reset} className="button button-light text-red-600"><RotateCcw size={16} />Đặt lại tiến độ</button></div></div>
     {message && <p role="status" className="form-message">{message}</p>}

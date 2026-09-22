@@ -4,8 +4,8 @@ test('dashboard, theme and complete navigation work at every screen size', async
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Theo dõi, tìm kiếm và học toán');
-  await expect(page.getByRole('heading', { name: 'Radar toán học' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Cập nhật tài liệu, tìm kiếm và học toán');
+  await expect(page.getByRole('heading', { name: 'Tài liệu mới' })).toBeVisible();
   await page.screenshot({ path: info.outputPath('dashboard.png'), fullPage: true });
   await page.getByRole('button', { name: 'Bật giao diện tối' }).click();
   await expect(page.locator('html')).toHaveClass('dark');
@@ -218,9 +218,9 @@ test('knowledge map exposes prerequisite depth, gaps and learning paths', async 
 
 test('deep ontology exposes definitions, misconceptions and evidence mastery', async ({ page }) => {
   await page.goto('/map?concept=derivative-definition');
-  await expect(page.getByText('DEEP ONTOLOGY')).toBeVisible();
+  await expect(page.getByText('NỘI DUNG CHI TIẾT', { exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Bên trong “Định nghĩa đạo hàm”' })).toBeVisible();
-  await expect(page.getByText('Mức thành thạo theo bằng chứng')).toBeVisible();
+  await expect(page.getByText('Mức độ nắm vững')).toBeVisible();
   await expect(page.getByText('Độ sâu nội dung')).toBeVisible();
 
   await page.locator('.ontology-atom-list').getByRole('button', { name: /Liên tục không suy ra khả vi/ }).click();
@@ -232,7 +232,7 @@ test('deep ontology exposes definitions, misconceptions and evidence mastery', a
   await expect(page.locator('.ontology-practice-link')).toBeVisible();
 
   await page.goto('/progress');
-  await expect(page.getByRole('heading', { name: 'Bản đồ bằng chứng học tập' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Mức độ nắm vững theo khái niệm' })).toBeVisible();
   await expect(page.getByText('Chưa đánh giá').first()).toBeVisible();
   await expect(page.getByRole('link', { name: /Mở bản đồ toán học/ })).toBeVisible();
 });
@@ -241,23 +241,23 @@ test('deep ontology exposes definitions, misconceptions and evidence mastery', a
 
 test('Math Cosmos exposes the 3D knowledge universe and spatial node search', async ({ page }, info) => {
   await page.goto('/cosmos');
-  await expect(page.getByRole('heading', { name: 'Vũ trụ tri thức toán học 3D' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Bản đồ toán học 3D' })).toBeVisible();
   const canvas = page.getByTestId('math-cosmos-canvas');
   await expect(canvas).toBeVisible();
   await expect(canvas).toHaveAttribute('data-quality', info.project.name === 'desktop-chromium' ? 'desktop' : 'mobile');
   await expect(page.getByText('InstancedMesh', { exact: true })).toBeVisible();
-  await expect(page.locator('.cosmos-runtime-badges')).toContainText(/Worker layout|Layout fallback/);
+  await expect(page.locator('.cosmos-runtime-badges')).toContainText(/Bố trí bằng Worker|Bố trí dự phòng/);
 
-  await page.getByLabel('Tìm node trong Math Cosmos').fill('Taylor');
+  await page.getByLabel('Tìm trong bản đồ toán học 3D').fill('Taylor');
   const searchPanel = page.locator('.cosmos-search-panel');
   await searchPanel.getByRole('button', { name: /Chuỗi Taylor/ }).click();
   await expect(page.locator('.cosmos-hud')).toContainText('Chuỗi Taylor');
-  await expect(page.locator('.cosmos-hud')).toContainText('CONCEPT');
+  await expect(page.locator('.cosmos-hud')).toContainText('KHÁI NIỆM');
   await expect(page.locator('.cosmos-hud').getByRole('link', { name: 'Mở cấu trúc đầy đủ' })).toHaveAttribute('href', '/map?concept=taylor');
 
   await page.getByRole('button', { name: 'Số phức', exact: true }).click();
   await expect(page.locator('.cosmos-hud')).toContainText('Số phức');
-  await expect(page.locator('.cosmos-runtime-badges')).toContainText('node đang render');
+  await expect(page.locator('.cosmos-runtime-badges')).toContainText('nút đang hiển thị');
 
   await page.getByRole('button', { name: 'N-body', exact: true }).click();
   await expect(page.locator('.cosmos-hud')).toContainText('Bài toán N-body');
@@ -274,7 +274,7 @@ test('Math Cosmos degrades to deterministic layout fallback and honors reduced m
 
   const canvas = page.getByTestId('math-cosmos-canvas');
   await expect(canvas).toHaveAttribute('data-reduced-motion', 'true');
-  await expect(page.locator('.cosmos-runtime-badges')).toContainText('Layout fallback');
+  await expect(page.locator('.cosmos-runtime-badges')).toContainText('Bố trí dự phòng');
   await expect(page.locator('.cosmos-hud')).toContainText('Định nghĩa đạo hàm');
 });
 
@@ -331,11 +331,11 @@ test('exploration state tracks intentional discovery without inventing mastery o
   expect(JSON.stringify(stored.exploration)).not.toMatch(/pointerPath|cameraVelocity|emotion|diagnosis/i);
 
   await page.goto('/progress');
-  await expect(page.getByRole('heading', { name: 'Khám phá tự chủ' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Hoạt động tự học' })).toBeVisible();
   await expect(page.getByTestId('exploration-concepts')).toContainText('1');
   await expect(page.getByTestId('exploration-atoms')).toContainText('1');
   await expect(page.getByTestId('exploration-simulations')).toContainText('1');
-  await expect(page.getByText('không đánh giá trí thông minh')).toBeVisible();
+  await expect(page.getByText(/không dùng để đánh giá trí thông minh/)).toBeVisible();
 });
 
 
@@ -362,7 +362,7 @@ test('natural-language search ranks relevant knowledge and can hand the question
   const dialog = page.getByRole('dialog');
   await dialog.getByRole('textbox').fill(query);
   await expect(dialog.locator('.search-result').first()).toContainText('Đạo hàm');
-  await dialog.getByRole('link', { name: new RegExp('Hỏi MathNexus AI') }).click();
+  await dialog.getByRole('link', { name: new RegExp('Hỏi trợ lý toán học') }).click();
   await expect(page).toHaveURL(/\/ai\?q=/);
   await expect(page.getByRole('textbox', { name: 'Câu hỏi cho trợ lý' })).toHaveValue(query);
 });
@@ -398,7 +398,7 @@ test('quiz scores a complete session once per answer and persists results', asyn
 
 test('adaptive practice remembers weak questions and filters by difficulty', async ({ page }) => {
   await page.goto('/practice?cat=' + encodeURIComponent('Tổ hợp'));
-  await expect(page.getByRole('heading', { name: 'Luyện tập thích ứng' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Luyện tập theo kết quả trước' })).toBeVisible();
   await expect(page.getByLabel('Độ khó luyện tập')).toHaveValue('Tất cả');
 
   await page.getByRole('button', { name: 'B 20', exact: true }).click();
@@ -573,7 +573,7 @@ test('calculus lab parses free expressions and computes core numerical calculus'
 
 test('Infinite Math Canvas persists spatial objects and viewport locally', async ({ page }) => {
   await page.goto('/canvas');
-  await expect(page.getByRole('heading', { name: 'Không gian toán học vô hạn' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Math Canvas' })).toBeVisible();
   await expect(page.getByTestId('math-canvas-stage')).toBeVisible();
 
   await page.getByRole('button', { name: 'Thêm LaTeX' }).click();
@@ -672,7 +672,7 @@ test('notes, personal goals and exported backup are usable', async ({ page }) =>
   expect(backup.canvas.objects[0].text).toBe('Taylor backup');
 
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Theo dõi, tìm kiếm và học toán');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Cập nhật tài liệu, tìm kiếm và học toán');
   await expect(page.locator('.overview-goal-row')).toContainText('Chuỗi Taylor');
 
   await page.goto('/progress');
@@ -760,7 +760,7 @@ test('AI uses an explicit Learning Goal as transparent tutor context', async ({ 
   });
 
   await page.goto('/ai');
-  await expect(page.getByText(/Đang dùng mục tiêu bạn đã đặt làm ngữ cảnh:/)).toBeVisible();
+  await expect(page.getByText(/Đang dùng mục tiêu bạn đã đặt:/)).toBeVisible();
   await expect(page.getByText('Chuỗi Taylor', { exact: true })).toBeVisible();
 
   await page.getByRole('textbox', { name: 'Câu hỏi cho trợ lý' }).fill('Mình nên học gì tiếp?');
@@ -804,7 +804,7 @@ test('PWA assets and unvisited lessons are available offline', async ({ page, co
   await page.goto('/formulas');
   await expect(page.locator('.katex').first()).toBeVisible();
   await page.goto('/canvas');
-  await expect(page.getByRole('heading', { name: 'Không gian toán học vô hạn' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Math Canvas' })).toBeVisible();
   await page.getByRole('button', { name: 'Thêm văn bản' }).click();
   await expect(page.locator('.canvas-object-text')).toBeVisible();
   await page.goto('/notebook');
@@ -847,13 +847,13 @@ test('goal diagnostic mode samples missing path evidence and clears stale concep
   await page.getByRole('button', { name: 'Đặt làm mục tiêu học' }).click();
 
   await page.goto('/practice?concept=complex-numbers');
-  await expect(page.getByText(/Knowledge Graph focus: “Số phức”/)).toBeVisible();
-  await page.getByRole('button', { name: 'Chẩn đoán mục tiêu' }).click();
+  await expect(page.getByText(/Khái niệm đang chọn: “Số phức”/)).toBeVisible();
+  await page.getByRole('button', { name: 'Kiểm tra mục tiêu' }).click();
 
   await expect(page).toHaveURL(/mode=goal/);
   expect(new URL(page.url()).searchParams.has('concept')).toBe(false);
-  await expect(page.getByText(/Đang chẩn đoán lộ trình tới “Chuỗi Taylor”/)).toBeVisible();
-  await expect(page.getByText(/Goal Diagnostic: “Chuỗi Taylor”/)).toBeVisible();
+  await expect(page.getByText(/Đang kiểm tra lộ trình tới “Chuỗi Taylor”/)).toBeVisible();
+  await expect(page.getByText(/Mục tiêu: “Chuỗi Taylor”/)).toBeVisible();
 
   const panel = page.locator('.practice-panel');
   await expect(panel).toBeVisible();
@@ -883,10 +883,10 @@ test('goal diagnostic debrief explains concept evidence after a complete session
 
   const debrief = page.locator('.diagnostic-debrief');
   await expect(debrief).toBeVisible();
-  await expect(debrief.getByRole('heading', { name: 'Bản đồ bằng chứng sau phiên' })).toBeVisible();
+  await expect(debrief.getByRole('heading', { name: 'Kết quả sau phiên' })).toBeVisible();
   await expect(debrief).toContainText('Tiến độ mục tiêu');
-  await expect(debrief).toContainText('Concept đã đo');
-  await expect(debrief).toContainText('Confidence');
+  await expect(debrief).toContainText('Khái niệm đã kiểm tra');
+  await expect(debrief).toContainText('Độ tin cậy');
   await expect(debrief.locator('.diagnostic-concept-row').first()).toBeVisible();
   await expect(debrief.getByRole('link', { name: /Ôn đúng điểm yếu|Tiếp tục lộ trình/ })).toBeVisible();
 });
