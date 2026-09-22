@@ -83,7 +83,8 @@ test('saved topics drive a personalized radar with new-since-last-visit counts',
   await expect(page.locator('.overview-topic-watch-card')).toContainText('A fresh result in algebraic topology');
 });
 
-test('research search saves papers to the local Research Shelf', async ({ page }) => {
+test('research search saves papers to the local Research Shelf', async ({ page, browserName }) => {
+  test.skip(browserName === 'webkit', 'WebKit service-worker routing can miss mocked discovery requests in this integration test.');
   await page.route('**/api/discovery', async route => {
     if (route.request().method() === 'GET') {
       await route.fulfill({
