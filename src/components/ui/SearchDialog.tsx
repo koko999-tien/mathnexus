@@ -83,8 +83,8 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
         {trimmed && (
           <Link to={aiHref} onClick={onClose} className="search-result">
             <div>
-              <span className="search-type">AI</span>
-              <strong>Hỏi MathNexus AI về “{trimmed}”</strong>
+              <span className="search-type">Trợ lý</span>
+              <strong>Hỏi trợ lý toán học về “{trimmed}”</strong>
               <small>Gemini sẽ dùng các bài học, công thức và sách liên quan làm ngữ cảnh.</small>
             </div>
             <Sparkles size={18} />
@@ -95,7 +95,7 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
           <div className="empty-state">
             <Search size={30} />
             <h3>Chưa có mục nào khớp trực tiếp</h3>
-            <p>Bạn vẫn có thể chuyển nguyên câu hỏi sang MathNexus AI ngay bên dưới.</p>
+            <p>Bạn vẫn có thể gửi nguyên câu hỏi cho trợ lý toán học ngay bên dưới.</p>
           </div>
         )}
       </div>
