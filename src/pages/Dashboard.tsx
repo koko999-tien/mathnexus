@@ -17,7 +17,6 @@ import {
   RefreshCcw,
   Search,
   Sigma,
-  Sparkles,
   Target,
   Video,
 } from 'lucide-react';
