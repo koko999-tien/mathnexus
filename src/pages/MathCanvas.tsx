@@ -299,9 +299,9 @@ export default function MathCanvas() {
   return <section className="math-canvas-page page-enter">
     <div className="canvas-page-head">
       <div>
-        <p className="eyebrow">INFINITE MATH CANVAS · LOCAL-FIRST</p>
-        <h1>Không gian toán học vô hạn</h1>
-        <p>Đặt ý tưởng, công thức, khái niệm và mô phỏng vào cùng một mặt phẳng. Pan, zoom và nối các mảnh tri thức theo cách bạn đang nghĩ.</p>
+        <p className="eyebrow">BẢNG GHI CHÚ TOÁN HỌC</p>
+        <h1>Math Canvas</h1>
+        <p>Đặt ghi chú, công thức, khái niệm và mô phỏng trên cùng một mặt phẳng. Có thể kéo, phóng to, thu nhỏ và nối các mục với nhau.</p>
       </div>
       <div className="canvas-save-state" role="status"><Save size={14} />{saved ? 'Đã lưu cục bộ' : 'Đang chờ lưu…'}</div>
     </div>
