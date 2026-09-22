@@ -495,6 +495,83 @@ test('knowledge library can search Wikipedia, read an article, and browse open b
   await expect(bookFrame).toHaveAttribute('src', /archive\.org\/embed\/calculusmadeclear/);
 });
 
+test('external book workspace saves progress notes bookmarks and OCR search locally', async ({ page, browserName }) => {
+  test.skip(browserName === 'webkit', 'WebKit service-worker routing does not consistently expose mocked /api/library requests in this integration test.');
+
+  await page.route('**/api/library**', async route => {
+    const url = new URL(route.request().url());
+    const mode = url.searchParams.get('mode');
+
+    if (mode === 'inside') {
+      await route.fulfill({
+        status: 200,
+        json: {
+          source: 'openlibrary',
+          mode: 'inside',
+          archiveId: 'calculusmadeclear',
+          query: 'derivative',
+          available: true,
+          pageCount: 220,
+          matches: [{
+            id: 'match-1',
+            text: 'The derivative measures the instantaneous rate of change.',
+            pages: [42],
+          }],
+        },
+      });
+      return;
+    }
+
+    await route.fulfill({
+      status: 200,
+      json: {
+        source: 'openlibrary',
+        mode: 'detail',
+        book: {
+          key: '/works/OL1W',
+          title: 'Calculus Made Clear',
+          subtitle: 'A practical introduction',
+          description: 'An introductory calculus text.',
+          firstPublishDate: '1920',
+          subjects: ['Calculus', 'Mathematics'],
+          subjectPlaces: [],
+          subjectTimes: [],
+          cover: '',
+          links: [],
+          openLibraryUrl: 'https://openlibrary.org/works/OL1W',
+        },
+      },
+    });
+  });
+
+  await page.goto('/library/book-info?key=%2Fworks%2FOL1W&archive=calculusmadeclear&title=Calculus%20Made%20Clear&authors=Ada%20Example');
+  await expect(page.getByRole('heading', { name: 'Calculus Made Clear' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Lưu sách' }).click();
+  await page.getByLabel('Trạng thái đọc').selectOption('reading');
+  await page.getByLabel('Tiến độ đọc').fill('35');
+
+  await page.getByLabel('Ghi chú sách').fill('Ôn lại định nghĩa đạo hàm.');
+  await page.getByRole('button', { name: 'Lưu ghi chú' }).click();
+
+  await page.getByLabel('Nội dung đánh dấu').fill('Chương 3 – đạo hàm');
+  await page.getByRole('button', { name: 'Thêm', exact: true }).click();
+  await expect(page.getByText('Chương 3 – đạo hàm')).toBeVisible();
+
+  await page.getByLabel('Tìm trong sách').fill('derivative');
+  await page.getByRole('button', { name: 'Tìm', exact: true }).click();
+  await expect(page.getByText(/instantaneous rate of change/)).toBeVisible();
+  await expect(page.getByText('Trang OCR: 42')).toBeVisible();
+
+  await page.goto('/library?tab=reading');
+  await expect(page.getByRole('heading', { name: 'Calculus Made Clear' })).toBeVisible();
+  await expect(page.getByText(/Đang đọc · 35%/)).toBeVisible();
+
+  await page.getByRole('link', { name: 'Mở ghi chú' }).click();
+  await expect(page.getByLabel('Ghi chú sách')).toHaveValue('Ôn lại định nghĩa đạo hàm.');
+  await expect(page.getByText('Chương 3 – đạo hàm')).toBeVisible();
+});
+
 test('quiz scores a complete session once per answer and persists results', async ({ page }) => {
   await page.goto('/practice?cat=' + encodeURIComponent('Tổ hợp'));
   await expect(page.getByRole('button', { name: 'Câu tiếp theo' })).toBeDisabled();
