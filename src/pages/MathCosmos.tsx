@@ -74,9 +74,9 @@ export default function MathCosmos() {
       <div className="cosmos-runtime-badges">
         <span><Box size={14} />InstancedMesh</span>
         <PrecisionBadge mode="visual" suffix="3D knowledge coordinates" compact />
-        <span><Cpu size={14} />{webgpu ? 'WebGPU detected' : 'WebGL2 fallback'}</span>
-        <span><Network size={14} />{layoutMode === 'worker' ? 'Worker layout' : layoutMode === 'fallback' ? 'Layout fallback' : 'Đang bố trí'}{layoutDurationMs !== null ? ' · ' + layoutDurationMs.toFixed(1) + ' ms' : ''}</span>
-        <span><Layers3 size={14} />{data.nodes.length} node đang render</span>
+        <span><Cpu size={14} />{webgpu ? 'WebGPU' : 'WebGL2'}</span>
+        <span><Network size={14} />{layoutMode === 'worker' ? 'Bố trí bằng Worker' : layoutMode === 'fallback' ? 'Bố trí dự phòng' : 'Đang bố trí'}{layoutDurationMs !== null ? ' · ' + layoutDurationMs.toFixed(1) + ' ms' : ''}</span>
+        <span><Layers3 size={14} />{data.nodes.length} nút đang hiển thị</span>
       </div>
     </div>
 
@@ -123,7 +123,7 @@ export default function MathCosmos() {
         {selected.formula && <div className="cosmos-formula"><ChatText text={selected.formula} /></div>}
         <div className="cosmos-hud-actions">
           <Link to={selected.href} className="button button-light">Mở cấu trúc đầy đủ<ArrowRight size={15} /></Link>
-          {selected.kind === 'concept' && expandedConceptId === selected.entityId && <button type="button" className="button button-light" onClick={() => setExpandedConceptId(null)}><Focus size={15} />Thu gọn vi mô</button>}
+          {selected.kind === 'concept' && expandedConceptId === selected.entityId && <button type="button" className="button button-light" onClick={() => setExpandedConceptId(null)}><Focus size={15} />Thu gọn chi tiết</button>}
         </div>
       </aside>}
     </div>
