@@ -21,7 +21,7 @@ export interface LibraryReadingRecord {
 
 const STORAGE_KEY = 'mathnexus:library-reading:v1';
 
-function clampProgress(value: number) {
+function clampProgress(value: unknown) {
   return Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
 }
 
