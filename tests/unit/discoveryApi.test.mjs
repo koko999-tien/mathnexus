@@ -205,6 +205,26 @@ test('search combines academic, editorial, web and video sources for a query', a
   assert.ok(seenUrls.some(url => url.includes('export.arxiv.org/api/query')));
 });
 
+test('watch mode aggregates saved topics with OpenAlex and arXiv', async () => {
+  const seenUrls = [];
+  mockDiscoveryFetch(seenUrls);
+
+  const response = await request({
+    method: 'GET',
+    query: { watch: 'algebraic topology|number theory' },
+    url: '/api/discovery?watch=algebraic%20topology%7Cnumber%20theory',
+  });
+
+  assert.equal(response.code, 200);
+  assert.equal(response.payload.mode, 'watch');
+  assert.equal(response.payload.topics.length, 2);
+  assert.equal(response.payload.topics[0].topic, 'algebraic topology');
+  assert.equal(response.payload.topics[0].providers.openAlex, true);
+  assert.equal(response.payload.topics[0].providers.arxiv, true);
+  assert.ok(response.payload.topics[0].papers.some(item => item.database === 'arXiv'));
+  assert.ok(seenUrls.some(url => url.includes('export.arxiv.org/api/query')));
+});
+
 test('GET q supports reusable discovery search and validation remains strict', async () => {
   mockDiscoveryFetch([]);
 
