@@ -181,7 +181,10 @@ test('search combines academic, editorial, web and video sources for a query', a
   assert.ok(response.payload.videos.some(item => /topology/i.test(item.title)));
   assert.equal(response.payload.searchAvailable, true);
 
-  assert.ok(seenUrls.some(url => url.includes('api.openalex.org') && decodeURIComponent(url).includes('algebraic topology')));
+  assert.ok(seenUrls.some(url => {
+    if (!url.includes('api.openalex.org')) return false;
+    return new URL(url).searchParams.get('search') === 'algebraic topology';
+  }));
   assert.ok(seenUrls.some(url => url.includes('api.semanticscholar.org')));
 });
 
