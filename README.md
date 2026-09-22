@@ -49,7 +49,7 @@ Trang Tổng quan dùng endpoint:
 api/discovery.js
 ```
 
-Discovery được thiết kế để chạy mà không cần dịch vụ tìm kiếm trả phí:
+Discovery được thiết kế để chạy mà không cần dịch vụ tìm kiếm trả phí. Dashboard hiện có thêm lịch sử truy vấn, chủ đề lưu cục bộ, bộ lọc theo loại kết quả, sắp xếp paper và lọc Open Access:
 
 - **GDELT DOC API**: nguồn web/tin tức toàn cầu, dùng cho Radar và truy vấn nội dung gần đây.
 - **Quanta Mathematics RSS + arXiv Mathematics RSS**: nguồn biên tập/chuyên ngành cập nhật, dùng làm lớp fallback ổn định cho Radar.
@@ -105,6 +105,8 @@ Output: `dist/`
 ## Features
 
 - Dashboard theo ba tác vụ: theo dõi nội dung mới, tìm tài liệu theo ý tưởng, học/tra cứu.
+- Research Search có lịch sử truy vấn, chủ đề lưu, lọc Paper/Nguồn/Video, sắp xếp citation/ngày và Open Access.
+- Cửa sổ YouTube Search độc lập trên trang chính, dùng tìm kiếm trực tiếp của YouTube và RSS công khai.
 - Bài học toán từ THCS đến Đại học.
 - Knowledge Graph và Math Cosmos 3D.
 - Tủ sách và công thức có giải thích.
