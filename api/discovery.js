@@ -379,7 +379,7 @@ async function fetchGdelt(query, { timespan = '30d', limit = 10 } = {}) {
       `https://api.gdeltproject.org/api/v2/doc/doc?${jsonParams.toString()}`,
       {
         headers: { 'User-Agent': 'Mozilla/5.0 (compatible; MathNexus/1.0)' },
-        signal: AbortSignal.timeout(12_000),
+        signal: AbortSignal.timeout(4_500),
       },
     );
 
@@ -407,7 +407,7 @@ async function fetchGdelt(query, { timespan = '30d', limit = 10 } = {}) {
           Accept: 'application/rss+xml, application/xml, text/xml',
           'User-Agent': 'Mozilla/5.0 (compatible; MathNexus/1.0)',
         },
-        signal: AbortSignal.timeout(12_000),
+        signal: AbortSignal.timeout(4_500),
       },
     );
     if (!response.ok) return [];
