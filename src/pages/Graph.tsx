@@ -150,7 +150,7 @@ export default function Graph() {
   const reset = () => { setFamily('quad'); setCoefficients(['1', '-2', '-3']); setRange(10); setProbe('2'); setShowTangent(true); };
 
   return <section className="page-enter">
-    <div className="page-header"><p className="eyebrow">NHÌN THẤY & PHÂN TÍCH TOÁN HỌC</p><h1>Phòng thí nghiệm hàm số</h1><p>Vẽ đồ thị, đọc các đặc trưng quan trọng và khảo sát đạo hàm – tiếp tuyến ngay trên cùng một mô hình.</p></div>
+    <div className="page-header"><p className="eyebrow">ĐỒ THỊ VÀ KHẢO SÁT HÀM SỐ</p><h1>Đồ thị hàm số</h1><p>Vẽ đồ thị, đọc các đặc trưng quan trọng và khảo sát đạo hàm – tiếp tuyến ngay trên cùng một mô hình.</p></div>
 
     <div className="graph-layout">
       <div className="panel graph-controls">
