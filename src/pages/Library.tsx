@@ -380,7 +380,7 @@ export default function Library() {
                         Mở ghi chú
                       </Link>
                       {book.archiveId && (
-                        <Link to={`/library/book?archive=${encodeURIComponent(book.archiveId)}&title=${encodeURIComponent(book.title)}&ol=${encodeURIComponent(book.openLibraryUrl)}&key=${encodeURIComponent(book.key)}&authors=${encodeURIComponent(book.authors.join('|'))}&cover=${encodeURIComponent(book.cover)}`}>
+                        <Link to={`/library/book?archive=${encodeURIComponent(book.archiveId)}&title=${encodeURIComponent(book.title)}&ol=${encodeURIComponent(book.openLibraryUrl)}&key=${encodeURIComponent(book.openLibraryKey)}&authors=${encodeURIComponent(book.authors.join('|'))}&cover=${encodeURIComponent(book.cover)}`}>
                           Đọc sách
                         </Link>
                       )}
