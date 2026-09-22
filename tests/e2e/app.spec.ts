@@ -49,7 +49,7 @@ test('research search saves papers to the local Research Shelf', async ({ page }
         mode: 'search',
         query: 'algebraic topology',
         generatedAt: '2026-09-22T10:00:00.000Z',
-        synthesis: 'Kết quả hiện có: 1 công trình học thuật.',
+        synthesis: 'Kết quả hiện có: 2 công trình học thuật.',
         sources: [],
         queries: [],
         papers: [{
@@ -64,6 +64,18 @@ test('research search saves papers to the local Research Shelf', async ({ page }
           authors: ['Ada Example'],
           openAccess: true,
           database: 'arXiv',
+        }, {
+          id: 'https://openalex.org/W123',
+          title: 'Computational methods in topology',
+          url: 'https://doi.org/10.1000/topology-old',
+          date: '2018-01-10',
+          language: 'en',
+          type: 'article',
+          citedBy: 42,
+          source: 'Topology Journal',
+          authors: ['Emmy Example'],
+          openAccess: false,
+          database: 'OpenAlex',
         }],
         videos: [],
         searchAvailable: true,
@@ -77,6 +89,18 @@ test('research search saves papers to the local Research Shelf', async ({ page }
   await page.getByRole('button', { name: 'Tra cứu' }).click();
 
   await expect(page.getByText('Algebraic topology and derived geometry')).toBeVisible();
+  await expect(page.getByText('Computational methods in topology')).toBeVisible();
+
+  await page.getByLabel('Lọc theo cơ sở dữ liệu').selectOption('arxiv');
+  await expect(page.getByText('Algebraic topology and derived geometry')).toBeVisible();
+  await expect(page.getByText('Computational methods in topology')).toHaveCount(0);
+
+  await page.getByLabel('Lọc theo cơ sở dữ liệu').selectOption('all');
+  await page.getByLabel('Lọc paper trong kết quả').fill('Emmy');
+  await expect(page.getByText('Computational methods in topology')).toBeVisible();
+  await expect(page.getByText('Algebraic topology and derived geometry')).toHaveCount(0);
+
+  await page.getByLabel('Lọc paper trong kết quả').fill('');
   await page.getByRole('button', { name: 'Lưu Algebraic topology and derived geometry' }).click();
   await expect(page.getByRole('heading', { name: 'Tài liệu đang giữ' })).toBeVisible();
 

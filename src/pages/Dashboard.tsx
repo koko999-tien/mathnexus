@@ -47,6 +47,8 @@ import './dashboard.css';
 type SourceKind = 'web' | 'paper' | 'video' | 'tool';
 type ResultView = 'all' | 'sources' | 'papers' | 'videos';
 type PaperSort = 'relevance' | 'newest' | 'cited';
+type PaperProvider = 'all' | 'arxiv' | 'openalex' | 'crossref' | 'semantic';
+type PaperWindow = 'all' | '1y' | '5y';
 
 interface LiveSource {
   title: string;
@@ -261,6 +263,9 @@ export default function Dashboard() {
   const [savedTopics, setSavedTopics] = useState<string[]>(() => readStringList(SAVED_TOPICS_KEY, 12));
   const [resultView, setResultView] = useState<ResultView>('all');
   const [paperSort, setPaperSort] = useState<PaperSort>('relevance');
+  const [paperProvider, setPaperProvider] = useState<PaperProvider>('all');
+  const [paperWindow, setPaperWindow] = useState<PaperWindow>('all');
+  const [paperTextFilter, setPaperTextFilter] = useState('');
   const [openAccessOnly, setOpenAccessOnly] = useState(false);
   const [researchShelf, setResearchShelf] = useState<ResearchShelfItem[]>(() => getResearchShelf());
 
@@ -361,6 +366,9 @@ export default function Dashboard() {
     setSearchResult(null);
     setResultView('all');
     setPaperSort('relevance');
+    setPaperProvider('all');
+    setPaperWindow('all');
+    setPaperTextFilter('');
     setOpenAccessOnly(false);
 
     try {
@@ -459,8 +467,32 @@ export default function Dashboard() {
   };
 
   const filteredPapers = useMemo(() => {
+    const now = Date.now();
+    const windowMs = paperWindow === '1y'
+      ? 365 * 24 * 60 * 60 * 1000
+      : paperWindow === '5y'
+        ? 5 * 365 * 24 * 60 * 60 * 1000
+        : 0;
+    const needle = paperTextFilter.trim().toLowerCase();
+
     const papers = [...(searchResult?.papers || [])]
-      .filter(paper => !openAccessOnly || paper.openAccess);
+      .filter(paper => !openAccessOnly || paper.openAccess)
+      .filter(paper => {
+        if (paperProvider === 'all') return true;
+        const database = (paper.database || '').toLowerCase();
+        if (paperProvider === 'semantic') return database.includes('semantic');
+        return database.includes(paperProvider);
+      })
+      .filter(paper => {
+        if (!windowMs) return true;
+        const stamp = paperTimestamp(paper.date);
+        return stamp > 0 && now - stamp <= windowMs;
+      })
+      .filter(paper => {
+        if (!needle) return true;
+        return [paper.title, paper.source, ...(paper.authors || [])]
+          .some(value => value.toLowerCase().includes(needle));
+      });
 
     if (paperSort === 'newest') {
       papers.sort((left, right) => paperTimestamp(right.date) - paperTimestamp(left.date));
@@ -469,7 +501,7 @@ export default function Dashboard() {
     }
 
     return papers;
-  }, [searchResult, openAccessOnly, paperSort]);
+  }, [searchResult, openAccessOnly, paperSort, paperProvider, paperWindow, paperTextFilter]);
 
   const resultCounts = {
     sources: searchResult?.sources.length || 0,
@@ -800,6 +832,25 @@ export default function Dashboard() {
                     <option value="newest">Mới nhất</option>
                     <option value="cited">Trích dẫn nhiều</option>
                   </select>
+                  <select value={paperProvider} onChange={event => setPaperProvider(event.target.value as PaperProvider)} aria-label="Lọc theo cơ sở dữ liệu">
+                    <option value="all">Mọi cơ sở dữ liệu</option>
+                    <option value="arxiv">arXiv</option>
+                    <option value="openalex">OpenAlex</option>
+                    <option value="crossref">Crossref</option>
+                    <option value="semantic">Semantic Scholar</option>
+                  </select>
+                  <select value={paperWindow} onChange={event => setPaperWindow(event.target.value as PaperWindow)} aria-label="Lọc theo thời gian xuất bản">
+                    <option value="all">Mọi thời gian</option>
+                    <option value="1y">1 năm gần đây</option>
+                    <option value="5y">5 năm gần đây</option>
+                  </select>
+                  <input
+                    className="overview-paper-filter-input"
+                    value={paperTextFilter}
+                    onChange={event => setPaperTextFilter(event.target.value)}
+                    placeholder="Lọc tiêu đề / tác giả"
+                    aria-label="Lọc paper trong kết quả"
+                  />
                   <label>
                     <input type="checkbox" checked={openAccessOnly} onChange={event => setOpenAccessOnly(event.target.checked)} />
                     Open access
@@ -879,13 +930,16 @@ export default function Dashboard() {
               </div>}
 
               {(resultView === 'all' || resultView === 'papers') && <div>
-                <h3>Paper liên quan</h3>
+                <h3>Paper liên quan <small className="overview-paper-count">{filteredPapers.length}/{searchResult.papers.length}</small></h3>
                 <div className="overview-paper-list compact">
                   {filteredPapers.slice(0, 12).map(paper => (
                     <div key={paper.id} className="overview-result-save-row">
                       <a href={paper.url || paper.id} target="_blank" rel="noreferrer" className="overview-paper-row">
                         <div>
                           <strong>{paper.title}</strong>
+                          {paper.authors?.length ? (
+                            <small className="overview-paper-authors">{paper.authors.slice(0, 4).join(' · ')}</small>
+                          ) : null}
                           <small>
                             {[
                               paper.database,
