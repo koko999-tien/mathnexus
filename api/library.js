@@ -1,5 +1,8 @@
 const ALLOWED_WIKI_LANGS = new Set(['vi', 'en']);
 const CACHE_HEADER = 'public, s-maxage=1800, stale-while-revalidate=3600';
+const ARCHIVE_ID_RE = /^[A-Za-z0-9._-]{1,180}$/;
+const OPEN_LIBRARY_KEY_RE = /^\/(?:works\/OL\d+W|books\/OL\d+M)$/i;
+const ARCHIVE_HOST_RE = /^[a-z0-9.-]+\.archive\.org$/i;
 
 function clean(value, max = 500) {
   return String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
@@ -23,6 +26,13 @@ function normalizeWikiLanguage(value) {
   return ALLOWED_WIKI_LANGS.has(lang) ? lang : 'vi';
 }
 
+function normalizeOpenLibraryKey(value) {
+  const raw = clean(value, 300);
+  if (!raw) return '';
+  const key = raw.startsWith('/') ? raw : `/${raw}`;
+  return OPEN_LIBRARY_KEY_RE.test(key) ? key : '';
+}
+
 async function fetchJson(url, timeout = 9000) {
   const response = await fetch(url, {
     headers: {
@@ -33,6 +43,18 @@ async function fetchJson(url, timeout = 9000) {
   });
   if (!response.ok) throw new Error(`Upstream error ${response.status}`);
   return response.json();
+}
+
+async function fetchText(url, timeout = 12000) {
+  const response = await fetch(url, {
+    headers: {
+      Accept: 'application/json,text/plain;q=0.9,*/*;q=0.5',
+      'User-Agent': 'MathNexus/1.0 (knowledge library; educational use)',
+    },
+    signal: AbortSignal.timeout(timeout),
+  });
+  if (!response.ok) throw new Error(`Upstream error ${response.status}`);
+  return response.text();
 }
 
 function wikiArticleUrl(lang, title) {
@@ -182,6 +204,94 @@ async function searchOpenLibrary(query, page = 1, readableOnly = false) {
   };
 }
 
+function descriptionValue(value) {
+  if (typeof value === 'string') return value.trim().slice(0, 24000);
+  if (value && typeof value === 'object' && typeof value.value === 'string') return value.value.trim().slice(0, 24000);
+  return '';
+}
+
+async function fetchOpenLibraryDetail(key) {
+  const data = await fetchJson(`https://openlibrary.org${key}.json`, 12000);
+  const covers = Array.isArray(data?.covers) ? data.covers.filter(Number.isFinite) : [];
+  const links = Array.isArray(data?.links) ? data.links : [];
+
+  return {
+    key,
+    title: clean(data?.title, 500) || 'Untitled',
+    subtitle: clean(data?.subtitle, 500),
+    description: descriptionValue(data?.description),
+    firstPublishDate: clean(data?.first_publish_date, 100),
+    subjects: Array.isArray(data?.subjects) ? data.subjects.map(subject => clean(subject, 160)).filter(Boolean).slice(0, 40) : [],
+    subjectPlaces: Array.isArray(data?.subject_places) ? data.subject_places.map(value => clean(value, 160)).filter(Boolean).slice(0, 20) : [],
+    subjectTimes: Array.isArray(data?.subject_times) ? data.subject_times.map(value => clean(value, 160)).filter(Boolean).slice(0, 20) : [],
+    cover: covers[0] ? `https://covers.openlibrary.org/b/id/${covers[0]}-L.jpg` : '',
+    links: links
+      .map(link => ({
+        title: clean(link?.title, 180),
+        url: clean(link?.url, 1200),
+      }))
+      .filter(link => link.title && /^https?:\/\//i.test(link.url))
+      .slice(0, 12),
+    openLibraryUrl: `https://openlibrary.org${key}`,
+  };
+}
+
+function parseInsidePayload(text) {
+  const trimmed = String(text || '').trim();
+  if (!trimmed) return null;
+
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    const start = trimmed.indexOf('{');
+    const end = trimmed.lastIndexOf('}');
+    if (start < 0 || end <= start) return null;
+    try {
+      return JSON.parse(trimmed.slice(start, end + 1));
+    } catch {
+      return null;
+    }
+  }
+}
+
+async function searchInsideArchive(archiveId, query) {
+  const metadata = await fetchJson(`https://archive.org/metadata/${encodeURIComponent(archiveId)}`, 12000);
+  const host = clean(metadata?.d1 || metadata?.d2, 255).toLowerCase();
+  const dir = String(metadata?.dir || '').trim().slice(0, 1200);
+
+  if (!host || !ARCHIVE_HOST_RE.test(host) || !dir) {
+    return { available: false, pageCount: 0, matches: [] };
+  }
+
+  const params = new URLSearchParams({
+    item_id: archiveId,
+    doc: archiveId,
+    path: dir,
+    q: query,
+  });
+  const text = await fetchText(`https://${host}/fulltext/inside.php?${params.toString()}`, 15000);
+  const data = parseInsidePayload(text);
+  if (!data) return { available: false, pageCount: 0, matches: [] };
+
+  const matches = Array.isArray(data.matches) ? data.matches : [];
+  return {
+    available: true,
+    pageCount: Number(data.page_count || 0),
+    matches: matches.slice(0, 20).map((match, index) => ({
+      id: `${archiveId}:${index}`,
+      text: String(match?.text || '')
+        .replace(/\{\{\{/g, '')
+        .replace(/\}\}\}/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 2400),
+      pages: Array.isArray(match?.par)
+        ? [...new Set(match.par.map(par => Number(par?.page)).filter(Number.isFinite))].slice(0, 8)
+        : [],
+    })).filter(match => match.text),
+  };
+}
+
 export default async function handler(request, response) {
   response.setHeader('Content-Type', 'application/json; charset=utf-8');
   response.setHeader('Cache-Control', CACHE_HEADER);
@@ -215,6 +325,26 @@ export default async function handler(request, response) {
     }
 
     if (source === 'openlibrary') {
+      if (mode === 'detail') {
+        const key = normalizeOpenLibraryKey(requestParam(request, 'key'));
+        if (!key) return response.status(400).json({ error: 'A valid Open Library work or edition key is required.', code: 'INVALID_KEY' });
+        const book = await fetchOpenLibraryDetail(key);
+        return response.status(200).json({ source: 'openlibrary', mode: 'detail', book });
+      }
+
+      if (mode === 'inside') {
+        const archiveId = requestParam(request, 'archive');
+        if (!ARCHIVE_ID_RE.test(archiveId)) {
+          return response.status(400).json({ error: 'A valid Internet Archive identifier is required.', code: 'INVALID_ARCHIVE_ID' });
+        }
+        if (!query) return response.status(400).json({ error: 'A search phrase is required.', code: 'EMPTY_QUERY' });
+        if (query.length > 240) return response.status(400).json({ error: 'Search phrase is too long.', code: 'QUERY_TOO_LONG' });
+
+        const result = await searchInsideArchive(archiveId, query);
+        response.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=7200');
+        return response.status(200).json({ source: 'openlibrary', mode: 'inside', archiveId, query, ...result });
+      }
+
       const effectiveQuery = query || 'mathematics';
       if (effectiveQuery.length > 500) return response.status(400).json({ error: 'Query is too long.', code: 'QUERY_TOO_LONG' });
       const page = requestParam(request, 'page') || '1';
