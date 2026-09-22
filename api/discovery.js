@@ -1,8 +1,16 @@
-const DEFAULT_MODEL = 'gemini-3.8-flash';
 const MAX_QUERY_LENGTH = 1200;
 const RATE_WINDOW_MS = 60_000;
-const RATE_LIMIT = 18;
+const RATE_LIMIT = 20;
 const rateBuckets = new Map();
+
+const GDELT_FEED_QUERY =
+  '(mathematics OR "number theory" OR geometry OR topology OR theorem OR "mathematical physics")';
+
+const CURATED_VIDEO_CHANNELS = [
+  { name: '3Blue1Brown', id: 'UCYO_jab_esuFRV4b17AJtAw' },
+  { name: 'Numberphile', id: 'UCoxcjq-8xIDTYp3uz647V5A' },
+  { name: 'Mathologer', id: 'UC1_uAIS3r8Vu6JjXWvastJg' },
+];
 
 function headerValue(request, name) {
   const headers = request?.headers;
@@ -60,14 +68,6 @@ function cleanEnv(value) {
   return value.trim().replace(/^["']|["']$/g, '').trim();
 }
 
-function sourceKind(uri = '') {
-  const lower = uri.toLowerCase();
-  if (/youtube\.com|youtu\.be|vimeo\.com|bilibili\.com/.test(lower)) return 'video';
-  if (/arxiv\.org|doi\.org|openalex\.org|springer\.com|sciencedirect\.com|nature\.com|ams\.org|cambridge\.org|wiley\.com|jstor\.org|projecteuclid\.org/.test(lower)) return 'paper';
-  if (/github\.com|observablehq\.com|desmos\.com|geogebra\.org/.test(lower)) return 'tool';
-  return 'web';
-}
-
 function hostname(uri = '') {
   try {
     return new URL(uri).hostname.replace(/^www\./, '');
@@ -76,231 +76,105 @@ function hostname(uri = '') {
   }
 }
 
+function sourceKind(uri = '') {
+  const lower = uri.toLowerCase();
+  if (/youtube\.com|youtu\.be|vimeo\.com|bilibili\.com/.test(lower)) return 'video';
+  if (/arxiv\.org|doi\.org|openalex\.org|springer\.com|sciencedirect\.com|nature\.com|ams\.org|cambridge\.org|wiley\.com|jstor\.org|projecteuclid\.org|semanticscholar\.org/.test(lower)) return 'paper';
+  if (/github\.com|observablehq\.com|desmos\.com|geogebra\.org/.test(lower)) return 'tool';
+  return 'web';
+}
+
+function normalizeTitle(value = '') {
+  return value
+    .toLowerCase()
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function mergeSources(...groups) {
   const seen = new Set();
   const merged = [];
+
   for (const group of groups) {
     for (const item of group || []) {
-      if (!item?.uri || seen.has(item.uri)) continue;
-      seen.add(item.uri);
+      const uri = String(item?.uri || '').trim();
+      if (!uri || seen.has(uri)) continue;
+      seen.add(uri);
       merged.push(item);
       if (merged.length >= 18) return merged;
     }
   }
+
   return merged;
 }
 
-function extractGeminiText(payload) {
-  const parts = payload?.candidates?.[0]?.content?.parts;
-  if (!Array.isArray(parts)) return '';
-  return parts.map(part => typeof part?.text === 'string' ? part.text : '').join('').trim();
+function paperKey(paper) {
+  const url = String(paper?.url || '').toLowerCase();
+  const doiMatch = url.match(/10\.\d{4,9}\/[-._;()/:a-z0-9]+/i);
+  if (doiMatch) return `doi:${doiMatch[0].toLowerCase()}`;
+  const title = normalizeTitle(String(paper?.title || ''));
+  return title ? `title:${title}` : `id:${String(paper?.id || url)}`;
 }
 
-function extractGrounding(payload) {
-  const metadata = payload?.candidates?.[0]?.groundingMetadata || {};
-  const chunks = Array.isArray(metadata.groundingChunks) ? metadata.groundingChunks : [];
+function mergePapers(...groups) {
   const seen = new Set();
-  const sources = [];
+  const merged = [];
 
-  for (const chunk of chunks) {
-    const web = chunk?.web;
-    const uri = typeof web?.uri === 'string' ? web.uri.trim() : '';
-    if (!uri || seen.has(uri)) continue;
-    seen.add(uri);
-    sources.push({
-      title: typeof web?.title === 'string' && web.title.trim() ? web.title.trim() : hostname(uri),
-      uri,
-      domain: hostname(uri),
-      kind: sourceKind(uri),
-      description: '',
-      age: '',
-      provider: 'google',
-    });
-    if (sources.length >= 14) break;
-  }
-
-  return {
-    queries: Array.isArray(metadata.webSearchQueries)
-      ? metadata.webSearchQueries.filter(query => typeof query === 'string').slice(0, 8)
-      : [],
-    sources,
-  };
-}
-
-async function callGroundedSearch(prompt) {
-  const apiKey = cleanEnv(process.env.GEMINI_API_KEY);
-  if (!apiKey) {
-    return {
-      ok: false,
-      error: 'GEMINI_API_KEY chưa được cấu hình.',
-      code: 'MISSING_GEMINI_API_KEY',
-    };
-  }
-
-  const model = cleanEnv(process.env.GEMINI_SEARCH_MODEL)
-    || cleanEnv(process.env.GEMINI_MODEL)
-    || DEFAULT_MODEL;
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 22_000);
-
-  try {
-    const upstream = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': apiKey,
-        },
-        signal: controller.signal,
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          tools: [{ google_search: {} }],
-          generationConfig: {
-            temperature: 0.18,
-            maxOutputTokens: 1800,
-          },
-        }),
-      },
-    );
-
-    const payload = await upstream.json().catch(() => ({}));
-    if (!upstream.ok) {
-      return {
-        ok: false,
-        error: String(payload?.error?.message || 'Google Search grounding failed').slice(0, 800),
-        code: String(payload?.error?.status || upstream.status),
-      };
+  for (const group of groups) {
+    for (const paper of group || []) {
+      const key = paperKey(paper);
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      merged.push(paper);
+      if (merged.length >= 20) return merged;
     }
-
-    const text = extractGeminiText(payload);
-    const grounding = extractGrounding(payload);
-    if (!text && grounding.sources.length === 0) {
-      return { ok: false, error: 'Không nhận được dữ liệu tìm kiếm.', code: 'EMPTY_SEARCH_RESPONSE' };
-    }
-
-    return {
-      ok: true,
-      text,
-      model,
-      ...grounding,
-    };
-  } catch (error) {
-    return {
-      ok: false,
-      error: error?.name === 'AbortError'
-        ? 'Tìm kiếm vượt quá thời gian chờ.'
-        : String(error?.message || 'Không kết nối được dịch vụ tìm kiếm.').slice(0, 800),
-      code: error?.name === 'AbortError' ? 'TIMEOUT' : 'NETWORK_ERROR',
-    };
-  } finally {
-    clearTimeout(timeout);
   }
+
+  return merged;
 }
 
-async function fetchBraveWeb(query, freshness = '') {
-  const apiKey = cleanEnv(process.env.BRAVE_SEARCH_API_KEY);
-  if (!apiKey || !query) return [];
-
-  const params = new URLSearchParams({
-    q: query.slice(0, 560),
-    count: '10',
-    safesearch: 'moderate',
-    text_decorations: 'false',
-    extra_snippets: 'true',
-  });
-  if (freshness) params.set('freshness', freshness);
-
-  try {
-    const response = await fetch(`https://api.search.brave.com/res/v1/web/search?${params.toString()}`, {
-      headers: {
-        Accept: 'application/json',
-        'X-Subscription-Token': apiKey,
-      },
-      signal: AbortSignal.timeout(10_000),
-    });
-    if (!response.ok) return [];
-    const payload = await response.json();
-    const results = Array.isArray(payload?.web?.results) ? payload.web.results : [];
-    return results.map(item => ({
-      title: String(item?.title || hostname(item?.url || '')),
-      uri: String(item?.url || ''),
-      domain: hostname(item?.url || ''),
-      kind: sourceKind(item?.url || ''),
-      description: String(item?.description || ''),
-      age: String(item?.age || item?.page_age || ''),
-      provider: 'brave',
-    })).filter(item => item.uri);
-  } catch {
-    return [];
-  }
+function datePartsToIso(value) {
+  const parts = value?.['date-parts']?.[0];
+  if (!Array.isArray(parts) || !parts.length) return '';
+  const [year, month = 1, day = 1] = parts;
+  if (!year) return '';
+  return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
-async function fetchBraveVideos(query, freshness = '') {
-  const apiKey = cleanEnv(process.env.BRAVE_SEARCH_API_KEY);
-  if (!apiKey || !query) return [];
-
-  const params = new URLSearchParams({
-    q: query.slice(0, 380),
-    count: '8',
-    safesearch: 'moderate',
-  });
-  if (freshness) params.set('freshness', freshness);
-
-  try {
-    const response = await fetch(`https://api.search.brave.com/res/v1/videos/search?${params.toString()}`, {
-      headers: {
-        Accept: 'application/json',
-        'X-Subscription-Token': apiKey,
-      },
-      signal: AbortSignal.timeout(10_000),
-    });
-    if (!response.ok) return [];
-    const payload = await response.json();
-    const results = Array.isArray(payload?.results) ? payload.results : [];
-    return results.map((item, index) => ({
-      id: String(item?.url || `brave-video-${index}`),
-      title: String(item?.title || ''),
-      url: String(item?.url || ''),
-      channel: String(item?.video?.creator || hostname(item?.url || '')),
-      publishedAt: String(item?.page_age || item?.age || ''),
-      description: String(item?.description || ''),
-      language: '',
-    })).filter(item => item.url && item.title);
-  } catch {
-    return [];
-  }
+function xmlDecode(value = '') {
+  return value
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
 }
 
-function openAlexWork(work) {
-  const primary = work?.primary_location;
-  const source = primary?.source?.display_name || '';
-  const authors = Array.isArray(work?.authorships)
-    ? work.authorships
-      .map(item => item?.author?.display_name)
-      .filter(Boolean)
-      .slice(0, 4)
-    : [];
+function tagValue(xml, tag) {
+  const match = xml.match(new RegExp(`<${tag}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/${tag}>`, 'i'));
+  return match ? xmlDecode(match[1].replace(/<!\[CDATA\[|\]\]>/g, '').trim()) : '';
+}
 
-  const url = primary?.landing_page_url
-    || primary?.pdf_url
-    || work?.doi
-    || work?.id
-    || '';
+function coverageSummary({ sources, papers, videos, providers }) {
+  const active = [
+    providers.gdelt ? 'GDELT' : '',
+    providers.openAlex ? 'OpenAlex' : '',
+    providers.crossref ? 'Crossref' : '',
+    providers.semanticScholar ? 'Semantic Scholar' : '',
+    providers.youtubeRss ? 'YouTube RSS' : '',
+  ].filter(Boolean);
 
-  return {
-    id: String(work?.id || url || `${work?.title || 'work'}-${work?.publication_date || ''}`),
-    title: String(work?.title || 'Untitled'),
-    url,
-    date: String(work?.publication_date || ''),
-    language: String(work?.language || ''),
-    type: String(work?.type || 'work'),
-    citedBy: Number(work?.cited_by_count || 0),
-    source,
-    authors,
-    openAccess: Boolean(work?.open_access?.is_oa),
-  };
+  const parts = [];
+  if (sources.length) parts.push(`${sources.length} nguồn web/tin tức`);
+  if (papers.length) parts.push(`${papers.length} công trình học thuật`);
+  if (videos.length) parts.push(`${videos.length} video từ kênh được theo dõi`);
+
+  const countText = parts.length ? parts.join(', ') : 'chưa có kết quả';
+  const providerText = active.length ? active.join(' · ') : 'không có nguồn khả dụng';
+
+  return `Kết quả hiện có: ${countText}. Nguồn dữ liệu: ${providerText}.`;
 }
 
 async function fetchOpenAlex({ query = '', limit = 8 } = {}) {
@@ -332,101 +206,235 @@ async function fetchOpenAlex({ query = '', limit = 8 } = {}) {
     });
     if (!response.ok) return [];
     const payload = await response.json();
-    return Array.isArray(payload?.results) ? payload.results.map(openAlexWork) : [];
+
+    return (Array.isArray(payload?.results) ? payload.results : []).map(work => {
+      const primary = work?.primary_location;
+      const source = primary?.source?.display_name || '';
+      const authors = Array.isArray(work?.authorships)
+        ? work.authorships
+          .map(item => item?.author?.display_name)
+          .filter(Boolean)
+          .slice(0, 4)
+        : [];
+      const url = primary?.landing_page_url || primary?.pdf_url || work?.doi || work?.id || '';
+
+      return {
+        id: String(work?.id || url || `${work?.title || 'work'}-${work?.publication_date || ''}`),
+        title: String(work?.title || 'Untitled'),
+        url,
+        date: String(work?.publication_date || ''),
+        language: String(work?.language || ''),
+        type: String(work?.type || 'work'),
+        citedBy: Number(work?.cited_by_count || 0),
+        source,
+        authors,
+        openAccess: Boolean(work?.open_access?.is_oa),
+        database: 'OpenAlex',
+      };
+    });
   } catch {
     return [];
   }
 }
 
-async function fetchYouTube(query) {
-  const key = cleanEnv(process.env.YOUTUBE_API_KEY);
-  if (!key || !query) return [];
-
+async function fetchCrossref(query, limit = 8) {
+  if (!query) return [];
+  const today = new Date().toISOString().slice(0, 10);
   const params = new URLSearchParams({
-    part: 'snippet',
-    type: 'video',
-    maxResults: '6',
-    order: 'relevance',
-    q: query.slice(0, 300),
-    key,
-    safeSearch: 'moderate',
+    query: query.slice(0, 500),
+    rows: String(Math.min(12, Math.max(1, limit))),
+    sort: 'relevance',
+    order: 'desc',
+    select: 'DOI,title,URL,published,published-online,published-print,issued,container-title,author,type,is-referenced-by-count,language',
+    filter: `until-pub-date:${today}`,
   });
 
   try {
-    const response = await fetch(`https://www.googleapis.com/youtube/v3/search?${params.toString()}`, {
+    const response = await fetch(`https://api.crossref.org/works?${params.toString()}`, {
+      headers: { 'User-Agent': 'MathNexus/1.0 (metadata discovery; https://github.com/koko999-tien/mathnexus)' },
       signal: AbortSignal.timeout(10_000),
     });
     if (!response.ok) return [];
     const payload = await response.json();
-    return (Array.isArray(payload?.items) ? payload.items : []).map(item => ({
-      id: String(item?.id?.videoId || ''),
-      title: String(item?.snippet?.title || ''),
-      url: item?.id?.videoId ? `https://www.youtube.com/watch?v=${item.id.videoId}` : '',
-      channel: String(item?.snippet?.channelTitle || ''),
-      publishedAt: String(item?.snippet?.publishedAt || ''),
-      description: String(item?.snippet?.description || ''),
-      language: '',
-    })).filter(item => item.id && item.title);
+    const items = Array.isArray(payload?.message?.items) ? payload.message.items : [];
+
+    return items.map(item => {
+      const doi = String(item?.DOI || '');
+      const title = Array.isArray(item?.title) ? String(item.title[0] || '') : String(item?.title || '');
+      const container = Array.isArray(item?.['container-title'])
+        ? String(item['container-title'][0] || '')
+        : '';
+      const authors = Array.isArray(item?.author)
+        ? item.author.map(author => [author?.given, author?.family].filter(Boolean).join(' ')).filter(Boolean).slice(0, 4)
+        : [];
+      const date =
+        datePartsToIso(item?.['published-online'])
+        || datePartsToIso(item?.['published-print'])
+        || datePartsToIso(item?.published)
+        || datePartsToIso(item?.issued);
+      const url = doi ? `https://doi.org/${doi}` : String(item?.URL || '');
+
+      return {
+        id: doi || url || title,
+        title: title || 'Untitled',
+        url,
+        date,
+        language: String(item?.language || ''),
+        type: String(item?.type || 'work'),
+        citedBy: Number(item?.['is-referenced-by-count'] || 0),
+        source: container,
+        authors,
+        openAccess: false,
+        database: 'Crossref',
+      };
+    }).filter(item => item.title && item.url);
   } catch {
     return [];
   }
 }
 
-const FEED_PROMPT = `
-Bạn đang biên tập mục theo dõi toán học cho một công cụ nghiên cứu.
+async function fetchSemanticScholar(query, limit = 8) {
+  if (!query) return [];
 
-Dùng Google Search để rà soát các nội dung toán học mới hoặc đáng chú ý trên web. Ưu tiên:
-- bài báo khoa học, preprint, thông báo kết quả nghiên cứu;
-- seminar, lecture, video chuyên môn, talk;
-- bài viết giải thích chuyên sâu, ghi chú kỹ thuật, dự án hoặc công cụ toán học có giá trị;
-- nguồn từ nhiều quốc gia và nhiều ngôn ngữ; không ưu tiên tiếng Anh chỉ vì ngôn ngữ;
-- nội dung xuất bản gần đây, nhưng có thể đưa một nội dung cũ nếu vừa được thảo luận lại vì có giá trị rõ ràng.
+  const params = new URLSearchParams({
+    query: query.replace(/-/g, ' ').slice(0, 500),
+    limit: String(Math.min(12, Math.max(1, limit))),
+    fields: 'title,url,year,authors,venue,citationCount,openAccessPdf,publicationDate,externalIds',
+  });
 
-Không viết quảng cáo. Không dùng các cụm "đột phá", "cách mạng", "cực kỳ thú vị" nếu nguồn không chứng minh điều đó.
-Không bịa tiêu đề, tác giả, ngày tháng hoặc đường dẫn.
-Viết bằng tiếng Việt, giữ nguyên tiêu đề gốc khi nhắc tới nguồn.
-Trình bày 5-7 tín hiệu ngắn, mỗi tín hiệu gồm: tiêu đề gốc — loại nội dung — lý do đáng xem trong 1 câu.
-`.trim();
+  try {
+    const response = await fetch(`https://api.semanticscholar.org/graph/v1/paper/search?${params.toString()}`, {
+      headers: { 'User-Agent': 'MathNexus/1.0' },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!response.ok) return [];
+    const payload = await response.json();
+    const data = Array.isArray(payload?.data) ? payload.data : [];
 
-const BRAVE_FEED_QUERY = [
-  'mathematics',
-  'math research',
-  'theorem',
-  'geometry',
-  'topology',
-  'number theory',
-  'analysis',
-  'probability',
-  'mathematical physics',
-].join(' OR ');
+    return data.map(paper => {
+      const doi = String(paper?.externalIds?.DOI || '');
+      const url = doi ? `https://doi.org/${doi}` : String(paper?.url || '');
+      const authors = Array.isArray(paper?.authors)
+        ? paper.authors.map(author => author?.name).filter(Boolean).slice(0, 4)
+        : [];
 
-function searchPrompt(query) {
-  return `
-Người dùng đang nghiên cứu hoặc phát triển một ý tưởng toán học. Truy vấn:
-
-"${query}"
-
-Dùng Google Search để tìm tài liệu liên quan trực tiếp. Phạm vi:
-- paper, preprint, journal article;
-- lecture, seminar, conference talk, video chuyên môn;
-- notes, textbook chapter, blog kỹ thuật, project, software, visualization;
-- nội dung ở bất kỳ ngôn ngữ nào nếu liên quan tốt.
-
-Yêu cầu:
-1. Ưu tiên nguồn gốc hoặc nguồn sơ cấp khi có thể.
-2. Phân biệt kết quả nghiên cứu với nội dung giải thích hoặc video.
-3. Không suy đoán mức độ liên quan nếu chỉ nhìn thấy tiêu đề.
-4. Không bịa URL hoặc tài liệu.
-5. Trả lời bằng tiếng Việt, giữ nguyên tiêu đề nguồn.
-6. Mở đầu bằng 2-4 câu tổng hợp hướng tìm kiếm; sau đó liệt kê tối đa 8 nguồn hoặc nhánh đáng kiểm tra.
-7. Nếu truy vấn mơ hồ, nêu các cách hiểu hợp lý thay vì tự chọn một nghĩa duy nhất.
-`.trim();
+      return {
+        id: String(paper?.paperId || url || paper?.title || ''),
+        title: String(paper?.title || 'Untitled'),
+        url,
+        date: String(paper?.publicationDate || (paper?.year ? `${paper.year}-01-01` : '')),
+        language: '',
+        type: 'paper',
+        citedBy: Number(paper?.citationCount || 0),
+        source: String(paper?.venue || ''),
+        authors,
+        openAccess: Boolean(paper?.openAccessPdf?.url),
+        database: 'Semantic Scholar',
+      };
+    }).filter(item => item.title && item.url);
+  } catch {
+    return [];
+  }
 }
 
-function providerWarning({ grounded, braveAvailable }) {
-  if (grounded.ok) return null;
-  if (braveAvailable) return 'Gemini synthesis tạm thời không khả dụng; kết quả web vẫn được lấy trực tiếp từ Brave Search.';
-  return grounded.error || 'Tìm kiếm web tạm thời không khả dụng.';
+async function fetchGdelt(query, { timespan = '30d', limit = 10 } = {}) {
+  if (!query) return [];
+
+  const params = new URLSearchParams({
+    query: query.slice(0, 700),
+    mode: 'artlist',
+    maxrecords: String(Math.min(25, Math.max(1, limit))),
+    timespan,
+    sort: 'datedesc',
+    format: 'json',
+  });
+
+  try {
+    const response = await fetch(`https://api.gdeltproject.org/api/v2/doc/doc?${params.toString()}`, {
+      signal: AbortSignal.timeout(12_000),
+    });
+    if (!response.ok) return [];
+    const payload = await response.json();
+    const articles = Array.isArray(payload?.articles) ? payload.articles : [];
+
+    return articles.map(article => {
+      const uri = String(article?.url || '');
+      const meta = [
+        article?.language ? String(article.language) : '',
+        article?.sourcecountry ? String(article.sourcecountry) : '',
+      ].filter(Boolean).join(' · ');
+
+      return {
+        title: String(article?.title || hostname(uri) || 'Untitled'),
+        uri,
+        domain: String(article?.domain || hostname(uri)),
+        kind: sourceKind(uri),
+        description: meta,
+        age: String(article?.seendate || ''),
+        provider: 'GDELT',
+      };
+    }).filter(item => item.uri);
+  } catch {
+    return [];
+  }
+}
+
+async function fetchCuratedVideos(query = '') {
+  const feeds = await Promise.all(CURATED_VIDEO_CHANNELS.map(async channel => {
+    try {
+      const response = await fetch(
+        `https://www.youtube.com/feeds/videos.xml?channel_id=${encodeURIComponent(channel.id)}`,
+        { signal: AbortSignal.timeout(8_000) },
+      );
+      if (!response.ok) return [];
+      const xml = await response.text();
+      const entries = xml.match(/<entry>[\s\S]*?<\/entry>/gi) || [];
+
+      return entries.slice(0, 8).map(entry => {
+        const id = tagValue(entry, 'yt:videoId');
+        const title = tagValue(entry, 'title');
+        const publishedAt = tagValue(entry, 'published');
+        const description = tagValue(entry, 'media:description');
+        return {
+          id,
+          title,
+          url: id ? `https://www.youtube.com/watch?v=${id}` : '',
+          channel: channel.name,
+          publishedAt,
+          description,
+          language: '',
+        };
+      }).filter(item => item.id && item.title);
+    } catch {
+      return [];
+    }
+  }));
+
+  const all = feeds.flat().sort((a, b) => String(b.publishedAt).localeCompare(String(a.publishedAt)));
+  if (!query) return all.slice(0, 8);
+
+  const tokens = normalizeTitle(query).split(' ').filter(token => token.length > 2);
+  if (!tokens.length) return all.slice(0, 8);
+
+  const ranked = all
+    .map(video => {
+      const haystack = normalizeTitle(`${video.title} ${video.description}`);
+      const score = tokens.reduce((sum, token) => sum + (haystack.includes(token) ? 1 : 0), 0);
+      return { video, score };
+    })
+    .filter(item => item.score > 0)
+    .sort((a, b) => b.score - a.score || String(b.video.publishedAt).localeCompare(String(a.video.publishedAt)));
+
+  return ranked.slice(0, 8).map(item => item.video);
+}
+
+function providerWarning(providers) {
+  const academic = providers.openAlex || providers.crossref || providers.semanticScholar;
+  const live = providers.gdelt || providers.youtubeRss;
+  if (academic && live) return null;
+  if (academic) return 'Nguồn học thuật đang hoạt động; nguồn web hoặc video tạm thời chưa phản hồi.';
+  if (live) return 'Nguồn web/video đang hoạt động; một số cơ sở dữ liệu học thuật tạm thời chưa phản hồi.';
+  return 'Các nguồn bên ngoài chưa phản hồi. Hãy thử lại sau.';
 }
 
 export default async function handler(request, response) {
@@ -446,48 +454,37 @@ export default async function handler(request, response) {
   }
 
   if (request.method === 'GET') {
-    const [grounded, braveSources, braveVideos, papers] = await Promise.all([
-      callGroundedSearch(FEED_PROMPT),
-      fetchBraveWeb(BRAVE_FEED_QUERY, 'pm'),
-      fetchBraveVideos('mathematics lecture seminar research', 'pm'),
-      fetchOpenAlex({ limit: 8 }),
+    const [gdelt, openAlex, crossref, videos] = await Promise.all([
+      fetchGdelt(GDELT_FEED_QUERY, { timespan: '30d', limit: 12 }),
+      fetchOpenAlex({ limit: 9 }),
+      fetchCrossref('mathematics', 6),
+      fetchCuratedVideos(),
     ]);
 
-    const braveVideoSources = braveVideos.map(video => ({
-      title: video.title,
-      uri: video.url,
-      domain: hostname(video.url),
-      kind: 'video',
-      description: video.description,
-      age: video.publishedAt,
-      provider: 'brave',
-    }));
-
-    const sources = mergeSources(
-      grounded.ok ? grounded.sources : [],
-      braveSources,
-      braveVideoSources,
-    );
-    const braveAvailable = braveSources.length > 0 || braveVideos.length > 0;
+    const papers = mergePapers(openAlex, crossref).slice(0, 12);
+    const providers = {
+      gdelt: gdelt.length > 0,
+      openAlex: openAlex.length > 0,
+      crossref: crossref.length > 0,
+      semanticScholar: false,
+      youtubeRss: videos.length > 0,
+    };
 
     response.setHeader('Cache-Control', 'public, s-maxage=1200, stale-while-revalidate=3600');
     return response.status(200).json({
       mode: 'feed',
       generatedAt: new Date().toISOString(),
-      briefing: grounded.ok ? grounded.text : '',
-      sources,
-      queries: grounded.ok ? grounded.queries : [],
+      briefing: coverageSummary({ sources: gdelt, papers, videos, providers }),
+      synthesis: '',
+      sources: mergeSources(gdelt),
+      queries: [],
       papers,
-      videos: braveVideos,
-      model: grounded.ok ? grounded.model : null,
-      searchAvailable: grounded.ok || braveAvailable,
-      synthesisAvailable: grounded.ok,
-      providers: {
-        googleGrounding: grounded.ok,
-        brave: braveAvailable,
-        openAlex: papers.length > 0,
-      },
-      warning: providerWarning({ grounded, braveAvailable }),
+      videos,
+      model: null,
+      searchAvailable: gdelt.length > 0 || papers.length > 0 || videos.length > 0,
+      synthesisAvailable: false,
+      providers,
+      warning: providerWarning(providers),
     });
   }
 
@@ -511,25 +508,27 @@ export default async function handler(request, response) {
     return response.status(400).json({ error: 'Query is too long.', code: 'QUERY_TOO_LONG' });
   }
 
-  const [grounded, braveSources, braveVideos, papers, youtubeVideos] = await Promise.all([
-    callGroundedSearch(searchPrompt(query)),
-    fetchBraveWeb(query),
-    fetchBraveVideos(query),
+  const [gdelt, openAlex, crossref, semanticScholar, videos] = await Promise.all([
+    fetchGdelt(query, { timespan: '3m', limit: 10 }),
     fetchOpenAlex({ query, limit: 8 }),
-    fetchYouTube(query),
+    fetchCrossref(query, 8),
+    fetchSemanticScholar(query, 8),
+    fetchCuratedVideos(query),
   ]);
 
-  const sources = mergeSources(
-    grounded.ok ? grounded.sources : [],
-    braveSources,
-  );
-  const videos = youtubeVideos.length ? youtubeVideos : braveVideos;
-  const braveAvailable = braveSources.length > 0 || braveVideos.length > 0;
+  const papers = mergePapers(semanticScholar, openAlex, crossref).slice(0, 16);
+  const providers = {
+    gdelt: gdelt.length > 0,
+    openAlex: openAlex.length > 0,
+    crossref: crossref.length > 0,
+    semanticScholar: semanticScholar.length > 0,
+    youtubeRss: videos.length > 0,
+  };
 
-  if (!grounded.ok && !braveAvailable && papers.length === 0 && videos.length === 0) {
+  if (!gdelt.length && !papers.length && !videos.length) {
     return response.status(502).json({
-      error: grounded.error || 'Không tìm thấy dữ liệu.',
-      code: grounded.code || 'DISCOVERY_FAILED',
+      error: 'Không nhận được kết quả từ các nguồn discovery.',
+      code: 'DISCOVERY_FAILED',
     });
   }
 
@@ -537,20 +536,16 @@ export default async function handler(request, response) {
     mode: 'search',
     query,
     generatedAt: new Date().toISOString(),
-    synthesis: grounded.ok ? grounded.text : '',
-    sources,
-    queries: grounded.ok ? grounded.queries : [],
+    synthesis: coverageSummary({ sources: gdelt, papers, videos, providers }),
+    briefing: '',
+    sources: mergeSources(gdelt),
+    queries: [],
     papers,
     videos,
-    model: grounded.ok ? grounded.model : null,
-    searchAvailable: grounded.ok || braveAvailable,
-    synthesisAvailable: grounded.ok,
-    providers: {
-      googleGrounding: grounded.ok,
-      brave: braveAvailable,
-      openAlex: papers.length > 0,
-      youtube: youtubeVideos.length > 0,
-    },
-    warning: providerWarning({ grounded, braveAvailable }),
+    model: null,
+    searchAvailable: true,
+    synthesisAvailable: false,
+    providers,
+    warning: providerWarning(providers),
   });
 }
