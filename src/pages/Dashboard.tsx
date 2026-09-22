@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   ArrowRight,
   BookOpen,
+  Bookmark,
   Brain,
   Calculator,
   ChartSpline,
@@ -10,6 +11,7 @@ import {
   ExternalLink,
   FileText,
   Globe2,
+  History,
   Layers3,
   Library,
   LoaderCircle,
@@ -17,8 +19,10 @@ import {
   RefreshCcw,
   Search,
   Sigma,
+  SlidersHorizontal,
   Target,
   Video,
+  X,
 } from 'lucide-react';
 import { LESSONS } from '../data/lessons';
 import { BOOKS } from '../data/books';
@@ -32,6 +36,8 @@ import { ChatText } from '../components/ui/ChatText';
 import './dashboard.css';
 
 type SourceKind = 'web' | 'paper' | 'video' | 'tool';
+type ResultView = 'all' | 'sources' | 'papers' | 'videos';
+type PaperSort = 'relevance' | 'newest' | 'cited';
 
 interface LiveSource {
   title: string;
@@ -92,6 +98,17 @@ interface DiscoveryPayload {
 
 const FEED_CACHE_KEY = 'mathnexus:discovery-feed:v4';
 const FEED_CACHE_MS = 15 * 60 * 1000;
+const SEARCH_HISTORY_KEY = 'mathnexus:research-history:v1';
+const SAVED_TOPICS_KEY = 'mathnexus:saved-research-topics:v1';
+
+const RESEARCH_SEEDS = [
+  'algebraic topology',
+  'number theory',
+  'differential geometry',
+  'partial differential equations',
+  'mathematical physics',
+  'probability theory',
+];
 
 const LEARNING_TOOLS = [
   { to: '/map', Icon: Network, title: 'Bản đồ tri thức', text: 'Quan hệ tiên quyết, khái niệm liên quan và lộ trình.' },
@@ -145,6 +162,30 @@ function writeFeedCache(data: DiscoveryPayload) {
   } catch {
     // Discovery cache is optional.
   }
+}
+
+function readStringList(key: string, limit = 10) {
+  try {
+    const value = JSON.parse(localStorage.getItem(key) || '[]');
+    return Array.isArray(value)
+      ? value.map(item => String(item).trim()).filter(Boolean).slice(0, limit)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeStringList(key: string, values: string[]) {
+  try {
+    localStorage.setItem(key, JSON.stringify(values));
+  } catch {
+    // Local research history is optional.
+  }
+}
+
+function paperTimestamp(value: string) {
+  const stamp = Date.parse(value || '');
+  return Number.isFinite(stamp) ? stamp : 0;
 }
 
 async function fetchOpenAlexFallback(query = ''): Promise<ResearchPaper[]> {
@@ -206,6 +247,11 @@ export default function Dashboard() {
   const [searchResult, setSearchResult] = useState<DiscoveryPayload | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState('');
+  const [recentQueries, setRecentQueries] = useState<string[]>(() => readStringList(SEARCH_HISTORY_KEY, 8));
+  const [savedTopics, setSavedTopics] = useState<string[]>(() => readStringList(SAVED_TOPICS_KEY, 12));
+  const [resultView, setResultView] = useState<ResultView>('all');
+  const [paperSort, setPaperSort] = useState<PaperSort>('relevance');
+  const [openAccessOnly, setOpenAccessOnly] = useState(false);
 
   const domains = useMemo(() => MATH_DOMAINS.map(domain => {
     const concepts = MATH_CONCEPTS.filter(concept => concept.domain === domain.id);
@@ -272,14 +318,39 @@ export default function Dashboard() {
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
-  const runSearch = async (event: FormEvent) => {
-    event.preventDefault();
-    const trimmed = query.trim();
+  const rememberQuery = (value: string) => {
+    setRecentQueries(current => {
+      const next = [value, ...current.filter(item => item.toLowerCase() !== value.toLowerCase())].slice(0, 8);
+      writeStringList(SEARCH_HISTORY_KEY, next);
+      return next;
+    });
+  };
+
+  const toggleSavedTopic = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+
+    setSavedTopics(current => {
+      const exists = current.some(item => item.toLowerCase() === trimmed.toLowerCase());
+      const next = exists
+        ? current.filter(item => item.toLowerCase() !== trimmed.toLowerCase())
+        : [trimmed, ...current].slice(0, 12);
+      writeStringList(SAVED_TOPICS_KEY, next);
+      return next;
+    });
+  };
+
+  const executeSearch = async (value: string) => {
+    const trimmed = value.trim();
     if (!trimmed || searchLoading) return;
 
+    setQuery(trimmed);
     setSearchLoading(true);
     setSearchError('');
     setSearchResult(null);
+    setResultView('all');
+    setPaperSort('relevance');
+    setOpenAccessOnly(false);
 
     try {
       const response = await fetch('/api/discovery', {
@@ -290,6 +361,7 @@ export default function Dashboard() {
       const data = await response.json().catch(() => ({})) as DiscoveryPayload & { error?: string };
       if (!response.ok) throw new Error(data.error || 'Search unavailable');
       setSearchResult(data);
+      rememberQuery(trimmed);
     } catch {
       try {
         const papers = await fetchOpenAlexFallback(trimmed);
@@ -304,6 +376,7 @@ export default function Dashboard() {
           searchAvailable: false,
           warning: 'Discovery backend chưa phản hồi. Kết quả hiện tại đến từ OpenAlex.',
         });
+        rememberQuery(trimmed);
       } catch {
         setSearchError('Không thực hiện được tìm kiếm lúc này.');
       }
@@ -312,6 +385,31 @@ export default function Dashboard() {
     }
   };
 
+  const runSearch = (event: FormEvent) => {
+    event.preventDefault();
+    void executeSearch(query);
+  };
+
+  const filteredPapers = useMemo(() => {
+    const papers = [...(searchResult?.papers || [])]
+      .filter(paper => !openAccessOnly || paper.openAccess);
+
+    if (paperSort === 'newest') {
+      papers.sort((left, right) => paperTimestamp(right.date) - paperTimestamp(left.date));
+    } else if (paperSort === 'cited') {
+      papers.sort((left, right) => right.citedBy - left.citedBy);
+    }
+
+    return papers;
+  }, [searchResult, openAccessOnly, paperSort]);
+
+  const resultCounts = {
+    sources: searchResult?.sources.length || 0,
+    papers: searchResult?.papers.length || 0,
+    videos: searchResult?.videos?.length || 0,
+  };
+
+  const youtubeShortcuts = [...new Set([...savedTopics, ...recentQueries, ...RESEARCH_SEEDS])].slice(0, 6);
   const featuredLesson = recommended[0] || LESSONS[0];
 
   return (
@@ -327,7 +425,7 @@ export default function Dashboard() {
         </div>
         <nav className="overview-modes" aria-label="Ba chế độ sử dụng chính">
           <a href="#radar"><span>01</span><strong>Cập nhật</strong><small>Nội dung mới và đáng chú ý</small></a>
-          <a href="#research"><span>02</span><strong>Tìm kiếm</strong><small>Paper, video, notes, project</small></a>
+          <a href="#research"><span>02</span><strong>Tìm kiếm</strong><small>Paper, web, video và truy vấn đã lưu</small></a>
           <a href="#learn"><span>03</span><strong>Học & công cụ</strong><small>Tri thức nội bộ và workspace</small></a>
         </nav>
       </header>
@@ -476,6 +574,12 @@ export default function Dashboard() {
           </button>
         </form>
 
+        <div className="overview-query-chips" aria-label="Gợi ý tìm kiếm YouTube">
+          {youtubeShortcuts.map(item => (
+            <button key={item} type="button" onClick={() => setYoutubeQuery(item)}>{item}</button>
+          ))}
+        </div>
+
         {feed?.videos?.length ? (
           <div className="overview-youtube-recent">
             <span>Video mới từ các kênh đang theo dõi</span>
@@ -529,10 +633,75 @@ export default function Dashboard() {
           <span>không yêu cầu API trả phí</span>
         </div>
 
+        <div className="overview-research-memory">
+          <div className="overview-memory-group">
+            <div className="overview-memory-label">
+              <Bookmark size={14} />
+              <span>Chủ đề đã lưu</span>
+              {query.trim() && (
+                <button type="button" onClick={() => toggleSavedTopic(query)}>
+                  {savedTopics.some(item => item.toLowerCase() === query.trim().toLowerCase()) ? 'Bỏ lưu truy vấn này' : 'Lưu truy vấn này'}
+                </button>
+              )}
+            </div>
+            <div className="overview-query-chips">
+              {savedTopics.length ? savedTopics.map(item => (
+                <span key={item} className="overview-saved-chip">
+                  <button type="button" onClick={() => void executeSearch(item)}>{item}</button>
+                  <button type="button" aria-label={`Bỏ lưu ${item}`} onClick={() => toggleSavedTopic(item)}><X size={11} /></button>
+                </span>
+              )) : <small>Chưa có chủ đề được lưu trên trình duyệt này.</small>}
+            </div>
+          </div>
+
+          {recentQueries.length > 0 && (
+            <div className="overview-memory-group">
+              <div className="overview-memory-label"><History size={14} /><span>Tìm gần đây</span></div>
+              <div className="overview-query-chips">
+                {recentQueries.map(item => (
+                  <button key={item} type="button" onClick={() => void executeSearch(item)}>{item}</button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
         {searchError && <p className="overview-error">{searchError}</p>}
 
         {searchResult && (
           <div className="overview-search-results">
+            <div className="overview-result-toolbar">
+              <div className="overview-result-tabs" role="group" aria-label="Loại kết quả">
+                <button type="button" className={resultView === 'all' ? 'active' : ''} onClick={() => setResultView('all')}>
+                  Tất cả <span>{resultCounts.sources + resultCounts.papers + resultCounts.videos}</span>
+                </button>
+                <button type="button" className={resultView === 'papers' ? 'active' : ''} onClick={() => setResultView('papers')}>
+                  Paper <span>{resultCounts.papers}</span>
+                </button>
+                <button type="button" className={resultView === 'sources' ? 'active' : ''} onClick={() => setResultView('sources')}>
+                  Nguồn <span>{resultCounts.sources}</span>
+                </button>
+                <button type="button" className={resultView === 'videos' ? 'active' : ''} onClick={() => setResultView('videos')}>
+                  Video <span>{resultCounts.videos}</span>
+                </button>
+              </div>
+
+              {(resultView === 'all' || resultView === 'papers') && (
+                <div className="overview-paper-controls">
+                  <SlidersHorizontal size={14} />
+                  <select value={paperSort} onChange={event => setPaperSort(event.target.value as PaperSort)} aria-label="Sắp xếp paper">
+                    <option value="relevance">Độ liên quan</option>
+                    <option value="newest">Mới nhất</option>
+                    <option value="cited">Trích dẫn nhiều</option>
+                  </select>
+                  <label>
+                    <input type="checkbox" checked={openAccessOnly} onChange={event => setOpenAccessOnly(event.target.checked)} />
+                    Open access
+                  </label>
+                </div>
+              )}
+            </div>
+
             <div className="overview-search-summary">
               <div className="overview-result-head">
                 <span>PHẠM VI KẾT QUẢ</span>
@@ -554,8 +723,9 @@ export default function Dashboard() {
               )}
             </div>
 
-            <div className="overview-result-columns">
-              <div>
+            {(resultView === 'all' || resultView === 'sources' || resultView === 'papers') && (
+              <div className={`overview-result-columns ${resultView !== 'all' ? 'single' : ''}`}>
+              {(resultView === 'all' || resultView === 'sources') && <div>
                 <h3>Nguồn cập nhật</h3>
                 <div className="overview-source-list compact">
                   {searchResult.sources.slice(0, 8).map(source => {
@@ -576,12 +746,12 @@ export default function Dashboard() {
                   })}
                   {!searchResult.sources.length && <p className="overview-muted">Không có nguồn cập nhật phù hợp trong chế độ hiện tại.</p>}
                 </div>
-              </div>
+              </div>}
 
-              <div>
+              {(resultView === 'all' || resultView === 'papers') && <div>
                 <h3>Paper liên quan</h3>
                 <div className="overview-paper-list compact">
-                  {searchResult.papers.slice(0, 8).map(paper => (
+                  {filteredPapers.slice(0, 12).map(paper => (
                     <a key={paper.id} href={paper.url || paper.id} target="_blank" rel="noreferrer" className="overview-paper-row">
                       <div>
                         <strong>{paper.title}</strong>
@@ -599,12 +769,15 @@ export default function Dashboard() {
                       <ExternalLink size={14} />
                     </a>
                   ))}
-                  {!searchResult.papers.length && <p className="overview-muted">Chưa có paper phù hợp từ các nguồn hiện tại.</p>}
+                  {!filteredPapers.length && <p className="overview-muted">
+                    {openAccessOnly ? 'Không có paper open access trong tập kết quả này.' : 'Chưa có paper phù hợp từ các nguồn hiện tại.'}
+                  </p>}
                 </div>
+              </div>}
               </div>
-            </div>
+            )}
 
-            {searchResult.videos?.length ? (
+            {(resultView === 'all' || resultView === 'videos') && searchResult.videos?.length ? (
               <div className="overview-video-strip">
                 <h3>Video</h3>
                 <div>
