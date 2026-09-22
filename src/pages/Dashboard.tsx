@@ -6,7 +6,6 @@ import {
   Brain,
   Calculator,
   ChartSpline,
-  CircleDot,
   Clock,
   ExternalLink,
   FileText,
