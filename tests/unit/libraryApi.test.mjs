@@ -118,6 +118,71 @@ test('Open Library search exposes reading availability and Archive link', async 
   assert.match(decodeURIComponent(requested), /ebook_access:public/);
 });
 
+test('Open Library detail mode returns work metadata', async () => {
+  globalThis.fetch = async url => {
+    assert.equal(String(url), 'https://openlibrary.org/works/OL123W.json');
+    return new Response(JSON.stringify({
+      title: 'Topology',
+      subtitle: 'An introduction',
+      description: { value: 'A concise introduction to topology.' },
+      first_publish_date: '1970',
+      covers: [321],
+      subjects: ['Topology', 'Mathematics'],
+      subject_places: ['Europe'],
+      subject_times: ['20th century'],
+      links: [{ title: 'Companion notes', url: 'https://example.org/notes' }],
+    }), { status: 200 });
+  };
+
+  const response = await request({
+    source: 'openlibrary',
+    mode: 'detail',
+    key: '/works/OL123W',
+  });
+
+  assert.equal(response.code, 200);
+  assert.equal(response.payload.book.title, 'Topology');
+  assert.match(response.payload.book.description, /concise introduction/);
+  assert.match(response.payload.book.cover, /321-L\.jpg/);
+  assert.equal(response.payload.book.subjects[0], 'Topology');
+});
+
+test('Open Library inside mode resolves Archive host and returns OCR matches', async () => {
+  const urls = [];
+  globalThis.fetch = async url => {
+    urls.push(String(url));
+
+    if (String(url).startsWith('https://archive.org/metadata/')) {
+      return new Response(JSON.stringify({
+        d1: 'ia800204.us.archive.org',
+        dir: '/27/items/calculusmadeclear',
+      }), { status: 200 });
+    }
+
+    return new Response(JSON.stringify({
+      page_count: 220,
+      matches: [{
+        text: 'The {{{derivative}}} measures a rate of change.',
+        par: [{ page: 42 }, { page: 42 }],
+      }],
+    }), { status: 200 });
+  };
+
+  const response = await request({
+    source: 'openlibrary',
+    mode: 'inside',
+    archive: 'calculusmadeclear',
+    q: 'derivative',
+  });
+
+  assert.equal(response.code, 200);
+  assert.equal(response.payload.available, true);
+  assert.equal(response.payload.pageCount, 220);
+  assert.equal(response.payload.matches[0].text, 'The derivative measures a rate of change.');
+  assert.deepEqual(response.payload.matches[0].pages, [42]);
+  assert.ok(urls.some(url => url.includes('/fulltext/inside.php?')));
+});
+
 test('library endpoint validates source and method', async () => {
   const badSource = await request({ source: 'unknown' });
   assert.equal(badSource.code, 400);
