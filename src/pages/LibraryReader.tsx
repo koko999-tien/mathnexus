@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, ExternalLink, Languages, LoaderCircle, Minus, Plus } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Languages, LoaderCircle, Map, Minus, Plus } from 'lucide-react';
+import { MATH_DOMAINS } from '../data/mathKnowledge';
+import { relatedConceptsForText } from '../data/conceptWikipedia';
 import './library.css';
 
 interface WikiArticle {
@@ -72,6 +74,10 @@ export default function LibraryReader() {
   const paragraphs = useMemo(() => splitArticle(article?.extract || ''), [article]);
   const words = useMemo(() => (article?.extract || '').trim().split(/\s+/).filter(Boolean).length, [article]);
   const readingMinutes = Math.max(1, Math.ceil(words / 220));
+  const relatedConcepts = useMemo(
+    () => relatedConceptsForText(`${article?.title || ''} ${article?.extract || ''}`, 6),
+    [article],
+  );
 
   if (loading) {
     return (
@@ -131,6 +137,31 @@ export default function LibraryReader() {
               : <p key={`${index}-${paragraph.slice(0, 20)}`}>{paragraph}</p>;
           })}
         </div>
+
+        {relatedConcepts.length > 0 && (
+          <section className="library-wiki-concepts">
+            <div className="library-wiki-concepts-head">
+              <div>
+                <p className="eyebrow">LIÊN QUAN TRONG MATHNEXUS</p>
+                <h2>Khái niệm liên quan</h2>
+              </div>
+              <Map size={18} />
+            </div>
+
+            <div className="library-wiki-concept-grid">
+              {relatedConcepts.map(concept => {
+                const domain = MATH_DOMAINS.find(item => item.id === concept.domain);
+                return (
+                  <Link key={concept.id} to={`/map?concept=${encodeURIComponent(concept.id)}`}>
+                    <strong>{concept.title}</strong>
+                    <small>{domain?.short} · {concept.level}</small>
+                    <span>{concept.description}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         <footer>
           Nội dung được tải từ Wikipedia. Với công thức, bảng, hình minh họa hoặc chú thích phức tạp, hãy đối chiếu bài gốc.

@@ -1035,3 +1035,140 @@
     min-height: 260px;
   }
 }
+
+
+.library-wiki-concepts {
+  display: grid;
+  gap: 12px;
+  max-width: 820px;
+  margin: 0 auto 28px;
+  padding: 18px clamp(22px, 5vw, 54px);
+  border-top: 1px solid var(--color-line);
+}
+
+.library-wiki-concepts-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.library-wiki-concepts-head h2 {
+  margin: 2px 0 0;
+  font-size: 15px;
+}
+
+.library-wiki-concepts-head > svg {
+  color: var(--color-accent);
+}
+
+.library-wiki-concept-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.library-wiki-concept-grid a {
+  display: grid;
+  gap: 3px;
+  padding: 10px;
+  border: 1px solid var(--color-line);
+  border-radius: 9px;
+  background: var(--color-bg);
+  color: var(--color-ink);
+}
+
+.library-wiki-concept-grid a:hover {
+  border-color: var(--color-sage);
+}
+
+.library-wiki-concept-grid strong {
+  font-size: 8.5px;
+}
+
+.library-wiki-concept-grid small {
+  color: var(--color-muted);
+  font-size: 7px;
+}
+
+.library-wiki-concept-grid span {
+  color: var(--color-muted);
+  font-size: 7.5px;
+  line-height: 1.45;
+}
+
+.library-related-concepts {
+  display: grid;
+  gap: 7px;
+}
+
+.library-related-concepts article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid var(--color-line);
+  border-radius: 9px;
+  background: var(--color-bg);
+}
+
+.library-related-concepts strong,
+.library-related-concepts small {
+  display: block;
+}
+
+.library-related-concepts strong {
+  font-size: 9px;
+}
+
+.library-related-concepts small {
+  margin-top: 2px;
+  color: var(--color-muted);
+  font-size: 7px;
+}
+
+.library-related-concepts p {
+  margin: 5px 0 0;
+  color: var(--color-muted);
+  font-size: 7.5px;
+  line-height: 1.45;
+}
+
+.library-related-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 5px;
+}
+
+.library-related-actions a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 7px;
+  border: 1px solid var(--color-line);
+  border-radius: 7px;
+  color: var(--color-ink);
+  font-size: 7px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.library-related-actions a:hover {
+  border-color: var(--color-sage);
+}
+
+@media (max-width: 640px) {
+  .library-wiki-concept-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .library-related-concepts article {
+    grid-template-columns: 1fr;
+  }
+
+  .library-related-actions {
+    justify-content: flex-start;
+  }
+}
