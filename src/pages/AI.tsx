@@ -268,6 +268,10 @@ export default function AI() {
       <p>Trợ lý chọn chiến lược theo câu hỏi, tri thức liên quan và bằng chứng học tập hiện có. Mặc định ưu tiên dẫn dắt; bạn vẫn có thể yêu cầu lời giải đầy đủ.</p>
     </div>
 
+    {goalContext && <div className="helper-text mb-3" role="status">
+      Đang dùng mục tiêu bạn đã đặt làm ngữ cảnh: <strong>{goalContext.targetTitle}</strong> · {goalContext.progressPercent}% theo evidence · <Link to={'/map?concept=' + encodeURIComponent(goalContext.targetConceptId)}>xem trên Knowledge Graph</Link>
+    </div>}
+
     <div className="tutor-mode-bar">
       <label>
         <GraduationCap size={16} />
