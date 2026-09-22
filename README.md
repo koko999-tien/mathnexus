@@ -53,6 +53,7 @@ Discovery được thiết kế để chạy mà không cần dịch vụ tìm k
 
 - **GDELT DOC API**: nguồn web/tin tức toàn cầu, dùng cho Radar và truy vấn nội dung gần đây.
 - **Quanta Mathematics RSS + arXiv Mathematics RSS**: nguồn biên tập/chuyên ngành cập nhật, dùng làm lớp fallback ổn định cho Radar.
+- **arXiv API**: tìm trực tiếp preprint theo truy vấn, không cần API key.
 - **OpenAlex**: metadata paper, preprint, tác giả, nguồn xuất bản và open-access status.
 - **Crossref REST API**: DOI và metadata từ các nhà xuất bản/thành viên Crossref.
 - **Semantic Scholar Academic Graph API**: tìm paper theo độ liên quan, citation count và open-access PDF khi endpoint công khai chưa bị throttling.
@@ -96,6 +97,7 @@ Output: `dist/`
 - Gemini Generate Content API
 - GDELT DOC API
 - Quanta/arXiv RSS feeds
+- arXiv API
 - OpenAlex API
 - Crossref REST API
 - Semantic Scholar Academic Graph API
@@ -106,6 +108,8 @@ Output: `dist/`
 
 - Dashboard theo ba tác vụ: theo dõi nội dung mới, tìm tài liệu theo ý tưởng, học/tra cứu.
 - Research Search có lịch sử truy vấn, chủ đề lưu, lọc Paper/Nguồn/Video, sắp xếp citation/ngày và Open Access.
+- Research Shelf lưu paper/nguồn/video cục bộ và xuất các paper đã giữ thành BibTeX.
+- Có lối tra cứu trực tiếp sang arXiv, Google Scholar và YouTube từ cùng truy vấn.
 - Cửa sổ YouTube Search độc lập trên trang chính, dùng tìm kiếm trực tiếp của YouTube và RSS công khai.
 - Bài học toán từ THCS đến Đại học.
 - Knowledge Graph và Math Cosmos 3D.

@@ -24,6 +24,67 @@ test('dashboard, theme and complete navigation work at every screen size', async
 });
 
 
+test('research search saves papers to the local Research Shelf', async ({ page }) => {
+  await page.route('**/api/discovery', async route => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        json: {
+          mode: 'feed',
+          generatedAt: '2026-09-22T10:00:00.000Z',
+          sources: [],
+          queries: [],
+          papers: [],
+          videos: [],
+          searchAvailable: true,
+          providers: { openAlex: true },
+        },
+      });
+      return;
+    }
+
+    await route.fulfill({
+      status: 200,
+      json: {
+        mode: 'search',
+        query: 'algebraic topology',
+        generatedAt: '2026-09-22T10:00:00.000Z',
+        synthesis: 'Kết quả hiện có: 1 công trình học thuật.',
+        sources: [],
+        queries: [],
+        papers: [{
+          id: 'https://arxiv.org/abs/2609.12345',
+          title: 'Algebraic topology and derived geometry',
+          url: 'https://arxiv.org/abs/2609.12345',
+          date: '2026-09-20',
+          language: 'en',
+          type: 'preprint',
+          citedBy: 0,
+          source: 'arXiv · math.AT',
+          authors: ['Ada Example'],
+          openAccess: true,
+          database: 'arXiv',
+        }],
+        videos: [],
+        searchAvailable: true,
+        providers: { arxiv: true },
+      },
+    });
+  });
+
+  await page.goto('/');
+  await page.getByLabel('Tìm kiếm tài liệu toán học trên web').fill('algebraic topology');
+  await page.getByRole('button', { name: 'Tra cứu' }).click();
+
+  await expect(page.getByText('Algebraic topology and derived geometry')).toBeVisible();
+  await page.getByRole('button', { name: 'Lưu Algebraic topology and derived geometry' }).click();
+  await expect(page.getByRole('heading', { name: 'Tài liệu đang giữ' })).toBeVisible();
+
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Tài liệu đang giữ' })).toBeVisible();
+  await expect(page.locator('.overview-research-shelf')).toContainText('Algebraic topology and derived geometry');
+});
+
 test('dashboard recommendations and knowledge map adapt to learning history', async ({ page }) => {
   await page.goto('/');
   await page.evaluate(() => {

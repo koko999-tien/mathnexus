@@ -110,6 +110,20 @@ function mockDiscoveryFetch(seenUrls) {
       }), { status: 200 });
     }
 
+    if (value.includes('export.arxiv.org/api/query')) {
+      return new Response(`<?xml version="1.0"?><feed>
+        <entry>
+          <id>https://arxiv.org/abs/2609.12345</id>
+          <title>Algebraic topology and derived geometry</title>
+          <published>2026-09-20T12:00:00Z</published>
+          <author><name>Ada Example</name></author>
+          <author><name>Emmy Example</name></author>
+          <category term="math.AT" />
+          <link href="https://arxiv.org/abs/2609.12345" rel="alternate" type="text/html" />
+        </entry>
+      </feed>`, { status: 200, headers: { 'Content-Type': 'application/atom+xml' } });
+    }
+
     if (value.includes('quantamagazine.org')) {
       return new Response(rssItem({
         title: 'Topology explained',
@@ -176,6 +190,8 @@ test('search combines academic, editorial, web and video sources for a query', a
   assert.equal(response.payload.mode, 'search');
   assert.equal(response.payload.query, 'algebraic topology');
   assert.equal(response.payload.providers.semanticScholar, true);
+  assert.equal(response.payload.providers.arxiv, true);
+  assert.ok(response.payload.papers.some(item => item.database === 'arXiv'));
   assert.ok(response.payload.papers.some(item => /algebraic topology/i.test(item.title)));
   assert.ok(response.payload.sources.some(item => /topology/i.test(item.title)));
   assert.ok(response.payload.videos.some(item => /topology/i.test(item.title)));
@@ -186,6 +202,7 @@ test('search combines academic, editorial, web and video sources for a query', a
     return new URL(url).searchParams.get('search') === 'algebraic topology';
   }));
   assert.ok(seenUrls.some(url => url.includes('api.semanticscholar.org')));
+  assert.ok(seenUrls.some(url => url.includes('export.arxiv.org/api/query')));
 });
 
 test('GET q supports reusable discovery search and validation remains strict', async () => {

@@ -8,6 +8,7 @@ import {
   Calculator,
   ChartSpline,
   Clock,
+  Download,
   ExternalLink,
   FileText,
   Globe2,
@@ -21,6 +22,7 @@ import {
   Sigma,
   SlidersHorizontal,
   Target,
+  Trash2,
   Video,
   X,
 } from 'lucide-react';
@@ -32,6 +34,13 @@ import { useProgress } from '../hooks/useProgress';
 import { useLearningGoal } from '../hooks/useLearningGoal';
 import { recommendLessons } from '../utils/learningInsights';
 import { buildLearningGoalState } from '../learning/learningGoal';
+import {
+  buildBibTeX,
+  getResearchShelf,
+  saveResearchShelf,
+  toggleResearchShelfItem,
+  type ResearchShelfItem,
+} from '../utils/researchShelf';
 import { ChatText } from '../components/ui/ChatText';
 import './dashboard.css';
 
@@ -90,6 +99,7 @@ interface DiscoveryPayload {
     openAlex?: boolean;
     crossref?: boolean;
     semanticScholar?: boolean;
+    arxiv?: boolean;
     youtubeRss?: boolean;
     editorialRss?: boolean;
   };
@@ -252,6 +262,7 @@ export default function Dashboard() {
   const [resultView, setResultView] = useState<ResultView>('all');
   const [paperSort, setPaperSort] = useState<PaperSort>('relevance');
   const [openAccessOnly, setOpenAccessOnly] = useState(false);
+  const [researchShelf, setResearchShelf] = useState<ResearchShelfItem[]>(() => getResearchShelf());
 
   const domains = useMemo(() => MATH_DOMAINS.map(domain => {
     const concepts = MATH_CONCEPTS.filter(concept => concept.domain === domain.id);
@@ -388,6 +399,63 @@ export default function Dashboard() {
   const runSearch = (event: FormEvent) => {
     event.preventDefault();
     void executeSearch(query);
+  };
+
+  const updateResearchShelf = (item: Omit<ResearchShelfItem, 'savedAt'> & { savedAt?: string }) => {
+    setResearchShelf(current => {
+      const next = toggleResearchShelfItem(current, item);
+      saveResearchShelf(next);
+      return next;
+    });
+  };
+
+  const isOnResearchShelf = (url: string) => researchShelf.some(
+    item => item.url.toLowerCase() === url.toLowerCase(),
+  );
+
+  const savePaper = (paper: ResearchPaper) => updateResearchShelf({
+    id: `paper:${paper.id}`,
+    kind: 'paper',
+    title: paper.title,
+    url: paper.url || paper.id,
+    provider: paper.database,
+    source: paper.source,
+    authors: paper.authors,
+    date: paper.date,
+    openAccess: paper.openAccess,
+  });
+
+  const saveSource = (source: LiveSource) => updateResearchShelf({
+    id: `source:${source.uri}`,
+    kind: source.kind === 'paper' ? 'paper' : source.kind === 'video' ? 'video' : 'source',
+    title: source.title,
+    url: source.uri,
+    provider: source.provider,
+    source: source.domain,
+    date: source.age,
+    openAccess: source.kind === 'paper' && /arxiv/i.test(`${source.provider || ''} ${source.domain || ''}`),
+  });
+
+  const saveVideo = (video: VideoResult) => updateResearchShelf({
+    id: `video:${video.id}`,
+    kind: 'video',
+    title: video.title,
+    url: video.url,
+    provider: video.channel,
+    source: video.channel,
+    date: video.publishedAt,
+  });
+
+  const exportResearchBibTeX = () => {
+    const text = buildBibTeX(researchShelf);
+    if (!text) return;
+    const blob = new Blob([text], { type: 'application/x-bibtex;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `mathnexus-research-${new Date().toISOString().slice(0, 10)}.bib`;
+    anchor.click();
+    URL.revokeObjectURL(url);
   };
 
   const filteredPapers = useMemo(() => {
@@ -604,7 +672,7 @@ export default function Dashboard() {
           <p className="eyebrow">RESEARCH SEARCH</p>
           <h2>Tìm nội dung liên quan đến một ý tưởng</h2>
           <p>
-            Truy vấn được gửi đồng thời tới GDELT, OpenAlex, Crossref và Semantic Scholar; video được lấy từ các kênh toán học
+            Truy vấn được gửi đồng thời tới arXiv, OpenAlex, Crossref, Semantic Scholar và GDELT; video được lấy từ các kênh toán học
             theo dõi qua RSS. Kết quả giữ nguyên tiêu đề và ngôn ngữ của nguồn.
           </p>
         </div>
@@ -625,6 +693,7 @@ export default function Dashboard() {
 
         <div className="overview-search-notes">
           <span>GDELT</span>
+          <span>arXiv API</span>
           <span>Quanta/arXiv RSS</span>
           <span>OpenAlex</span>
           <span>Crossref</span>
@@ -666,6 +735,43 @@ export default function Dashboard() {
           )}
         </div>
 
+        {researchShelf.length > 0 && (
+          <div className="overview-research-shelf">
+            <div className="overview-shelf-head">
+              <div>
+                <p className="eyebrow">RESEARCH SHELF</p>
+                <h3>Tài liệu đang giữ</h3>
+                <small>{researchShelf.length} mục được lưu cục bộ trên trình duyệt này.</small>
+              </div>
+              <button
+                type="button"
+                onClick={exportResearchBibTeX}
+                disabled={!researchShelf.some(item => item.kind === 'paper')}
+              >
+                <Download size={14} />
+                Xuất BibTeX
+              </button>
+            </div>
+            <div className="overview-shelf-list">
+              {researchShelf.slice(0, 10).map(item => (
+                <div key={item.id} className="overview-shelf-row">
+                  <span className="overview-shelf-kind">{item.kind === 'paper' ? 'Paper' : item.kind === 'video' ? 'Video' : 'Nguồn'}</span>
+                  <a href={item.url} target="_blank" rel="noreferrer">
+                    <strong>{item.title}</strong>
+                    <small>
+                      {[item.provider, item.source, item.date ? formatDate(item.date) : '', item.openAccess ? 'Open access' : '']
+                        .filter(Boolean).join(' · ')}
+                    </small>
+                  </a>
+                  <button type="button" aria-label={`Bỏ khỏi Research Shelf: ${item.title}`} onClick={() => updateResearchShelf(item)}>
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {searchError && <p className="overview-error">{searchError}</p>}
 
         {searchResult && (
@@ -702,6 +808,19 @@ export default function Dashboard() {
               )}
             </div>
 
+            <div className="overview-external-search">
+              <span>Tra cứu trực tiếp:</span>
+              <a href={`https://arxiv.org/search/?query=${encodeURIComponent(query.trim())}&searchtype=all`} target="_blank" rel="noreferrer">
+                arXiv <ExternalLink size={11} />
+              </a>
+              <a href={`https://scholar.google.com/scholar?q=${encodeURIComponent(query.trim())}`} target="_blank" rel="noreferrer">
+                Google Scholar <ExternalLink size={11} />
+              </a>
+              <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(query.trim())}`} target="_blank" rel="noreferrer">
+                YouTube <ExternalLink size={11} />
+              </a>
+            </div>
+
             <div className="overview-search-summary">
               <div className="overview-result-head">
                 <span>PHẠM VI KẾT QUẢ</span>
@@ -711,6 +830,7 @@ export default function Dashboard() {
                     searchResult.providers?.openAlex ? 'OpenAlex' : '',
                     searchResult.providers?.crossref ? 'Crossref' : '',
                     searchResult.providers?.semanticScholar ? 'Semantic Scholar' : '',
+                    searchResult.providers?.arxiv ? 'arXiv API' : '',
                     searchResult.providers?.youtubeRss ? 'YouTube RSS' : '',
                     searchResult.providers?.editorialRss ? 'Quanta/arXiv RSS' : '',
                   ].filter(Boolean).join(' · ') || 'OpenAlex fallback'}
@@ -731,17 +851,27 @@ export default function Dashboard() {
                   {searchResult.sources.slice(0, 8).map(source => {
                     const Icon = sourceIcon(source.kind);
                     return (
-                      <a key={source.uri} href={source.uri} target="_blank" rel="noreferrer" className="overview-source-row">
-                        <span className="overview-source-icon"><Icon size={15} /></span>
-                        <span>
-                          <strong>{source.title}</strong>
-                          <small>
-                            {[source.provider, sourceLabel[source.kind], source.domain, source.age ? formatDate(source.age) : '']
-                              .filter(Boolean).join(' · ')}
-                          </small>
-                        </span>
-                        <ExternalLink size={14} />
-                      </a>
+                      <div key={source.uri} className="overview-result-save-row">
+                        <a href={source.uri} target="_blank" rel="noreferrer" className="overview-source-row">
+                          <span className="overview-source-icon"><Icon size={15} /></span>
+                          <span>
+                            <strong>{source.title}</strong>
+                            <small>
+                              {[source.provider, sourceLabel[source.kind], source.domain, source.age ? formatDate(source.age) : '']
+                                .filter(Boolean).join(' · ')}
+                            </small>
+                          </span>
+                          <ExternalLink size={14} />
+                        </a>
+                        <button
+                          type="button"
+                          className={isOnResearchShelf(source.uri) ? 'is-saved' : ''}
+                          aria-label={isOnResearchShelf(source.uri) ? `Bỏ lưu ${source.title}` : `Lưu ${source.title}`}
+                          onClick={() => saveSource(source)}
+                        >
+                          <Bookmark size={13} />
+                        </button>
+                      </div>
                     );
                   })}
                   {!searchResult.sources.length && <p className="overview-muted">Không có nguồn cập nhật phù hợp trong chế độ hiện tại.</p>}
@@ -752,22 +882,32 @@ export default function Dashboard() {
                 <h3>Paper liên quan</h3>
                 <div className="overview-paper-list compact">
                   {filteredPapers.slice(0, 12).map(paper => (
-                    <a key={paper.id} href={paper.url || paper.id} target="_blank" rel="noreferrer" className="overview-paper-row">
-                      <div>
-                        <strong>{paper.title}</strong>
-                        <small>
-                          {[
-                            paper.database,
-                            paper.source,
-                            paper.date ? formatDate(paper.date) : '',
-                            paper.language?.toUpperCase(),
-                            paper.openAccess ? 'Open access' : '',
-                            paper.citedBy > 0 ? `${paper.citedBy} trích dẫn` : '',
-                          ].filter(Boolean).join(' · ')}
-                        </small>
-                      </div>
-                      <ExternalLink size={14} />
-                    </a>
+                    <div key={paper.id} className="overview-result-save-row">
+                      <a href={paper.url || paper.id} target="_blank" rel="noreferrer" className="overview-paper-row">
+                        <div>
+                          <strong>{paper.title}</strong>
+                          <small>
+                            {[
+                              paper.database,
+                              paper.source,
+                              paper.date ? formatDate(paper.date) : '',
+                              paper.language?.toUpperCase(),
+                              paper.openAccess ? 'Open access' : '',
+                              paper.citedBy > 0 ? `${paper.citedBy} trích dẫn` : '',
+                            ].filter(Boolean).join(' · ')}
+                          </small>
+                        </div>
+                        <ExternalLink size={14} />
+                      </a>
+                      <button
+                        type="button"
+                        className={isOnResearchShelf(paper.url || paper.id) ? 'is-saved' : ''}
+                        aria-label={isOnResearchShelf(paper.url || paper.id) ? `Bỏ lưu ${paper.title}` : `Lưu ${paper.title}`}
+                        onClick={() => savePaper(paper)}
+                      >
+                        <Bookmark size={13} />
+                      </button>
+                    </div>
                   ))}
                   {!filteredPapers.length && <p className="overview-muted">
                     {openAccessOnly ? 'Không có paper open access trong tập kết quả này.' : 'Chưa có paper phù hợp từ các nguồn hiện tại.'}
@@ -782,11 +922,21 @@ export default function Dashboard() {
                 <h3>Video</h3>
                 <div>
                   {searchResult.videos.map(video => (
-                    <a key={video.id} href={video.url} target="_blank" rel="noreferrer">
-                      <Video size={16} />
-                      <span><strong>{video.title}</strong><small>{video.channel}</small></span>
-                      <ExternalLink size={13} />
-                    </a>
+                    <div key={video.id} className="overview-result-save-row">
+                      <a href={video.url} target="_blank" rel="noreferrer">
+                        <Video size={16} />
+                        <span><strong>{video.title}</strong><small>{video.channel}</small></span>
+                        <ExternalLink size={13} />
+                      </a>
+                      <button
+                        type="button"
+                        className={isOnResearchShelf(video.url) ? 'is-saved' : ''}
+                        aria-label={isOnResearchShelf(video.url) ? `Bỏ lưu ${video.title}` : `Lưu ${video.title}`}
+                        onClick={() => saveVideo(video)}
+                      >
+                        <Bookmark size={13} />
+                      </button>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -882,7 +1032,7 @@ export default function Dashboard() {
       <footer className="overview-data-note">
         <span>Phân tách nguồn:</span>
         <p>
-          Discovery sử dụng GDELT và RSS chuyên ngành cho nguồn cập nhật, OpenAlex/Crossref/Semantic Scholar cho metadata học thuật,
+          Discovery sử dụng GDELT và RSS chuyên ngành cho nguồn cập nhật, arXiv/OpenAlex/Crossref/Semantic Scholar cho metadata học thuật,
           cùng RSS công khai của các kênh toán học cho video. Thư viện MathNexus vẫn là dữ liệu nội bộ; mọi nguồn ngoài đều mở tại trang gốc để kiểm tra trực tiếp.
         </p>
       </footer>
