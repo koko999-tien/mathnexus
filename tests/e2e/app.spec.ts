@@ -24,6 +24,65 @@ test('dashboard, theme and complete navigation work at every screen size', async
 });
 
 
+test('saved topics drive a personalized radar with new-since-last-visit counts', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('mathnexus:saved-research-topics:v1', JSON.stringify(['algebraic topology']));
+    localStorage.setItem('mathnexus:radar-last-seen:v1', '2026-09-20T00:00:00.000Z');
+  });
+
+  await page.route('**/api/discovery**', async route => {
+    const url = new URL(route.request().url());
+    if (url.searchParams.has('watch')) {
+      await route.fulfill({
+        status: 200,
+        json: {
+          mode: 'watch',
+          generatedAt: '2026-09-22T10:00:00.000Z',
+          searchAvailable: true,
+          topics: [{
+            topic: 'algebraic topology',
+            providers: { openAlex: true, arxiv: true },
+            papers: [{
+              id: 'https://arxiv.org/abs/2609.99999',
+              title: 'A fresh result in algebraic topology',
+              url: 'https://arxiv.org/abs/2609.99999',
+              date: '2026-09-21T08:00:00Z',
+              language: 'en',
+              type: 'preprint',
+              citedBy: 0,
+              source: 'arXiv · math.AT',
+              authors: ['Ada Example'],
+              openAccess: true,
+              database: 'arXiv',
+            }],
+          }],
+        },
+      });
+      return;
+    }
+
+    await route.fulfill({
+      status: 200,
+      json: {
+        mode: 'feed',
+        generatedAt: '2026-09-22T10:00:00.000Z',
+        sources: [],
+        queries: [],
+        papers: [],
+        videos: [],
+        searchAvailable: true,
+        providers: { openAlex: true },
+      },
+    });
+  });
+
+  await page.goto('/');
+  await expect(page.getByText('Theo chủ đề của bạn')).toBeVisible();
+  await expect(page.locator('.overview-topic-watch-card')).toContainText('algebraic topology');
+  await expect(page.locator('.overview-topic-watch-card')).toContainText('1 mới');
+  await expect(page.locator('.overview-topic-watch-card')).toContainText('A fresh result in algebraic topology');
+});
+
 test('research search saves papers to the local Research Shelf', async ({ page }) => {
   await page.route('**/api/discovery', async route => {
     if (route.request().method() === 'GET') {
