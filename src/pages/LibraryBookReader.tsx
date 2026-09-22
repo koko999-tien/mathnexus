@@ -9,6 +9,9 @@ export default function LibraryBookReader() {
   const archiveId = params.get('archive') || '';
   const title = params.get('title') || 'Sách số hóa';
   const openLibraryUrl = params.get('ol') || '';
+  const key = params.get('key') || '';
+  const authors = params.get('authors') || '';
+  const cover = params.get('cover') || '';
   const validArchiveId = SAFE_ARCHIVE_ID.test(archiveId);
   const embedUrl = validArchiveId ? `https://archive.org/embed/${archiveId}` : '';
   const detailsUrl = validArchiveId ? `https://archive.org/details/${archiveId}` : '';
@@ -31,6 +34,13 @@ export default function LibraryBookReader() {
       <div className="library-reader-toolbar">
         <Link to="/library?tab=openlibrary" className="library-back"><ArrowLeft size={15} /> Sách mở</Link>
         <div className="library-book-external-links">
+          {key && (
+            <Link
+              to={`/library/book-info?key=${encodeURIComponent(key)}&archive=${encodeURIComponent(archiveId)}&title=${encodeURIComponent(title)}&authors=${encodeURIComponent(authors)}&cover=${encodeURIComponent(cover)}`}
+            >
+              Ghi chú & tiến độ
+            </Link>
+          )}
           {openLibraryUrl.startsWith('https://openlibrary.org/') && (
             <a href={openLibraryUrl} target="_blank" rel="noreferrer">Open Library <ExternalLink size={12} /></a>
           )}
