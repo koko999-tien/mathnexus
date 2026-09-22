@@ -52,9 +52,10 @@ api/discovery.js
 Discovery được thiết kế để chạy mà không cần dịch vụ tìm kiếm trả phí:
 
 - **GDELT DOC API**: nguồn web/tin tức toàn cầu, dùng cho Radar và truy vấn nội dung gần đây.
+- **Quanta Mathematics RSS + arXiv Mathematics RSS**: nguồn biên tập/chuyên ngành cập nhật, dùng làm lớp fallback ổn định cho Radar.
 - **OpenAlex**: metadata paper, preprint, tác giả, nguồn xuất bản và open-access status.
 - **Crossref REST API**: DOI và metadata từ các nhà xuất bản/thành viên Crossref.
-- **Semantic Scholar Academic Graph API**: tìm paper theo độ liên quan, citation count và open-access PDF khi có.
+- **Semantic Scholar Academic Graph API**: tìm paper theo độ liên quan, citation count và open-access PDF khi endpoint công khai chưa bị throttling.
 - **YouTube RSS**: theo dõi video mới từ một tập kênh toán học được chọn sẵn, không cần YouTube API key.
 
 Không cần `BRAVE_SEARCH_API_KEY`, thẻ thanh toán hoặc tài khoản Search API.
@@ -94,6 +95,7 @@ Output: `dist/`
 - React Router
 - Gemini Generate Content API
 - GDELT DOC API
+- Quanta/arXiv RSS feeds
 - OpenAlex API
 - Crossref REST API
 - Semantic Scholar Academic Graph API
