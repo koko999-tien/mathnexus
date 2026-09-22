@@ -1211,7 +1211,7 @@ export default function Dashboard() {
           <div className="overview-domain-panel">
             <div className="overview-panel-head">
               <div>
-                <span>KNOWLEDGE GRAPH</span>
+                <span>BẢN ĐỒ KIẾN THỨC</span>
                 <strong>Miền kiến thức</strong>
               </div>
               <Network size={19} />
@@ -1267,8 +1267,8 @@ export default function Dashboard() {
       <footer className="overview-data-note">
         <span>Phân tách nguồn:</span>
         <p>
-          Discovery sử dụng GDELT và RSS chuyên ngành cho nguồn cập nhật, arXiv/OpenAlex/Crossref/Semantic Scholar cho metadata học thuật,
-          cùng RSS công khai của các kênh toán học cho video. Thư viện MathNexus vẫn là dữ liệu nội bộ; mọi nguồn ngoài đều mở tại trang gốc để kiểm tra trực tiếp.
+          Mục cập nhật sử dụng GDELT và RSS chuyên ngành cho bài viết, arXiv/OpenAlex/Crossref/Semantic Scholar cho thông tin paper,
+          cùng RSS công khai của các kênh toán học cho video. Thư viện MathNexus là dữ liệu nội bộ; các nguồn bên ngoài đều mở tại trang gốc để bạn kiểm tra.
         </p>
       </footer>
     </section>
