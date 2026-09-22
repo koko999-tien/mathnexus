@@ -149,7 +149,7 @@ const LEARNING_TOOLS = [
   { to: '/graph', Icon: ChartSpline, title: 'Đồ thị hàm số', text: 'Khảo sát trực quan và thay đổi tham số.' },
   { to: '/tools', Icon: Calculator, title: 'Công cụ toán học', text: 'Tính toán, kiểm tra và thử nghiệm.' },
   { to: '/canvas', Icon: Layers3, title: 'Math Canvas', text: 'Ghi chú, công thức và cấu trúc ý tưởng trên một mặt phẳng.' },
-  { to: '/ai', Icon: Brain, title: 'Trợ lý toán học', text: 'Giải thích, phản biện và hỗ trợ suy luận.' },
+  { to: '/ai', Icon: Brain, title: 'Trợ lý toán học', text: 'Hỏi đáp, gợi ý cách làm và giải thích từng bước.' },
   { to: '/books', Icon: Library, title: 'Tủ sách', text: 'Giáo trình và sách tham khảo theo chủ đề.' },
 ];
 
@@ -368,7 +368,7 @@ export default function Dashboard() {
           papers,
           videos: [],
           searchAvailable: false,
-          warning: 'Discovery backend chưa phản hồi; danh sách paper đang lấy trực tiếp từ OpenAlex.',
+          warning: 'Máy chủ tìm kiếm chưa phản hồi; danh sách paper đang lấy trực tiếp từ OpenAlex.',
         };
         setFeed(fallback);
       } catch {
@@ -501,7 +501,7 @@ export default function Dashboard() {
           papers,
           videos: [],
           searchAvailable: false,
-          warning: 'Discovery backend chưa phản hồi. Kết quả hiện tại đến từ OpenAlex.',
+          warning: 'Máy chủ tìm kiếm chưa phản hồi. Kết quả hiện tại đến từ OpenAlex.',
         });
         rememberQuery(trimmed);
       } catch {
@@ -624,27 +624,26 @@ export default function Dashboard() {
     <section className="overview-workspace page-enter">
       <header className="overview-header">
         <div>
-          <p className="overview-kicker">MATHNEXUS / DISCOVERY WORKSPACE</p>
-          <h1>Theo dõi, tìm kiếm và học toán trong một không gian.</h1>
+          <p className="overview-kicker">MATHNEXUS / TỔNG QUAN</p>
+          <h1>Cập nhật tài liệu, tìm kiếm và học toán.</h1>
           <p>
-            Trang tổng quan được tổ chức theo ba tác vụ: cập nhật nội dung mới, tra cứu tài liệu cho một ý tưởng,
-            và truy cập hệ tri thức cùng các công cụ toán học của MathNexus.
+            Từ đây bạn có thể xem tài liệu mới, tìm paper hoặc video theo chủ đề và mở các công cụ học toán trong MathNexus.
           </p>
         </div>
         <nav className="overview-modes" aria-label="Ba chế độ sử dụng chính">
           <a href="#radar"><span>01</span><strong>Cập nhật</strong><small>Nội dung mới và đáng chú ý</small></a>
           <a href="#research"><span>02</span><strong>Tìm kiếm</strong><small>Paper, web, video và truy vấn đã lưu</small></a>
-          <a href="#learn"><span>03</span><strong>Học & công cụ</strong><small>Tri thức nội bộ và workspace</small></a>
+          <a href="#learn"><span>03</span><strong>Học & công cụ</strong><small>Nội dung và công cụ trong MathNexus</small></a>
         </nav>
       </header>
 
       <section id="radar" className="overview-section">
         <div className="overview-section-heading">
           <div>
-            <p className="eyebrow">LIVE DISCOVERY</p>
-            <h2>Radar toán học</h2>
+            <p className="eyebrow">CẬP NHẬT</p>
+            <h2>Tài liệu mới</h2>
             <p>
-              Theo dõi bài viết, preprint, paper và video mới; kết quả được loại trùng và ưu tiên theo độ mới, mức liên quan và tín hiệu học thuật.
+              Theo dõi bài viết, preprint, paper và video mới. Kết quả được loại trùng và sắp theo độ mới, mức liên quan và nguồn xuất bản.
             </p>
           </div>
           <button
@@ -671,7 +670,7 @@ export default function Dashboard() {
               <small>
                 {watchedTopics.length
                   ? `Theo dõi ${watchedTopics.length} chủ đề lưu gần nhất bằng arXiv và OpenAlex.`
-                  : 'Lưu một truy vấn ở Research Search để Radar bắt đầu theo dõi chủ đề đó.'}
+                  : 'Lưu một chủ đề ở mục Tìm tài liệu để theo dõi các paper mới liên quan.'}
               </small>
             </div>
             {radarLastSeen > 0 && <span>Lần trước: {formatDate(new Date(radarLastSeen).toISOString())}</span>}
@@ -736,7 +735,7 @@ export default function Dashboard() {
           <div className="overview-live-panel">
             <div className="overview-panel-head">
               <div>
-                <span>WEB RADAR</span>
+                <span>BÀI VIẾT VÀ NGUỒN</span>
                 <strong>
                   {[
                     feed?.providers?.gdelt ? 'GDELT' : '',
@@ -787,14 +786,14 @@ export default function Dashboard() {
 
             <div className="overview-live-meta">
               <span><Clock size={13} /> {feed?.generatedAt ? formatDate(feed.generatedAt) : '—'}</span>
-              <span>{feed?.searchAvailable ? 'Nguồn mở, không yêu cầu API trả phí' : 'OpenAlex fallback'}</span>
+              <span>{feed?.searchAvailable ? 'Nguồn mở, không yêu cầu API trả phí' : 'Tạm dùng dữ liệu OpenAlex'}</span>
             </div>
           </div>
 
           <div className="overview-papers-panel">
             <div className="overview-panel-head">
               <div>
-                <span>RECENT RESEARCH</span>
+                <span>PAPER GẦN ĐÂY</span>
                 <strong>
                   {[
                     feed?.providers?.openAlex ? 'OpenAlex' : '',
@@ -834,7 +833,7 @@ export default function Dashboard() {
         <div className="overview-youtube-copy">
           <div className="overview-youtube-icon"><Video size={22} /></div>
           <div>
-            <p className="eyebrow">YOUTUBE SEARCH</p>
+            <p className="eyebrow">TÌM TRÊN YOUTUBE</p>
             <h2 id="youtube-search-title">Tìm video toán học trên YouTube</h2>
             <p>
               Tìm trực tiếp trên YouTube mà không cần API key. Truy vấn sẽ mở trang kết quả YouTube trong tab mới.
@@ -883,7 +882,7 @@ export default function Dashboard() {
 
       <section id="research" className="overview-search-section">
         <div className="overview-search-copy">
-          <p className="eyebrow">RESEARCH SEARCH</p>
+          <p className="eyebrow">TÌM TÀI LIỆU</p>
           <h2>Tìm nội dung liên quan đến một ý tưởng</h2>
           <p>
             Truy vấn được gửi đồng thời tới arXiv, OpenAlex, Crossref, Semantic Scholar và GDELT; video được lấy từ các kênh toán học
@@ -953,7 +952,7 @@ export default function Dashboard() {
           <div className="overview-research-shelf">
             <div className="overview-shelf-head">
               <div>
-                <p className="eyebrow">RESEARCH SHELF</p>
+                <p className="eyebrow">ĐÃ LƯU</p>
                 <h3>Tài liệu đang giữ</h3>
                 <small>{researchShelf.length} mục được lưu cục bộ trên trình duyệt này.</small>
               </div>
@@ -977,7 +976,7 @@ export default function Dashboard() {
                         .filter(Boolean).join(' · ')}
                     </small>
                   </a>
-                  <button type="button" aria-label={`Bỏ khỏi Research Shelf: ${item.title}`} onClick={() => updateResearchShelf(item)}>
+                  <button type="button" aria-label={`Bỏ khỏi danh sách đã lưu: ${item.title}`} onClick={() => updateResearchShelf(item)}>
                     <Trash2 size={13} />
                   </button>
                 </div>
@@ -1184,7 +1183,7 @@ export default function Dashboard() {
       <section id="learn" className="overview-section">
         <div className="overview-section-heading">
           <div>
-            <p className="eyebrow">KNOWLEDGE & WORKBENCH</p>
+            <p className="eyebrow">HỌC VÀ CÔNG CỤ</p>
             <h2>Học, tra cứu và thử nghiệm</h2>
             <p>
               Nội dung nội bộ của MathNexus được giữ riêng với tìm kiếm web: có cấu trúc, có quan hệ tiên quyết và có công cụ thao tác.
@@ -1231,7 +1230,7 @@ export default function Dashboard() {
           <div className="overview-continue-panel">
             <div className="overview-panel-head">
               <div>
-                <span>CONTINUE</span>
+                <span>TIẾP TỤC</span>
                 <strong>Điểm tiếp tục gần nhất</strong>
               </div>
               <Target size={19} />
