@@ -44,7 +44,7 @@ test('dashboard recommendations and knowledge map adapt to learning history', as
 
   const continuePanel = page.locator('.overview-continue-panel');
   await expect(continuePanel).toBeVisible();
-  await expect(continuePanel).toContainText('Giới hạn');
+  await expect(continuePanel).toContainText('Tích phân');
   await expect(continuePanel.getByRole('link', { name: /Mở bài học/ })).toBeVisible();
 
   await page.goto('/progress');
