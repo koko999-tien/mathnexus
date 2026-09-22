@@ -379,6 +379,100 @@ test('library filters have a useful empty state and can be cleared', async ({ pa
   await expect(page.getByLabel('Cấp học')).toHaveValue('THCS');
 });
 
+test('knowledge library can search Wikipedia, read an article, and browse open books', async ({ page }) => {
+  await page.route('**/api/library**', async route => {
+    const url = new URL(route.request().url());
+    const source = url.searchParams.get('source');
+
+    if (source === 'wikipedia' && url.searchParams.get('mode') === 'read') {
+      await route.fulfill({
+        status: 200,
+        json: {
+          source: 'wikipedia',
+          mode: 'read',
+          article: {
+            id: '10',
+            title: 'Đạo hàm',
+            extract: 'Đạo hàm mô tả tốc độ thay đổi của hàm số.\n\nỨng dụng\n\nĐạo hàm được dùng để khảo sát hàm số và tối ưu.',
+            thumbnail: '',
+            url: 'https://vi.wikipedia.org/wiki/Đạo_hàm',
+            lang: 'vi',
+            source: 'Wikipedia',
+          },
+        },
+      });
+      return;
+    }
+
+    if (source === 'wikipedia') {
+      await route.fulfill({
+        status: 200,
+        json: {
+          source: 'wikipedia',
+          mode: 'search',
+          query: 'đạo hàm',
+          lang: 'vi',
+          items: [{
+            id: '10',
+            title: 'Đạo hàm',
+            extract: 'Đạo hàm mô tả tốc độ thay đổi của một hàm số.',
+            thumbnail: '',
+            url: 'https://vi.wikipedia.org/wiki/Đạo_hàm',
+            lang: 'vi',
+            source: 'Wikipedia',
+          }],
+        },
+      });
+      return;
+    }
+
+    await route.fulfill({
+      status: 200,
+      json: {
+        source: 'openlibrary',
+        mode: 'search',
+        query: 'calculus',
+        total: 1,
+        page: 1,
+        readableOnly: false,
+        items: [{
+          key: '/works/OL1W',
+          title: 'Calculus Made Clear',
+          authors: ['Ada Example'],
+          firstPublishYear: 1920,
+          cover: '',
+          editionCount: 3,
+          languages: ['eng'],
+          subjects: ['Calculus'],
+          hasFullText: true,
+          publicScan: true,
+          ebookAccess: 'public',
+          readState: 'public',
+          readLabel: 'Đọc online',
+          openLibraryUrl: 'https://openlibrary.org/works/OL1W',
+          readUrl: 'https://archive.org/details/calculusmadeclear',
+          archiveId: 'calculusmadeclear',
+        }],
+      },
+    });
+  });
+
+  await page.goto('/library');
+  await page.getByRole('button', { name: 'Wikipedia' }).click();
+  await page.getByRole('textbox', { name: 'Tìm Wikipedia' }).fill('đạo hàm');
+  await page.getByRole('button', { name: 'Tìm', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Đạo hàm' })).toBeVisible();
+  await page.getByRole('link', { name: 'Đọc trong MathNexus' }).click();
+  await expect(page).toHaveURL(/\/library\/read/);
+  await expect(page.getByRole('heading', { name: 'Đạo hàm' })).toBeVisible();
+  await expect(page.getByText(/tốc độ thay đổi/)).toBeVisible();
+
+  await page.goto('/library?tab=openlibrary&q=calculus');
+  await expect(page.getByRole('heading', { name: 'Calculus Made Clear' })).toBeVisible();
+  await expect(page.getByText('Đọc online', { exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Open Library/ })).toBeVisible();
+});
+
 test('quiz scores a complete session once per answer and persists results', async ({ page }) => {
   await page.goto('/practice?cat=' + encodeURIComponent('Tổ hợp'));
   await expect(page.getByRole('button', { name: 'Câu tiếp theo' })).toBeDisabled();
