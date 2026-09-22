@@ -202,7 +202,8 @@ export default function AI() {
             mode: plan.mode,
             directSolutionAllowed: plan.directSolutionAllowed,
             masterySummary: plan.masterySummary,
-            anchorConceptIds: plan.anchorConceptIds,
+            anchorConceptIds,
+            goalContext: turnGoalContext?.text || '',
           },
         }),
       });
@@ -226,7 +227,7 @@ export default function AI() {
           model: typeof payload.model === 'string' ? payload.model : undefined,
           fallbackUsed: payload.fallbackUsed === true,
           tutorMode: plan.mode,
-          links: context.links,
+          links: responseLinks,
         },
       ]);
     } catch (error) {
@@ -239,14 +240,17 @@ export default function AI() {
           : 'Chưa kết nối được Gemini.';
 
       const localContext = context.text || 'Thư viện chưa tìm thấy nội dung liên quan. Bạn có thể thử hỏi theo tên khái niệm, chủ đề hoặc mục tiêu học.';
+      const localGoal = turnGoalContext
+        ? `\n\n**Mục tiêu đang theo:** ${turnGoalContext.targetTitle} · ${turnGoalContext.progressPercent}% theo evidence.`
+        : '';
       setMessages(current => [
         ...current,
         {
           role: 'bot',
           source: 'local',
           tutorMode: plan.mode,
-          text: `${detail}\n\n**Cách tiếp cận ${tutorModeLabel(plan.mode)}:** ${plan.localOpening}\n\n${localContext}`,
-          links: context.links,
+          text: `${detail}\n\n**Cách tiếp cận ${tutorModeLabel(plan.mode)}:** ${plan.localOpening}\n\n${localContext}${localGoal}`,
+          links: responseLinks,
         },
       ]);
     } finally {
