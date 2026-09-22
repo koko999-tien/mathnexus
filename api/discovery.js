@@ -270,12 +270,20 @@ function tagValue(xml, tag) {
   return match ? xmlDecode(match[1].replace(/<!\[CDATA\[|\]\]>/g, '').trim()) : '';
 }
 
+function tagValues(xml, tag) {
+  const matches = [...xml.matchAll(new RegExp(`<${tag}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/${tag}>`, 'gi'))];
+  return matches
+    .map(match => xmlDecode(String(match[1] || '').replace(/<!\[CDATA\[|\]\]>/g, '').trim()))
+    .filter(Boolean);
+}
+
 function coverageSummary({ sources, papers, videos, providers }) {
   const active = [
     providers.gdelt ? 'GDELT' : '',
     providers.openAlex ? 'OpenAlex' : '',
     providers.crossref ? 'Crossref' : '',
     providers.semanticScholar ? 'Semantic Scholar' : '',
+    providers.arxiv ? 'arXiv API' : '',
     providers.youtubeRss ? 'YouTube RSS' : '',
     providers.editorialRss ? 'Quanta/arXiv RSS' : '',
   ].filter(Boolean);
@@ -450,6 +458,70 @@ async function fetchSemanticScholar(query, limit = 8) {
         authors,
         openAccess: Boolean(paper?.openAccessPdf?.url),
         database: 'Semantic Scholar',
+      };
+    }).filter(item => item.title && item.url);
+  } catch {
+    return [];
+  }
+}
+
+async function fetchArxiv(query, limit = 10) {
+  if (!query) return [];
+
+  const safeTokens = normalizeTitle(query)
+    .split(' ')
+    .filter(token => token.length > 1)
+    .slice(0, 12);
+  if (!safeTokens.length) return [];
+
+  const searchQuery = safeTokens.map(token => `all:${token}`).join(' AND ');
+  const params = new URLSearchParams({
+    search_query: searchQuery,
+    start: '0',
+    max_results: String(Math.min(15, Math.max(1, limit))),
+    sortBy: 'relevance',
+    sortOrder: 'descending',
+  });
+
+  try {
+    const response = await fetch(`https://export.arxiv.org/api/query?${params.toString()}`, {
+      headers: {
+        Accept: 'application/atom+xml, application/xml, text/xml',
+        'User-Agent': 'MathNexus/1.0 (mathematics discovery workspace)',
+      },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!response.ok) return [];
+
+    const xml = await response.text();
+    const entries = xml.match(/<entry>[\s\S]*?<\/entry>/gi) || [];
+
+    return entries.slice(0, limit).map(entry => {
+      const id = tagValue(entry, 'id');
+      const title = tagValue(entry, 'title').replace(/\s+/g, ' ').trim();
+      const published = tagValue(entry, 'published');
+      const authors = tagValues(entry, 'name').slice(0, 6);
+      const categories = [...entry.matchAll(/<category[^>]+term=["']([^"']+)["'][^>]*>/gi)]
+        .map(match => xmlDecode(String(match[1] || '')))
+        .filter(Boolean)
+        .slice(0, 4);
+      const alternate = entry.match(/<link[^>]+rel=["']alternate["'][^>]+href=["']([^"']+)["'][^>]*>/i)?.[1]
+        || entry.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["']alternate["'][^>]*>/i)?.[1]
+        || id;
+      const uri = xmlDecode(alternate || id);
+
+      return {
+        id: id || uri || title,
+        title: title || 'Untitled',
+        url: uri,
+        date: published,
+        language: '',
+        type: 'preprint',
+        citedBy: 0,
+        source: categories.length ? `arXiv · ${categories.join(', ')}` : 'arXiv',
+        authors,
+        openAccess: true,
+        database: 'arXiv',
       };
     }).filter(item => item.title && item.url);
   } catch {
@@ -651,7 +723,7 @@ async function fetchCuratedVideos(query = '') {
 }
 
 function providerWarning(providers) {
-  const academic = providers.openAlex || providers.crossref || providers.semanticScholar;
+  const academic = providers.openAlex || providers.crossref || providers.semanticScholar || providers.arxiv;
   const live = providers.gdelt || providers.youtubeRss || providers.editorialRss;
   if (academic && live) return null;
   if (academic) return 'Nguồn học thuật đang hoạt động; nguồn web hoặc video tạm thời chưa phản hồi.';
@@ -660,21 +732,23 @@ function providerWarning(providers) {
 }
 
 async function buildSearchPayload(query) {
-  const [gdelt, openAlex, crossref, semanticScholar, videos, editorialSources] = await Promise.all([
+  const [gdelt, openAlex, crossref, semanticScholar, arxiv, videos, editorialSources] = await Promise.all([
     fetchGdelt(query, { timespan: '3m', limit: 10 }),
     fetchOpenAlex({ query, limit: 8 }),
     fetchCrossref(query, 8),
     fetchSemanticScholar(query, 8),
+    fetchArxiv(query, 10),
     fetchCuratedVideos(query),
     fetchCuratedArticles(query),
   ]);
 
-  const papers = rankPapers(mergePapers(semanticScholar, openAlex, crossref), query).slice(0, 16);
+  const papers = rankPapers(mergePapers(arxiv, semanticScholar, openAlex, crossref), query).slice(0, 20);
   const providers = {
     gdelt: gdelt.length > 0,
     openAlex: openAlex.length > 0,
     crossref: crossref.length > 0,
     semanticScholar: semanticScholar.length > 0,
+    arxiv: arxiv.length > 0,
     youtubeRss: videos.length > 0,
     editorialRss: editorialSources.length > 0,
   };
@@ -718,6 +792,7 @@ async function buildFeedPayload() {
     openAlex: openAlex.length > 0,
     crossref: crossref.length > 0,
     semanticScholar: false,
+    arxiv: false,
     youtubeRss: videos.length > 0,
     editorialRss: editorialSources.length > 0,
   };
