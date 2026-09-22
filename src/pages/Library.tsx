@@ -11,10 +11,14 @@ import {
   Languages,
   LibraryBig,
   LoaderCircle,
+  Map,
   Search,
   SlidersHorizontal,
 } from 'lucide-react';
 import { LESSONS } from '../data/lessons';
+import { BOOKS } from '../data/books';
+import { MATH_CONCEPTS, MATH_DOMAINS, type MathDomainId } from '../data/mathKnowledge';
+import { LIBRARY_DOMAIN_PROFILE_BY_ID } from '../data/libraryCatalog';
 import { LessonCard } from '../components/ui/LessonCard';
 import { useProgress } from '../hooks/useProgress';
 import { matchesSearch } from '../utils/search';
@@ -85,6 +89,14 @@ export default function Library() {
   const readableOnly = params.get('readable') === '1';
   const page = Math.max(1, Number(params.get('page') || 1) || 1);
   const progress = useProgress();
+  const domainParam = params.get('domain') as MathDomainId | null;
+  const selectedDomainId: MathDomainId = domainParam && LIBRARY_DOMAIN_PROFILE_BY_ID.has(domainParam) ? domainParam : 'foundations';
+  const selectedDomain = MATH_DOMAINS.find(domain => domain.id === selectedDomainId)!;
+  const selectedProfile = LIBRARY_DOMAIN_PROFILE_BY_ID.get(selectedDomainId)!;
+  const domainConcepts = MATH_CONCEPTS.filter(concept => concept.domain === selectedDomainId);
+  const domainLessonIds = new Set(domainConcepts.flatMap(concept => concept.lessonIds || []));
+  const domainLessons = LESSONS.filter(lesson => domainLessonIds.has(lesson.id));
+  const domainBooks = BOOKS.filter(book => selectedProfile.relatedBookIds.includes(book.id));
 
   const [draft, setDraft] = useState(search);
   const [wikiData, setWikiData] = useState<WikipediaResponse | null>(null);
@@ -171,6 +183,23 @@ export default function Library() {
     });
   };
 
+  const selectDomain = (domainId: MathDomainId) => setParams(current => {
+    current.set('domain', domainId);
+    return current;
+  }, { replace: true });
+
+  const openDomainSource = (source: 'wikipedia' | 'openlibrary') => setParams(current => {
+    current.set('domain', selectedDomainId);
+    current.set('tab', source);
+    current.set('q', source === 'wikipedia'
+      ? (lang === 'vi' ? selectedProfile.wikipediaVi : selectedProfile.wikipediaEn)
+      : selectedProfile.openLibraryQuery);
+    current.delete('page');
+    current.delete('cat');
+    current.delete('level');
+    return current;
+  });
+
   return (
     <section className="knowledge-library page-enter">
       <div className="page-header">
@@ -179,6 +208,76 @@ export default function Library() {
         <p>
           Nội dung của MathNexus được đặt cùng các nguồn công khai từ Wikipedia và Open Library để bạn có thể tra cứu rộng hơn mà không cần API trả phí.
         </p>
+
+        <section className="library-domain-browser" aria-label="Duyệt thư viện theo lĩnh vực toán học">
+          <div className="library-domain-head">
+            <div>
+              <p className="eyebrow">THEO LĨNH VỰC</p>
+              <h2>Duyệt từ khái niệm đến tài liệu</h2>
+            </div>
+            <span>{MATH_DOMAINS.length} lĩnh vực</span>
+          </div>
+
+          <div className="library-domain-list" role="group" aria-label="Lĩnh vực toán học">
+            {MATH_DOMAINS.map(domain => (
+              <button
+                key={domain.id}
+                type="button"
+                aria-pressed={domain.id === selectedDomainId}
+                onClick={() => selectDomain(domain.id)}
+              >
+                {domain.short}
+              </button>
+            ))}
+          </div>
+
+          <div className="library-domain-detail">
+            <div className="library-domain-copy">
+              <div className="library-domain-title">
+                <Map size={17} />
+                <div>
+                  <strong>{selectedDomain.name}</strong>
+                  <p>{selectedDomain.description}</p>
+                </div>
+              </div>
+
+              <div className="library-domain-stats">
+                <span><strong>{domainConcepts.length}</strong> khái niệm</span>
+                <span><strong>{domainLessons.length}</strong> bài học</span>
+                <span><strong>{domainBooks.length}</strong> sách gợi ý</span>
+              </div>
+            </div>
+
+            <div className="library-domain-columns">
+              <div>
+                <small>Khái niệm</small>
+                <div className="library-domain-links">
+                  {domainConcepts.slice(0, 6).map(concept => (
+                    <Link key={concept.id} to={`/map?concept=${encodeURIComponent(concept.id)}`}>{concept.title}</Link>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <small>Nội dung MathNexus</small>
+                <div className="library-domain-links">
+                  {domainLessons.slice(0, 4).map(lesson => (
+                    <Link key={lesson.id} to={`/lesson/${lesson.id}`}>{lesson.t}</Link>
+                  ))}
+                  {domainBooks.slice(0, 3).map(book => (
+                    <Link key={book.id} to={`/book/${book.id}`}>{book.t}</Link>
+                  ))}
+                  {!domainLessons.length && !domainBooks.length && <span>Chưa có nội dung nội bộ cho lĩnh vực này.</span>}
+                </div>
+              </div>
+            </div>
+
+            <div className="library-domain-actions">
+              <button type="button" onClick={() => openDomainSource('wikipedia')}><Globe2 size={14} /> Wikipedia về {selectedDomain.short}</button>
+              <button type="button" onClick={() => openDomainSource('openlibrary')}><LibraryBig size={14} /> Sách về {selectedDomain.short}</button>
+            </div>
+          </div>
+        </section>
 
         <div className="library-source-tabs" role="group" aria-label="Nguồn thư viện">
           <button type="button" aria-pressed={tab === 'lessons'} onClick={() => switchTab('lessons')}>
@@ -371,11 +470,18 @@ export default function Library() {
                       <span className={`openbook-status ${book.readState === 'public' ? 'public' : ''}`}>{book.readLabel}</span>
 
                       <div className="library-card-actions">
-                        {book.readUrl && (
-                          <a className={book.readState === 'public' ? 'primary' : ''} href={book.readUrl} target="_blank" rel="noreferrer">
+                        {book.readState === 'public' && book.archiveId ? (
+                          <Link
+                            className="primary"
+                            to={`/library/book?archive=${encodeURIComponent(book.archiveId)}&title=${encodeURIComponent(book.title)}&ol=${encodeURIComponent(book.openLibraryUrl)}`}
+                          >
+                            Đọc trong MathNexus
+                          </Link>
+                        ) : book.readUrl ? (
+                          <a href={book.readUrl} target="_blank" rel="noreferrer">
                             {book.readLabel} <ExternalLink size={11} />
                           </a>
-                        )}
+                        ) : null}
                         <a href={book.openLibraryUrl} target="_blank" rel="noreferrer">
                           Open Library <ExternalLink size={11} />
                         </a>
