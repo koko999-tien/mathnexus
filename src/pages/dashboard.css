@@ -88,8 +88,6 @@
   font-size: 8px;
 }
 
-.overview-section,
-
 .overview-youtube-search {
   display: flex;
   flex-direction: column;
@@ -236,6 +234,7 @@
   font-size: 7px;
 }
 
+.overview-section,
 .overview-search-section {
   scroll-margin-top: 90px;
 }
