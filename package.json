@@ -10,6 +10,7 @@
     "build": "tsc -b && vite build",
     "build:pages": "node scripts/icons.mjs && tsc -b && node scripts/pages.mjs",
     "test": "node --test tests/unit/*.test.mjs",
+    "knowledge:check": "node scripts/knowledge-audit.mjs",
     "test:e2e": "playwright test",
     "lint": "oxlint",
     "preview": "vite preview",
