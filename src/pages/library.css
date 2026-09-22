@@ -502,3 +502,246 @@
     flex-direction: column;
   }
 }
+
+
+.library-domain-browser {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--color-line);
+  border-radius: 14px;
+  background: var(--color-panel);
+}
+
+.library-domain-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.library-domain-head h2 {
+  margin: 2px 0 0;
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+.library-domain-head > span {
+  color: var(--color-muted);
+  font-size: 7.5px;
+}
+
+.library-domain-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.library-domain-list button {
+  min-height: 30px;
+  padding: 5px 8px;
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+  background: var(--color-bg);
+  color: var(--color-muted);
+  font-size: 7.5px;
+  font-weight: 700;
+}
+
+.library-domain-list button[aria-pressed="true"] {
+  border-color: var(--color-ink);
+  background: var(--color-ink);
+  color: var(--color-panel);
+}
+
+.library-domain-detail {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--color-line);
+  border-radius: 11px;
+  background: var(--color-bg);
+}
+
+.library-domain-title {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+}
+
+.library-domain-title > svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--color-accent);
+}
+
+.library-domain-title strong {
+  font-size: 11px;
+}
+
+.library-domain-title p {
+  max-width: 760px;
+  margin: 3px 0 0;
+  color: var(--color-muted);
+  font-size: 8px;
+  line-height: 1.55;
+}
+
+.library-domain-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 9px;
+}
+
+.library-domain-stats span {
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: var(--color-mist);
+  color: var(--color-muted);
+  font-size: 7px;
+}
+
+.library-domain-stats strong {
+  color: var(--color-ink);
+}
+
+.library-domain-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.library-domain-columns > div {
+  min-width: 0;
+}
+
+.library-domain-columns small {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--color-muted);
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.library-domain-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.library-domain-links a,
+.library-domain-links span {
+  max-width: 100%;
+  padding: 5px 7px;
+  border: 1px solid var(--color-line);
+  border-radius: 7px;
+  background: var(--color-panel);
+  color: var(--color-ink);
+  font-size: 7.5px;
+  line-height: 1.35;
+}
+
+.library-domain-links span {
+  color: var(--color-muted);
+}
+
+.library-domain-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.library-domain-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 6px 9px;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  background: var(--color-panel);
+  color: var(--color-ink);
+  font-size: 7.5px;
+  font-weight: 700;
+}
+
+.library-domain-actions button:hover {
+  border-color: var(--color-sage);
+}
+
+.library-book-reader {
+  display: grid;
+  gap: 12px;
+  min-height: calc(100vh - 170px);
+}
+
+.library-book-external-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.library-book-external-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-accent);
+  font-size: 7.5px;
+  font-weight: 700;
+}
+
+.library-book-reader-head {
+  padding: 0 2px;
+}
+
+.library-book-reader-head h1 {
+  margin: 3px 0 5px;
+  font-size: clamp(22px, 4vw, 38px);
+  line-height: 1.08;
+}
+
+.library-book-reader-head p:last-child {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 8px;
+}
+
+.library-book-frame {
+  overflow: hidden;
+  min-height: 72vh;
+  border: 1px solid var(--color-line);
+  border-radius: 14px;
+  background: #111;
+}
+
+.library-book-frame iframe {
+  display: block;
+  width: 100%;
+  min-height: 72vh;
+  border: 0;
+}
+
+@media (max-width: 760px) {
+  .library-domain-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .library-domain-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .library-domain-browser {
+    padding: 11px;
+  }
+
+  .library-book-frame,
+  .library-book-frame iframe {
+    min-height: 68vh;
+  }
+}
