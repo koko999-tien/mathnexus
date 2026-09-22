@@ -20,7 +20,7 @@ test('PWA lazy-caches Math Cosmos after first visit and keeps it available offli
   expect(initialCacheUrls.some(url => /\/assets\/react-three-fiber\.esm-[^/]+\.js$/.test(url))).toBe(false);
 
   await page.goto('/cosmos');
-  await expect(page.getByRole('heading', { name: 'Vũ trụ tri thức toán học 3D' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Bản đồ toán học 3D' })).toBeVisible();
   await expect(page.getByTestId('math-cosmos-canvas')).toBeVisible();
 
   const cosmosResources = await page.evaluate(() =>
@@ -39,7 +39,7 @@ test('PWA lazy-caches Math Cosmos after first visit and keeps it available offli
   await context.setOffline(true);
   await page.reload();
 
-  await expect(page.getByRole('heading', { name: 'Vũ trụ tri thức toán học 3D' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Bản đồ toán học 3D' })).toBeVisible();
   await expect(page.getByTestId('math-cosmos-canvas')).toBeVisible();
 
   await context.setOffline(false);
