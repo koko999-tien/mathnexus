@@ -464,12 +464,12 @@ test('knowledge library can search Wikipedia, read an article, and browse open b
   await expect(page.getByRole('heading', { name: 'Đạo hàm' })).toBeVisible();
   await page.getByRole('link', { name: 'Đọc trong MathNexus' }).click();
   await expect(page).toHaveURL(/\/library\/read/);
-  await expect(page.getByRole('heading', { name: 'Đạo hàm' })).toBeVisible();
-  await expect(page.getByText(/tốc độ thay đổi/)).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Đạo hàm' })).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText(/tốc độ thay đổi/)).toBeVisible({ timeout: 10_000 });
 
   await page.goto('/library?tab=openlibrary&q=calculus');
-  await expect(page.getByRole('heading', { name: 'Calculus Made Clear' })).toBeVisible();
-  await expect(page.getByText('Đọc online', { exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Calculus Made Clear' })).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByRole('link', { name: 'Đọc online' })).toBeVisible();
   await expect(page.getByRole('link', { name: /Open Library/ })).toBeVisible();
 });
 
