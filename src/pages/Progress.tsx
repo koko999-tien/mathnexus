@@ -93,7 +93,7 @@ export default function Progress() {
         <div className="mastery-copy"><strong>{item.name}</strong><span>{item.attempted}/{item.total} câu đã gặp · {item.attempts} lượt làm</span></div>
         <div className="mastery-score"><strong>{item.accuracy === null ? '—' : item.accuracy + '%'}</strong><small>{item.needsReview > 0 ? item.needsReview + ' câu cần ôn' : 'Không có câu yếu'}</small></div>
         <ArrowUpRight size={16} />
-      </Link>)}</div> : <div className="mastery-empty"><Brain size={28} /><div><strong>Chưa có đủ dữ liệu luyện tập</strong><p>Hãy làm vài câu. MathNexus sẽ bắt đầu chỉ ra chuyên đề nào cần quay lại.</p></div><Link to="/practice" className="text-link">Làm phiên đầu tiên<ArrowUpRight size={15} /></Link></div>}
+      </Link>)}</div> : <div className="mastery-empty"><Brain size={28} /><div><strong>Chưa có đủ dữ liệu luyện tập</strong><p>Hãy làm vài câu để xem chuyên đề nào cần ôn lại.</p></div><Link to="/practice" className="text-link">Làm phiên đầu tiên<ArrowUpRight size={15} /></Link></div>}
     </div>
 
     <div className="panel concept-evidence-panel">
@@ -120,8 +120,8 @@ export default function Progress() {
       <div className="panel-heading-row">
         <div>
           <p className="eyebrow">HOẠT ĐỘNG KHÁM PHÁ</p>
-          <h2 className="panel-title">Khám phá tự chủ</h2>
-          <p className="helper-text">Chỉ số này mô tả mức độ bạn tự mở rộng không gian tri thức. Nó không phải điểm số, không đánh giá trí thông minh và không suy đoán cảm xúc.</p>
+          <h2 className="panel-title">Hoạt động tự học</h2>
+          <p className="helper-text">Phần này thống kê những khái niệm và mô phỏng bạn đã tự mở. Đây không phải điểm số và không dùng để đánh giá trí thông minh hay cảm xúc.</p>
         </div>
         <Link to="/cosmos" className="button button-light"><Network size={16} />Tiếp tục khám phá</Link>
       </div>
@@ -135,10 +135,10 @@ export default function Progress() {
 
       <div className="exploration-dimensions">
         {[
-          ['Độ rộng tri thức', explorationStats.breadthScore],
-          ['Độ sâu khám phá', explorationStats.depthScore],
+          ['Số lĩnh vực đã xem', explorationStats.breadthScore],
+          ['Mức chi tiết đã xem', explorationStats.depthScore],
           ['Quay lại khái niệm', explorationStats.revisitScore],
-          ['Thực nghiệm mô phỏng', explorationStats.simulationScore],
+          ['Sử dụng mô phỏng', explorationStats.simulationScore],
         ].map(([label, value]) => <div className="exploration-dimension" key={String(label)}>
           <div><strong>{label}</strong><span>{value}%</span></div>
           <div className="progress-track" role="progressbar" aria-label={String(label)} aria-valuenow={Number(value)} aria-valuemin={0} aria-valuemax={100}><span style={{ width: value + '%' }} /></div>
