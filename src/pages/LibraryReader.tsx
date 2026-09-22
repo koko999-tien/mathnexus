@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ExternalLink, Languages, LoaderCircle, Minus, Plus } from 'lucide-react';
 import './library.css';
@@ -106,7 +106,7 @@ export default function LibraryReader() {
         </div>
       </div>
 
-      <article className="library-reader-paper" style={{ '--reader-scale': fontScale } as React.CSSProperties}>
+      <article className="library-reader-paper" style={{ '--reader-scale': fontScale } as CSSProperties}>
         <header>
           <p className="eyebrow">WIKIPEDIA · {lang.toUpperCase()}</p>
           <h1>{article.title}</h1>
