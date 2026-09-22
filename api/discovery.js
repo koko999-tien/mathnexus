@@ -98,21 +98,79 @@ function normalizeTitle(value = '') {
     .trim();
 }
 
+function searchTokens(value = '') {
+  return [...new Set(normalizeTitle(value).split(' ').filter(token => token.length > 2))].slice(0, 16);
+}
+
+function parseExternalDate(value = '') {
+  const raw = String(value || '').trim();
+  if (!raw) return 0;
+
+  if (/^\d{14}$/.test(raw)) {
+    const normalized = `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}T${raw.slice(8, 10)}:${raw.slice(10, 12)}:${raw.slice(12, 14)}Z`;
+    const stamp = Date.parse(normalized);
+    return Number.isFinite(stamp) ? stamp : 0;
+  }
+
+  const stamp = Date.parse(raw);
+  return Number.isFinite(stamp) ? stamp : 0;
+}
+
+function freshnessScore(value = '') {
+  const stamp = parseExternalDate(value);
+  if (!stamp) return 0;
+  const ageDays = Math.max(0, (Date.now() - stamp) / 86_400_000);
+  if (ageDays <= 7) return 4;
+  if (ageDays <= 30) return 3;
+  if (ageDays <= 180) return 2;
+  if (ageDays <= 730) return 1;
+  return 0;
+}
+
+function sourceScore(source, query = '') {
+  let score = freshnessScore(source?.age);
+  const tokens = searchTokens(query);
+  const haystack = normalizeTitle(`${source?.title || ''} ${source?.description || ''}`);
+  if (tokens.length) {
+    const matches = tokens.reduce((sum, token) => sum + (haystack.includes(token) ? 1 : 0), 0);
+    score += matches * 4;
+    if (normalizeTitle(source?.title || '').includes(normalizeTitle(query))) score += 4;
+  }
+
+  const provider = String(source?.provider || '').toLowerCase();
+  if (provider.includes('quanta')) score += 2;
+  if (provider.includes('arxiv')) score += 1.5;
+  if (provider.includes('gdelt')) score += 0.5;
+  return score;
+}
+
 function mergeSources(...groups) {
-  const seen = new Set();
+  const seenUris = new Set();
+  const seenTitles = new Set();
   const merged = [];
 
   for (const group of groups) {
     for (const item of group || []) {
       const uri = String(item?.uri || '').trim();
-      if (!uri || seen.has(uri)) continue;
-      seen.add(uri);
+      const title = normalizeTitle(String(item?.title || ''));
+      if (!uri || seenUris.has(uri) || (title && seenTitles.has(title))) continue;
+      seenUris.add(uri);
+      if (title) seenTitles.add(title);
       merged.push(item);
-      if (merged.length >= 18) return merged;
+      if (merged.length >= 50) return merged;
     }
   }
 
   return merged;
+}
+
+function rankSources(sources, query = '') {
+  return [...(sources || [])]
+    .sort((left, right) => {
+      const byScore = sourceScore(right, query) - sourceScore(left, query);
+      if (byScore !== 0) return byScore;
+      return parseExternalDate(right?.age) - parseExternalDate(left?.age);
+    });
 }
 
 function paperKey(paper) {
@@ -133,11 +191,61 @@ function mergePapers(...groups) {
       if (!key || seen.has(key)) continue;
       seen.add(key);
       merged.push(paper);
-      if (merged.length >= 20) return merged;
+      if (merged.length >= 50) return merged;
     }
   }
 
   return merged;
+}
+
+function paperScore(paper, query = '') {
+  const title = normalizeTitle(String(paper?.title || ''));
+  const source = normalizeTitle(String(paper?.source || ''));
+  const type = String(paper?.type || '').toLowerCase();
+  if (!title || title.length < 8) return Number.NEGATIVE_INFINITY;
+  if (['paratext', 'dataset', 'retraction', 'peer-review', 'supplementary-materials'].includes(type)) {
+    return Number.NEGATIVE_INFINITY;
+  }
+
+  let score = freshnessScore(paper?.date) * (query ? 0.6 : 1.2);
+  const tokens = searchTokens(query);
+
+  if (tokens.length) {
+    const matches = tokens.reduce((sum, token) => sum + (title.includes(token) ? 1 : 0), 0);
+    score += matches * 4;
+    const normalizedQuery = normalizeTitle(query);
+    if (normalizedQuery && title.includes(normalizedQuery)) score += 5;
+  }
+
+  if (type === 'article') score += 1.5;
+  if (type === 'preprint') score += 1.1;
+  if (type === 'book-chapter') score += 0.5;
+
+  const citedBy = Math.max(0, Number(paper?.citedBy || 0));
+  score += Math.min(4, Math.log10(citedBy + 1) * 1.8);
+
+  if (paper?.openAccess) score += 0.35;
+
+  const sourceText = String(paper?.source || '').toLowerCase();
+  if (sourceText.includes('arxiv')) score += 1.5;
+  if (sourceText && !sourceText.includes('zenodo')) score += 0.8;
+  if (sourceText.includes('zenodo')) score -= 0.7;
+
+  if (source && title === source) score -= 5;
+  if (['mathematics', 'math', 'journal of mathematics'].includes(title)) score -= 5;
+
+  return score;
+}
+
+function rankPapers(papers, query = '') {
+  return [...(papers || [])]
+    .map(paper => ({ paper, score: paperScore(paper, query) }))
+    .filter(entry => Number.isFinite(entry.score))
+    .sort((left, right) => {
+      if (right.score !== left.score) return right.score - left.score;
+      return parseExternalDate(right.paper?.date) - parseExternalDate(left.paper?.date);
+    })
+    .map(entry => entry.paper);
 }
 
 function datePartsToIso(value) {
@@ -173,7 +281,7 @@ function coverageSummary({ sources, papers, videos, providers }) {
   ].filter(Boolean);
 
   const parts = [];
-  if (sources.length) parts.push(`${sources.length} nguồn web/tin tức`);
+  if (sources.length) parts.push(`${sources.length} nguồn cập nhật`);
   if (papers.length) parts.push(`${papers.length} công trình học thuật`);
   if (videos.length) parts.push(`${videos.length} video từ kênh được theo dõi`);
 
@@ -555,7 +663,7 @@ async function buildSearchPayload(query) {
     fetchCuratedArticles(query),
   ]);
 
-  const papers = mergePapers(semanticScholar, openAlex, crossref).slice(0, 16);
+  const papers = rankPapers(mergePapers(semanticScholar, openAlex, crossref), query).slice(0, 16);
   const providers = {
     gdelt: gdelt.length > 0,
     openAlex: openAlex.length > 0,
@@ -565,7 +673,7 @@ async function buildSearchPayload(query) {
     editorialRss: editorialSources.length > 0,
   };
 
-  const sources = mergeSources(gdelt, editorialSources);
+  const sources = rankSources(mergeSources(gdelt, editorialSources), query).slice(0, 18);
 
   return {
     mode: 'search',
@@ -598,7 +706,7 @@ async function buildFeedPayload() {
     fetchCuratedArticles(),
   ]);
 
-  const papers = mergePapers(openAlex, crossref).slice(0, 12);
+  const papers = rankPapers(mergePapers(openAlex, crossref)).slice(0, 12);
   const providers = {
     gdelt: gdelt.length > 0,
     openAlex: openAlex.length > 0,
@@ -608,7 +716,7 @@ async function buildFeedPayload() {
     editorialRss: editorialSources.length > 0,
   };
 
-  const sources = mergeSources(gdelt, editorialSources);
+  const sources = rankSources(mergeSources(gdelt, editorialSources)).slice(0, 18);
 
   return {
     mode: 'feed',

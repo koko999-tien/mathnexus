@@ -38,6 +38,9 @@ interface LiveSource {
   uri: string;
   domain: string;
   kind: SourceKind;
+  provider?: string;
+  age?: string;
+  description?: string;
 }
 
 interface ResearchPaper {
@@ -87,7 +90,7 @@ interface DiscoveryPayload {
   warning?: string | null;
 }
 
-const FEED_CACHE_KEY = 'mathnexus:discovery-feed:v3';
+const FEED_CACHE_KEY = 'mathnexus:discovery-feed:v4';
 const FEED_CACHE_MS = 15 * 60 * 1000;
 
 const LEARNING_TOOLS = [
@@ -117,7 +120,9 @@ function sourceIcon(kind: SourceKind) {
 
 function formatDate(value: string) {
   if (!value) return '';
-  const date = new Date(value);
+  const compact = value.match(/^(\d{4})(\d{2})(\d{2})\d{6}$/);
+  const normalized = compact ? `${compact[1]}-${compact[2]}-${compact[3]}` : value;
+  const date = new Date(normalized);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
@@ -145,15 +150,17 @@ function writeFeedCache(data: DiscoveryPayload) {
 async function fetchOpenAlexFallback(query = ''): Promise<ResearchPaper[]> {
   const params = new URLSearchParams({
     per_page: '8',
-    sort: 'publication_date:desc',
     select: 'id,title,doi,publication_date,language,type,cited_by_count,primary_location,authorships,open_access',
   });
 
+  const today = new Date().toISOString().slice(0, 10);
   if (query) {
     params.set('search', query.slice(0, 500));
+    params.set('filter', `to_publication_date:${today},is_retracted:false`);
   } else {
     const from = new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-    params.set('filter', `primary_topic.field.id:26,from_publication_date:${from}`);
+    params.set('sort', 'publication_date:desc');
+    params.set('filter', `primary_topic.field.id:26,from_publication_date:${from},to_publication_date:${today},is_retracted:false`);
   }
 
   const response = await fetch(`https://api.openalex.org/works?${params.toString()}`);
@@ -321,7 +328,7 @@ export default function Dashboard() {
             <p className="eyebrow">LIVE DISCOVERY</p>
             <h2>Radar toán học</h2>
             <p>
-              Theo dõi nguồn mới trên web và nghiên cứu gần đây. Tiêu đề được giữ nguyên theo ngôn ngữ của nguồn.
+              Theo dõi bài viết, preprint, paper và video mới; kết quả được loại trùng và ưu tiên theo độ mới, mức liên quan và tín hiệu học thuật.
             </p>
           </div>
           <button
@@ -376,7 +383,10 @@ export default function Dashboard() {
                       <span className="overview-source-icon"><Icon size={15} /></span>
                       <span>
                         <strong>{source.title}</strong>
-                        <small>{sourceLabel[source.kind]} · {source.domain}</small>
+                        <small>
+                          {[source.provider, sourceLabel[source.kind], source.domain, source.age ? formatDate(source.age) : '']
+                            .filter(Boolean).join(' · ')}
+                        </small>
                       </span>
                       <ExternalLink size={14} />
                     </a>
@@ -395,7 +405,12 @@ export default function Dashboard() {
             <div className="overview-panel-head">
               <div>
                 <span>RECENT RESEARCH</span>
-                <strong>Mathematics · OpenAlex</strong>
+                <strong>
+                  {[
+                    feed?.providers?.openAlex ? 'OpenAlex' : '',
+                    feed?.providers?.crossref ? 'Crossref' : '',
+                  ].filter(Boolean).join(' · ') || 'OpenAlex'}
+                </strong>
               </div>
               <FileText size={19} />
             </div>
@@ -406,8 +421,14 @@ export default function Dashboard() {
                   <div>
                     <strong>{paper.title}</strong>
                     <small>
-                      {[paper.database, paper.source, paper.date ? formatDate(paper.date) : '', paper.language?.toUpperCase()]
-                        .filter(Boolean).join(' · ')}
+                      {[
+                          paper.database,
+                          paper.source,
+                          paper.date ? formatDate(paper.date) : '',
+                          paper.language?.toUpperCase(),
+                          paper.openAccess ? 'Open access' : '',
+                          paper.citedBy > 0 ? `${paper.citedBy} trích dẫn` : '',
+                        ].filter(Boolean).join(' · ')}
                     </small>
                   </div>
                   <ExternalLink size={14} />
@@ -480,7 +501,7 @@ export default function Dashboard() {
 
             <div className="overview-result-columns">
               <div>
-                <h3>Nguồn web</h3>
+                <h3>Nguồn cập nhật</h3>
                 <div className="overview-source-list compact">
                   {searchResult.sources.slice(0, 8).map(source => {
                     const Icon = sourceIcon(source.kind);
@@ -495,7 +516,7 @@ export default function Dashboard() {
                       </a>
                     );
                   })}
-                  {!searchResult.sources.length && <p className="overview-muted">Không có nguồn web trực tiếp trong chế độ hiện tại.</p>}
+                  {!searchResult.sources.length && <p className="overview-muted">Không có nguồn cập nhật phù hợp trong chế độ hiện tại.</p>}
                 </div>
               </div>
 
