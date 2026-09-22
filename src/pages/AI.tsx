@@ -4,6 +4,8 @@ import { Send, Sparkles, BookOpen, Trash2, ArrowUpRight, GraduationCap } from 'l
 import { buildKnowledgeContext } from '../utils/knowledgeSearch';
 import { buildTutorPlan, tutorModeLabel, type TutorMode, type TutorModePreference } from '../utils/tutorPlanner';
 import { useProgress } from '../hooks/useProgress';
+import { useLearningGoal } from '../hooks/useLearningGoal';
+import { buildGoalTutorContext } from '../learning/goalTutorContext';
 import { ChatText } from '../components/ui/ChatText';
 
 interface Message {
@@ -111,6 +113,8 @@ function friendlyGeminiError(payload: GeminiPayload, status: number): string {
 export default function AI() {
   const [searchParams] = useSearchParams();
   const progress = useProgress();
+  const { goal } = useLearningGoal();
+  const goalContext = buildGoalTutorContext(progress, goal);
   const [messages, setMessages] = useState<Message[]>(loadConversation);
   const [input, setInput] = useState(() => searchParams.get('q')?.slice(0, 12000) || '');
   const [loading, setLoading] = useState(false);
@@ -153,6 +157,15 @@ export default function AI() {
     busy.current = true;
     const context = buildKnowledgeContext(text, 6);
     const plan = buildTutorPlan(text, context.hits, progress, tutorPreference);
+    const turnGoalContext = buildGoalTutorContext(progress, goal);
+    const anchorConceptIds = [
+      ...plan.anchorConceptIds,
+      ...(turnGoalContext?.anchorConceptIds || []),
+    ].filter((id, index, all) => all.indexOf(id) === index).slice(0, 6);
+    const responseLinks = [
+      ...context.links,
+      ...(turnGoalContext?.links || []),
+    ].filter((link, index, all) => all.findIndex(item => item.to === link.to) === index).slice(0, 8);
     setActiveTutorMode(plan.mode);
 
     const controller = new AbortController();
