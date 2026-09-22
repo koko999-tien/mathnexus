@@ -1,116 +1,202 @@
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Activity,
   ArrowRight,
-  ArrowUpRight,
   BookOpen,
   Brain,
   Calculator,
   ChartSpline,
-  CircleDot,
-  Compass,
-  Flame,
+  Clock,
+  ExternalLink,
+  FileText,
+  Globe2,
   Layers3,
   Library,
-  Lightbulb,
+  LoaderCircle,
   Network,
-  PenTool,
+  RefreshCcw,
+  Search,
   Sigma,
   Sparkles,
   Target,
+  Video,
 } from 'lucide-react';
 import { LESSONS } from '../data/lessons';
 import { BOOKS } from '../data/books';
 import { FORMS } from '../data/formulas';
-import { THINK } from '../data/think';
 import { MATH_CONCEPTS, MATH_DOMAINS } from '../data/mathKnowledge';
 import { useProgress } from '../hooks/useProgress';
 import { useLearningGoal } from '../hooks/useLearningGoal';
 import { recommendLessons } from '../utils/learningInsights';
 import { buildLearningGoalState } from '../learning/learningGoal';
+import { ChatText } from '../components/ui/ChatText';
 import './dashboard.css';
 
-const EXPERIENCE_PORTALS = [
-  {
-    to: '/map',
-    Icon: Network,
-    eyebrow: 'NHÌN TOÀN CẢNH',
-    title: 'Bản đồ toán học',
-    text: 'Đi xuyên qua các khái niệm và xem chúng nối với nhau bằng tiền đề, định lý và ứng dụng.',
-    action: 'Mở bản đồ',
-    tone: 'sage',
-  },
-  {
-    to: '/cosmos',
-    Icon: CircleDot,
-    eyebrow: 'KHÁM PHÁ KHÔNG GIAN',
-    title: 'Math Cosmos 3D',
-    text: 'Nhìn toán học như một vũ trụ thay vì một danh sách chương mục. Bay, quan sát và tìm đường giữa các ý tưởng.',
-    action: 'Bước vào Cosmos',
-    tone: 'night',
-  },
-  {
-    to: '/graph',
-    Icon: ChartSpline,
-    eyebrow: 'NHÌN THẤY HÀM SỐ',
-    title: 'Đồ thị tương tác',
-    text: 'Thay tham số và nhìn hình dạng biến đổi ngay trước mắt. Dùng trực giác thị giác để hiểu công thức.',
-    action: 'Chạm vào đồ thị',
-    tone: 'blue',
-  },
-  {
-    to: '/canvas',
-    Icon: Layers3,
-    eyebrow: 'TỰ XÂY Ý TƯỞNG',
-    title: 'Math Canvas',
-    text: 'Đặt công thức, khái niệm, ghi chú và mô phỏng lên một mặt phẳng vô hạn để suy nghĩ bằng chính cấu trúc của bạn.',
-    action: 'Mở canvas',
-    tone: 'paper',
-  },
-  {
-    to: '/ai',
-    Icon: Sparkles,
-    eyebrow: 'ĐỐI THOẠI',
-    title: 'Trợ lý toán học',
-    text: 'Hỏi vì sao, yêu cầu phản ví dụ, truy nguồn một định lý hoặc đào sâu một ý tưởng theo nhịp tò mò của bạn.',
-    action: 'Bắt đầu đối thoại',
-    tone: 'violet',
-  },
-  {
-    to: '/books',
-    Icon: Library,
-    eyebrow: 'ĐỌC ĐỂ THẤY TOÁN ĐẸP',
-    title: 'Tủ sách toán',
-    text: 'Từ Pólya, Euclid đến Tao: đọc toán như đọc một lịch sử của ý tưởng, không phải chỉ để lấy công thức.',
-    action: 'Vào tủ sách',
-    tone: 'warm',
-  },
+type SourceKind = 'web' | 'paper' | 'video' | 'tool';
+
+interface LiveSource {
+  title: string;
+  uri: string;
+  domain: string;
+  kind: SourceKind;
+}
+
+interface ResearchPaper {
+  id: string;
+  title: string;
+  url: string;
+  date: string;
+  language: string;
+  type: string;
+  citedBy: number;
+  source: string;
+  authors: string[];
+  openAccess: boolean;
+}
+
+interface VideoResult {
+  id: string;
+  title: string;
+  url: string;
+  channel: string;
+  publishedAt: string;
+  description: string;
+  language: string;
+}
+
+interface DiscoveryPayload {
+  mode: 'feed' | 'search';
+  generatedAt: string;
+  briefing?: string;
+  synthesis?: string;
+  sources: LiveSource[];
+  queries: string[];
+  papers: ResearchPaper[];
+  videos?: VideoResult[];
+  model?: string | null;
+  searchAvailable: boolean;
+  synthesisAvailable?: boolean;
+  providers?: {
+    googleGrounding?: boolean;
+    brave?: boolean;
+    openAlex?: boolean;
+    youtube?: boolean;
+  };
+  warning?: string | null;
+}
+
+const FEED_CACHE_KEY = 'mathnexus:discovery-feed:v2';
+const FEED_CACHE_MS = 15 * 60 * 1000;
+
+const LEARNING_TOOLS = [
+  { to: '/map', Icon: Network, title: 'Bản đồ tri thức', text: 'Quan hệ tiên quyết, khái niệm liên quan và lộ trình.' },
+  { to: '/library', Icon: BookOpen, title: 'Thư viện kiến thức', text: 'Bài học từ nền tảng đến đại học.' },
+  { to: '/formulas', Icon: Sigma, title: 'Công thức', text: 'Biểu thức, ý nghĩa, điều kiện sử dụng và ví dụ.' },
+  { to: '/graph', Icon: ChartSpline, title: 'Đồ thị hàm số', text: 'Khảo sát trực quan và thay đổi tham số.' },
+  { to: '/tools', Icon: Calculator, title: 'Công cụ toán học', text: 'Tính toán, kiểm tra và thử nghiệm.' },
+  { to: '/canvas', Icon: Layers3, title: 'Math Canvas', text: 'Ghi chú, công thức và cấu trúc ý tưởng trên một mặt phẳng.' },
+  { to: '/ai', Icon: Brain, title: 'Trợ lý toán học', text: 'Giải thích, phản biện và hỗ trợ suy luận.' },
+  { to: '/books', Icon: Library, title: 'Tủ sách', text: 'Giáo trình và sách tham khảo theo chủ đề.' },
 ];
 
-const CURIOSITY_PATHS = [
-  { to: '/library', Icon: BookOpen, title: 'Muốn hiểu một khái niệm', text: 'Đi từ trực giác đến định nghĩa, ví dụ và liên hệ.' },
-  { to: '/think', Icon: Brain, title: 'Muốn bị một câu hỏi ám ảnh', text: 'Câu đố và câu hỏi mở để kéo tư duy ra khỏi lối mòn.' },
-  { to: '/formulas', Icon: Sigma, title: 'Muốn hiểu một công thức', text: 'Không chỉ “dùng thế nào”, mà còn “vì sao nó có dạng đó”.' },
-  { to: '/tools', Icon: Calculator, title: 'Muốn tính, kiểm tra, thử nghiệm', text: 'Dùng công cụ như một phòng thí nghiệm nhỏ cho giả thuyết.' },
-  { to: '/calculus', Icon: Activity, title: 'Muốn chơi với biến thiên', text: 'Giới hạn, đạo hàm, tích phân và các trực giác của giải tích.' },
-  { to: '/simulations/gravity', Icon: CircleDot, title: 'Muốn thấy toán bước ra thế giới', text: 'Quan sát mô hình động và mối quan hệ giữa phương trình với hiện tượng.' },
-  { to: '/practice', Icon: PenTool, title: 'Muốn thử sức', text: 'Luyện tập vẫn ở đây — như một cách thử độ chắc của hiểu biết, không phải trung tâm của trải nghiệm.' },
-  { to: '/canvas', Icon: Layers3, title: 'Muốn tạo một hệ ý tưởng riêng', text: 'Vẽ, nối, nhóm và lưu cách bạn nhìn một vấn đề toán học.' },
-];
+const sourceLabel: Record<SourceKind, string> = {
+  web: 'Web',
+  paper: 'Paper',
+  video: 'Video',
+  tool: 'Tool',
+};
+
+function sourceIcon(kind: SourceKind) {
+  if (kind === 'paper') return FileText;
+  if (kind === 'video') return Video;
+  if (kind === 'tool') return Calculator;
+  return Globe2;
+}
+
+function formatDate(value: string) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function readFeedCache(): DiscoveryPayload | null {
+  try {
+    const raw = sessionStorage.getItem(FEED_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { savedAt?: number; data?: DiscoveryPayload };
+    if (!parsed.savedAt || !parsed.data || Date.now() - parsed.savedAt > FEED_CACHE_MS) return null;
+    return parsed.data;
+  } catch {
+    return null;
+  }
+}
+
+function writeFeedCache(data: DiscoveryPayload) {
+  try {
+    sessionStorage.setItem(FEED_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), data }));
+  } catch {
+    // Discovery cache is optional.
+  }
+}
+
+async function fetchOpenAlexFallback(query = ''): Promise<ResearchPaper[]> {
+  const params = new URLSearchParams({
+    per_page: '8',
+    sort: 'publication_date:desc',
+    select: 'id,title,doi,publication_date,language,type,cited_by_count,primary_location,authorships,open_access',
+  });
+
+  if (query) {
+    params.set('search', query.slice(0, 500));
+  } else {
+    const from = new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    params.set('filter', `primary_topic.field.id:26,from_publication_date:${from}`);
+  }
+
+  const response = await fetch(`https://api.openalex.org/works?${params.toString()}`);
+  if (!response.ok) throw new Error('OpenAlex unavailable');
+  const payload = await response.json() as { results?: Array<Record<string, unknown>> };
+
+  return (payload.results || []).map(work => {
+    const primary = work.primary_location as {
+      landing_page_url?: string;
+      pdf_url?: string;
+      source?: { display_name?: string };
+    } | null;
+    const authorships = Array.isArray(work.authorships) ? work.authorships as Array<{ author?: { display_name?: string } }> : [];
+    const openAccess = work.open_access as { is_oa?: boolean } | null;
+
+    return {
+      id: String(work.id || ''),
+      title: String(work.title || 'Untitled'),
+      url: String(primary?.landing_page_url || primary?.pdf_url || work.doi || work.id || ''),
+      date: String(work.publication_date || ''),
+      language: String(work.language || ''),
+      type: String(work.type || 'work'),
+      citedBy: Number(work.cited_by_count || 0),
+      source: String(primary?.source?.display_name || ''),
+      authors: authorships.map(item => item.author?.display_name || '').filter(Boolean).slice(0, 4),
+      openAccess: Boolean(openAccess?.is_oa),
+    };
+  });
+}
 
 export default function Dashboard() {
   const progress = useProgress();
   const learningGoal = useLearningGoal();
   const recommended = recommendLessons(progress, 3);
-  const now = new Date();
-  const dayIndex = Number(
-    `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`,
-  );
-  const curiosity = THINK[dayIndex % THINK.length];
-  const featuredLesson = recommended[0] || LESSONS[0];
   const focusGoal = buildLearningGoalState(progress, learningGoal.goal);
 
-  const domains = MATH_DOMAINS.map(domain => {
+  const [feed, setFeed] = useState<DiscoveryPayload | null>(() => readFeedCache());
+  const [feedLoading, setFeedLoading] = useState(!feed);
+  const [feedError, setFeedError] = useState('');
+  const [query, setQuery] = useState('');
+  const [searchResult, setSearchResult] = useState<DiscoveryPayload | null>(null);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState('');
+
+  const domains = useMemo(() => MATH_DOMAINS.map(domain => {
     const concepts = MATH_CONCEPTS.filter(concept => concept.domain === domain.id);
     const anchor = concepts[0];
     return {
@@ -118,217 +204,407 @@ export default function Dashboard() {
       count: concepts.length,
       to: anchor ? `/map?concept=${encodeURIComponent(anchor.id)}` : '/map',
     };
-  });
+  }), []);
 
-  const displayName = progress.displayName === 'Bạn học Toán' ? 'bạn' : progress.displayName;
+  const loadFeed = async (force = false) => {
+    if (!force) {
+      const cached = readFeedCache();
+      if (cached) {
+        setFeed(cached);
+        setFeedLoading(false);
+        return;
+      }
+    }
+
+    setFeedLoading(true);
+    setFeedError('');
+
+    try {
+      const response = await fetch('/api/discovery', { headers: { Accept: 'application/json' } });
+      if (!response.ok) throw new Error('Discovery API unavailable');
+      const data = await response.json() as DiscoveryPayload;
+      setFeed(data);
+      writeFeedCache(data);
+    } catch {
+      try {
+        const papers = await fetchOpenAlexFallback();
+        const fallback: DiscoveryPayload = {
+          mode: 'feed',
+          generatedAt: new Date().toISOString(),
+          sources: [],
+          queries: [],
+          papers,
+          videos: [],
+          searchAvailable: false,
+          warning: 'Web discovery cần backend Vercel; danh sách paper đang lấy trực tiếp từ OpenAlex.',
+        };
+        setFeed(fallback);
+      } catch {
+        setFeedError('Chưa tải được nguồn cập nhật. Thử lại sau.');
+      }
+    } finally {
+      setFeedLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (feed) return;
+    void loadFeed();
+  }, []);
+
+  const runSearch = async (event: FormEvent) => {
+    event.preventDefault();
+    const trimmed = query.trim();
+    if (!trimmed || searchLoading) return;
+
+    setSearchLoading(true);
+    setSearchError('');
+    setSearchResult(null);
+
+    try {
+      const response = await fetch('/api/discovery', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ query: trimmed }),
+      });
+      const data = await response.json().catch(() => ({})) as DiscoveryPayload & { error?: string };
+      if (!response.ok) throw new Error(data.error || 'Search unavailable');
+      setSearchResult(data);
+    } catch {
+      try {
+        const papers = await fetchOpenAlexFallback(trimmed);
+        setSearchResult({
+          mode: 'search',
+          generatedAt: new Date().toISOString(),
+          synthesis: '',
+          sources: [],
+          queries: [],
+          papers,
+          videos: [],
+          searchAvailable: false,
+          warning: 'Tìm kiếm web có AI cần backend Vercel. Kết quả hiện tại đến từ OpenAlex.',
+        });
+      } catch {
+        setSearchError('Không thực hiện được tìm kiếm lúc này.');
+      }
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const featuredLesson = recommended[0] || LESSONS[0];
 
   return (
-    <section className="math-home page-enter">
-      <div className="math-home-hero">
-        <div className="math-home-hero-copy">
-          <p className="math-home-kicker"><Compass size={15} /> KHÔNG GIAN DÀNH CHO SỰ TÒ MÒ</p>
-          <h1>
-            Toán học không phải một danh sách bài phải làm.
-            <span> Đây là nơi để đi thật xa với một câu hỏi.</span>
-          </h1>
-          <p className="math-home-lead">
-            Chào {displayName}. Từ số học sơ cấp đến giải tích, đại số tuyến tính, xác suất, vật lý toán và những ý tưởng còn khó gọi tên —
-            MathNexus được sắp lại để bạn có thể học, nhìn, thử, đọc, sáng tạo và khám phá toán theo cách mình muốn.
-          </p>
-
-          <div className="math-home-hero-actions">
-            <Link to="/map" className="button button-dark">
-              <Network size={17} /> Khám phá bản đồ toán học
-            </Link>
-            <Link to="/cosmos" className="button button-light">
-              <CircleDot size={17} /> Bước vào Math Cosmos 3D
-            </Link>
-            <Link to="/canvas" className="math-home-text-action">
-              Tạo không gian ý tưởng riêng <ArrowRight size={16} />
-            </Link>
-          </div>
-
-          <div className="math-home-hero-facts" aria-label="Quy mô nội dung MathNexus">
-            <span><strong>{MATH_CONCEPTS.length}</strong> khái niệm có liên kết</span>
-            <span><strong>{LESSONS.length}</strong> bài học</span>
-            <span><strong>{FORMS.length}</strong> công thức</span>
-            <span><strong>{BOOKS.length}</strong> đầu sách gợi ý</span>
-          </div>
-        </div>
-
-        <div className="math-home-orbit-card" aria-label="Các cách khám phá toán học">
-          <div className="math-home-orbit-core">
-            <span>∞</span>
-            <strong>MATH</strong>
-            <small>không có điểm kết thúc</small>
-          </div>
-          <span className="math-home-orbit orbit-one" />
-          <span className="math-home-orbit orbit-two" />
-          <span className="math-home-orbit orbit-three" />
-          <span className="math-home-orbit-node node-a">π</span>
-          <span className="math-home-orbit-node node-b">∫</span>
-          <span className="math-home-orbit-node node-c">λ</span>
-          <span className="math-home-orbit-node node-d">Σ</span>
-          <span className="math-home-orbit-node node-e">e<sup>iπ</sup></span>
-          <p>Đại số · Hình học · Giải tích · Xác suất · Logic · Vật lý toán · và còn nữa</p>
-        </div>
-      </div>
-
-      <div className="math-home-intent">
-        <div className="math-home-section-head">
-          <div>
-            <p className="eyebrow">BẮT ĐẦU TỪ HAM MUỐN, KHÔNG PHẢI TỪ BÀI TẬP</p>
-            <h2>Hôm nay bạn muốn làm gì với toán học?</h2>
-            <p>Không cần đi theo một lộ trình cố định. Chọn trạng thái tò mò phù hợp với bạn lúc này.</p>
-          </div>
-        </div>
-
-        <div className="math-home-intent-grid">
-          {CURIOSITY_PATHS.map(({ to, Icon, title, text }) => (
-            <Link key={title} to={to} className="math-home-intent-card">
-              <span className="math-home-intent-icon"><Icon size={21} /></span>
-              <div>
-                <h3>{title}</h3>
-                <p>{text}</p>
-              </div>
-              <ArrowUpRight size={17} />
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      <div className="math-home-section">
-        <div className="math-home-section-head">
-          <div>
-            <p className="eyebrow">CÁC CỔNG KHÁM PHÁ</p>
-            <h2>Một ý tưởng toán học có thể được nhìn bằng nhiều cách</h2>
-            <p>Đọc nó, vẽ nó, mô phỏng nó, đặt câu hỏi cho nó hoặc xây một bản đồ quanh nó.</p>
-          </div>
-        </div>
-
-        <div className="math-home-portal-grid">
-          {EXPERIENCE_PORTALS.map(({ to, Icon, eyebrow, title, text, action, tone }) => (
-            <Link key={to} to={to} className={`math-home-portal ${tone}`}>
-              <div className="math-home-portal-top">
-                <span className="math-home-portal-icon"><Icon size={23} /></span>
-                <span>{eyebrow}</span>
-              </div>
-              <h3>{title}</h3>
-              <p>{text}</p>
-              <strong>{action}<ArrowRight size={15} /></strong>
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      <div className="math-home-cosmos-band">
-        <div className="math-home-cosmos-copy">
-          <p className="eyebrow">VŨ TRỤ KIẾN THỨC</p>
-          <h2>11 miền toán học, không phải 11 ngăn kéo tách biệt</h2>
+    <section className="overview-workspace page-enter">
+      <header className="overview-header">
+        <div>
+          <p className="overview-kicker">MATHNEXUS / DISCOVERY WORKSPACE</p>
+          <h1>Theo dõi, tìm kiếm và học toán trong một không gian.</h1>
           <p>
-            Các miền dưới đây là những cửa vào. Bản đồ tri thức sẽ cho bạn thấy nơi chúng giao nhau,
-            nơi một khái niệm trở thành điều kiện cho khái niệm khác và nơi toán học chạm vào thế giới thật.
+            Trang tổng quan được tổ chức theo ba tác vụ: cập nhật nội dung mới, tra cứu tài liệu cho một ý tưởng,
+            và truy cập hệ tri thức cùng các công cụ toán học của MathNexus.
           </p>
-          <Link to="/map" className="math-home-text-action">Xem toàn bộ mạng tri thức <ArrowRight size={16} /></Link>
         </div>
+        <nav className="overview-modes" aria-label="Ba chế độ sử dụng chính">
+          <a href="#radar"><span>01</span><strong>Cập nhật</strong><small>Nội dung mới và đáng chú ý</small></a>
+          <a href="#research"><span>02</span><strong>Tìm kiếm</strong><small>Paper, video, notes, project</small></a>
+          <a href="#learn"><span>03</span><strong>Học & công cụ</strong><small>Tri thức nội bộ và workspace</small></a>
+        </nav>
+      </header>
 
-        <div className="math-home-domain-grid">
-          {domains.map(domain => (
-            <Link key={domain.id} to={domain.to} className="math-home-domain">
-              <span>{String(domain.order).padStart(2, '0')}</span>
-              <div>
-                <strong>{domain.name}</strong>
-                <small>{domain.description}</small>
-              </div>
-              <em>{domain.count} nút</em>
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      <div className="math-home-discovery-grid">
-        <article className="math-home-curiosity-card">
-          <div className="math-home-card-label"><Lightbulb size={17} /> CỬA SỔ TÒ MÒ HÔM NAY</div>
-          <h2>{curiosity.t}</h2>
-          <p>{curiosity.q}</p>
-          <Link to={`/think?item=${dayIndex % THINK.length}`} className="math-home-text-action">
-            Đi theo câu hỏi này <ArrowRight size={16} />
-          </Link>
-          <span className="math-home-question-mark" aria-hidden="true">?</span>
-        </article>
-
-        <article className="math-home-feature-card">
-          <div className="math-home-card-label"><Sparkles size={17} /> MỘT Ý TƯỞNG ĐỂ ĐI SÂU</div>
-          <span className="math-home-feature-meta">{featuredLesson.lv} · {featuredLesson.cat} · {featuredLesson.m}</span>
-          <h2>{featuredLesson.t}</h2>
-          <p>
-            Nếu bạn muốn bắt đầu từ một điểm cụ thể, đây là một cánh cửa hợp lý dựa trên nhịp khám phá hiện tại của bạn.
-          </p>
-          <Link to={`/lesson/${featuredLesson.id}`} className="button button-dark">
-            Mở bài này <ArrowRight size={16} />
-          </Link>
-        </article>
-      </div>
-
-      <div className="math-home-personal">
-        <div className="math-home-section-head">
+      <section id="radar" className="overview-section">
+        <div className="overview-section-heading">
           <div>
-            <p className="eyebrow">DẤU VẾT CỦA RIÊNG BẠN</p>
-            <h2>Tiến độ là bản ghi hành trình, không phải áp lực</h2>
-            <p>Phần này giúp bạn nhớ mình đã đi qua đâu. Nó đứng sau sự tò mò, không đứng trước nó.</p>
+            <p className="eyebrow">LIVE DISCOVERY</p>
+            <h2>Radar toán học</h2>
+            <p>
+              Theo dõi nguồn mới trên web và nghiên cứu gần đây. Tiêu đề được giữ nguyên theo ngôn ngữ của nguồn.
+            </p>
           </div>
-          <Link to="/progress" className="math-home-text-action">Xem toàn bộ dữ liệu <ArrowRight size={16} /></Link>
+          <button
+            type="button"
+            className="overview-refresh"
+            onClick={() => void loadFeed(true)}
+            disabled={feedLoading}
+          >
+            <RefreshCcw size={15} className={feedLoading ? 'is-spinning' : ''} />
+            Cập nhật
+          </button>
         </div>
 
-        <div className="math-home-personal-grid">
-          <Link to="/progress" className="math-home-stat">
-            <BookOpen size={20} />
-            <strong>{progress.lessonsRead.length}</strong>
-            <span>bài đã đọc</span>
-          </Link>
-          <Link to="/progress" className="math-home-stat">
-            <Brain size={20} />
-            <strong>{progress.questionsDone}</strong>
-            <span>câu đã thử</span>
-          </Link>
-          <Link to="/progress" className="math-home-stat">
-            <Flame size={20} />
-            <strong>{progress.streak}</strong>
-            <span>ngày có hoạt động</span>
-          </Link>
-          <Link to="/map" className="math-home-stat">
-            <Target size={20} />
-            <strong>{focusGoal ? focusGoal.progressPercent + '%' : '—'}</strong>
-            <span>{focusGoal ? 'mục tiêu dài hơi' : 'chưa cần đặt mục tiêu'}</span>
-          </Link>
+        <div className="overview-radar-grid">
+          <div className="overview-live-panel">
+            <div className="overview-panel-head">
+              <div>
+                <span>WEB RADAR</span>
+                <strong>{feed?.synthesisAvailable ? 'Google Search grounding + nguồn trực tiếp' : feed?.searchAvailable ? 'Nguồn trực tiếp từ web' : 'Nguồn nghiên cứu OpenAlex'}</strong>
+              </div>
+              <Globe2 size={19} />
+            </div>
+
+            {feedLoading && !feed && (
+              <div className="overview-loading"><LoaderCircle size={20} className="is-spinning" /> Đang rà soát nguồn mới…</div>
+            )}
+
+            {feedError && <p className="overview-error">{feedError}</p>}
+
+            {feed?.briefing ? (
+              <div className="overview-briefing"><ChatText text={feed.briefing} /></div>
+            ) : !feedLoading && (
+              <p className="overview-muted">
+                {feed?.warning || 'Chưa có bản tổng hợp trực tiếp từ web.'}
+              </p>
+            )}
+
+            {feed?.sources.length ? (
+              <div className="overview-source-list">
+                {feed.sources.slice(0, 7).map(source => {
+                  const Icon = sourceIcon(source.kind);
+                  return (
+                    <a key={source.uri} href={source.uri} target="_blank" rel="noreferrer" className="overview-source-row">
+                      <span className="overview-source-icon"><Icon size={15} /></span>
+                      <span>
+                        <strong>{source.title}</strong>
+                        <small>{sourceLabel[source.kind]} · {source.domain}</small>
+                      </span>
+                      <ExternalLink size={14} />
+                    </a>
+                  );
+                })}
+              </div>
+            ) : null}
+
+            <div className="overview-live-meta">
+              <span><Clock size={13} /> {feed?.generatedAt ? formatDate(feed.generatedAt) : '—'}</span>
+              <span>{feed?.searchAvailable ? 'Live web search' : 'OpenAlex fallback'}</span>
+            </div>
+          </div>
+
+          <div className="overview-papers-panel">
+            <div className="overview-panel-head">
+              <div>
+                <span>RECENT RESEARCH</span>
+                <strong>Mathematics · OpenAlex</strong>
+              </div>
+              <FileText size={19} />
+            </div>
+
+            <div className="overview-paper-list">
+              {(feed?.papers || []).slice(0, 7).map(paper => (
+                <a key={paper.id} href={paper.url || paper.id} target="_blank" rel="noreferrer" className="overview-paper-row">
+                  <div>
+                    <strong>{paper.title}</strong>
+                    <small>
+                      {[paper.source, paper.date ? formatDate(paper.date) : '', paper.language?.toUpperCase()]
+                        .filter(Boolean).join(' · ')}
+                    </small>
+                  </div>
+                  <ExternalLink size={14} />
+                </a>
+              ))}
+              {!feedLoading && !feed?.papers.length && <p className="overview-muted">Chưa có dữ liệu paper.</p>}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="research" className="overview-search-section">
+        <div className="overview-search-copy">
+          <p className="eyebrow">RESEARCH SEARCH</p>
+          <h2>Tìm nội dung liên quan đến một ý tưởng</h2>
+          <p>
+            Truy vấn không bị giới hạn ở thư viện MathNexus. Hệ thống tìm paper, preprint, lecture, video, notes,
+            dự án và nội dung kỹ thuật trên web; ngôn ngữ của nguồn không bị giới hạn.
+          </p>
         </div>
 
-        {focusGoal && (
-          <div className="math-home-goal">
-            <div>
-              <span className="eyebrow">MỤC TIÊU ĐANG THEO</span>
-              <h3>{focusGoal.target.title}</h3>
-              <p>{focusGoal.satisfiedCount}/{focusGoal.totalCount} nút đã có bằng chứng học tập.</p>
+        <form className="overview-search-box" onSubmit={runSearch}>
+          <Search size={21} />
+          <input
+            value={query}
+            onChange={event => setQuery(event.target.value)}
+            placeholder="Ví dụ: geometric deep learning và discrete differential geometry"
+            aria-label="Tìm kiếm tài liệu toán học trên web"
+          />
+          <button type="submit" disabled={!query.trim() || searchLoading}>
+            {searchLoading ? <LoaderCircle size={16} className="is-spinning" /> : <Sparkles size={16} />}
+            Tìm kiếm
+          </button>
+        </form>
+
+        <div className="overview-search-notes">
+          <span>Google Search grounding</span>
+          <span>OpenAlex</span>
+          <span>mọi ngôn ngữ</span>
+          <span>YouTube trực tiếp khi có API key</span>
+        </div>
+
+        {searchError && <p className="overview-error">{searchError}</p>}
+
+        {searchResult && (
+          <div className="overview-search-results">
+            <div className="overview-search-summary">
+              <div className="overview-result-head">
+                <span>SEARCH SYNTHESIS</span>
+                <small>{searchResult.synthesisAvailable ? searchResult.model || 'Gemini + Google Search' : searchResult.providers?.brave ? 'Brave Search + OpenAlex' : 'OpenAlex fallback'}</small>
+              </div>
+              {searchResult.synthesis ? (
+                <div className="overview-briefing"><ChatText text={searchResult.synthesis} /></div>
+              ) : (
+                <p className="overview-muted">{searchResult.warning || 'Không có bản tổng hợp.'}</p>
+              )}
             </div>
-            <div className="math-home-goal-actions">
-              <span>{focusGoal.progressPercent}%</span>
-              <Link to={`/map?concept=${encodeURIComponent(focusGoal.target.id)}`} className="button button-light">
-                Xem lộ trình <ArrowRight size={15} />
-              </Link>
+
+            <div className="overview-result-columns">
+              <div>
+                <h3>Nguồn web</h3>
+                <div className="overview-source-list compact">
+                  {searchResult.sources.slice(0, 8).map(source => {
+                    const Icon = sourceIcon(source.kind);
+                    return (
+                      <a key={source.uri} href={source.uri} target="_blank" rel="noreferrer" className="overview-source-row">
+                        <span className="overview-source-icon"><Icon size={15} /></span>
+                        <span>
+                          <strong>{source.title}</strong>
+                          <small>{sourceLabel[source.kind]} · {source.domain}</small>
+                        </span>
+                        <ExternalLink size={14} />
+                      </a>
+                    );
+                  })}
+                  {!searchResult.sources.length && <p className="overview-muted">Không có nguồn web trực tiếp trong chế độ hiện tại.</p>}
+                </div>
+              </div>
+
+              <div>
+                <h3>Paper liên quan</h3>
+                <div className="overview-paper-list compact">
+                  {searchResult.papers.slice(0, 8).map(paper => (
+                    <a key={paper.id} href={paper.url || paper.id} target="_blank" rel="noreferrer" className="overview-paper-row">
+                      <div>
+                        <strong>{paper.title}</strong>
+                        <small>
+                          {[paper.source, paper.date ? formatDate(paper.date) : '', paper.language?.toUpperCase()]
+                            .filter(Boolean).join(' · ')}
+                        </small>
+                      </div>
+                      <ExternalLink size={14} />
+                    </a>
+                  ))}
+                  {!searchResult.papers.length && <p className="overview-muted">OpenAlex chưa trả về paper phù hợp.</p>}
+                </div>
+              </div>
             </div>
+
+            {searchResult.videos?.length ? (
+              <div className="overview-video-strip">
+                <h3>Video</h3>
+                <div>
+                  {searchResult.videos.map(video => (
+                    <a key={video.id} href={video.url} target="_blank" rel="noreferrer">
+                      <Video size={16} />
+                      <span><strong>{video.title}</strong><small>{video.channel}</small></span>
+                      <ExternalLink size={13} />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </div>
         )}
-      </div>
+      </section>
 
-      <div className="math-home-footer-idea">
-        <div>
-          <span>MathNexus không nên hỏi “bạn đã làm bao nhiêu bài?” trước tiên.</span>
-          <h2>Nó nên hỏi: “Điều gì trong toán học đang khiến bạn tò mò?”</h2>
+      <section id="learn" className="overview-section">
+        <div className="overview-section-heading">
+          <div>
+            <p className="eyebrow">KNOWLEDGE & WORKBENCH</p>
+            <h2>Học, tra cứu và thử nghiệm</h2>
+            <p>
+              Nội dung nội bộ của MathNexus được giữ riêng với tìm kiếm web: có cấu trúc, có quan hệ tiên quyết và có công cụ thao tác.
+            </p>
+          </div>
+          <div className="overview-corpus">
+            <span><strong>{MATH_CONCEPTS.length}</strong> khái niệm</span>
+            <span><strong>{LESSONS.length}</strong> bài học</span>
+            <span><strong>{FORMS.length}</strong> công thức</span>
+            <span><strong>{BOOKS.length}</strong> sách</span>
+          </div>
         </div>
-        <Link to="/ai" className="button button-dark">
-          <Sparkles size={17} /> Hỏi một điều bất kỳ
-        </Link>
-      </div>
+
+        <div className="overview-tool-grid">
+          {LEARNING_TOOLS.map(({ to, Icon, title, text }) => (
+            <Link key={to} to={to} className="overview-tool-card">
+              <span><Icon size={19} /></span>
+              <div><strong>{title}</strong><small>{text}</small></div>
+              <ArrowRight size={15} />
+            </Link>
+          ))}
+        </div>
+
+        <div className="overview-knowledge-grid">
+          <div className="overview-domain-panel">
+            <div className="overview-panel-head">
+              <div>
+                <span>KNOWLEDGE GRAPH</span>
+                <strong>Miền kiến thức</strong>
+              </div>
+              <Network size={19} />
+            </div>
+            <div className="overview-domain-list">
+              {domains.map(domain => (
+                <Link key={domain.id} to={domain.to}>
+                  <span>{String(domain.order).padStart(2, '0')}</span>
+                  <strong>{domain.name}</strong>
+                  <small>{domain.count} nút</small>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div className="overview-continue-panel">
+            <div className="overview-panel-head">
+              <div>
+                <span>CONTINUE</span>
+                <strong>Điểm tiếp tục gần nhất</strong>
+              </div>
+              <Target size={19} />
+            </div>
+
+            <div className="overview-continue-main">
+              <span>{featuredLesson.lv} · {featuredLesson.cat}</span>
+              <h3>{featuredLesson.t}</h3>
+              <p>Gợi ý được lấy từ tiến độ hiện có trong MathNexus.</p>
+              <Link to={`/lesson/${featuredLesson.id}`} className="button button-dark">
+                Mở bài học <ArrowRight size={15} />
+              </Link>
+            </div>
+
+            <div className="overview-progress-data">
+              <span><strong>{progress.lessonsRead.length}</strong> bài đã đọc</span>
+              <span><strong>{progress.questionsDone}</strong> câu đã làm</span>
+              <span><strong>{progress.streak}</strong> ngày hoạt động</span>
+            </div>
+
+            {focusGoal && (
+              <Link to={`/map?concept=${encodeURIComponent(focusGoal.target.id)}`} className="overview-goal-row">
+                <span>
+                  <small>Mục tiêu đang theo</small>
+                  <strong>{focusGoal.target.title}</strong>
+                </span>
+                <span>{focusGoal.progressPercent}%</span>
+              </Link>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <footer className="overview-data-note">
+        <span>Phân tách nguồn:</span>
+        <p>
+          Web discovery dùng dữ liệu trực tuyến; OpenAlex cung cấp metadata nghiên cứu; thư viện MathNexus là dữ liệu nội bộ.
+          Các nguồn ngoài được mở tại trang gốc để người dùng kiểm tra trực tiếp.
+        </p>
+      </footer>
     </section>
   );
 }

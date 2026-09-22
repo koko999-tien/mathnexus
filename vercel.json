@@ -6,6 +6,9 @@
   "functions": {
     "api/gemini.js": {
       "maxDuration": 30
+    },
+    "api/discovery.js": {
+      "maxDuration": 30
     }
   },
   "headers": [
