@@ -593,6 +593,38 @@ test('AI auto mode sends prerequisite-aware discovery strategy', async ({ page }
   expect(requestBody.appContext).toContain('MathNexus');
 });
 
+test('AI uses an explicit Learning Goal as transparent tutor context', async ({ page }) => {
+  let requestBody;
+
+  await page.addInitScript(() => {
+    localStorage.setItem('mathnexus_learning_goal_v1', JSON.stringify({
+      version: 1,
+      targetConceptId: 'taylor',
+      createdAt: '2026-09-22T00:00:00.000Z',
+      updatedAt: '2026-09-22T00:00:00.000Z',
+    }));
+  });
+
+  await page.route('**/api/gemini', route => {
+    requestBody = route.request().postDataJSON();
+    return route.fulfill({ status: 200, json: { text: 'Ta sẽ nối câu hỏi này với mục tiêu Chuỗi Taylor.' } });
+  });
+
+  await page.goto('/ai');
+  await expect(page.getByText(/Đang dùng mục tiêu bạn đã đặt làm ngữ cảnh:/)).toBeVisible();
+  await expect(page.getByText('Chuỗi Taylor', { exact: true })).toBeVisible();
+
+  await page.getByRole('textbox', { name: 'Câu hỏi cho trợ lý' }).fill('Mình nên học gì tiếp?');
+  await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+
+  await expect(page.locator('.chat-message').last()).toContainText('mục tiêu Chuỗi Taylor');
+  expect(requestBody.tutor.goalContext).toContain('Mục tiêu học tập người dùng đã chủ động đặt: Chuỗi Taylor');
+  expect(requestBody.tutor.goalContext).toContain('Tiến độ theo evidence');
+  expect(requestBody.tutor.anchorConceptIds).toContain('taylor');
+  expect(requestBody.tutor.anchorConceptIds).toContain('number-systems');
+  await expect(page.locator('.chat-links a[href="/map?concept=taylor"]')).toBeVisible();
+});
+
 test('every route fits the viewport and has no client-side errors', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
