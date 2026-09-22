@@ -202,6 +202,7 @@ export default function Dashboard() {
   const [feedLoading, setFeedLoading] = useState(!feed);
   const [feedError, setFeedError] = useState('');
   const [query, setQuery] = useState('');
+  const [youtubeQuery, setYoutubeQuery] = useState('');
   const [searchResult, setSearchResult] = useState<DiscoveryPayload | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState('');
@@ -261,6 +262,15 @@ export default function Dashboard() {
     if (feed) return;
     void loadFeed();
   }, []);
+
+  const runYoutubeSearch = (event: FormEvent) => {
+    event.preventDefault();
+    const trimmed = youtubeQuery.trim();
+    if (!trimmed) return;
+
+    const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(trimmed)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
 
   const runSearch = async (event: FormEvent) => {
     event.preventDefault();
@@ -438,6 +448,51 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+      </section>
+
+      <section className="overview-youtube-search" aria-labelledby="youtube-search-title">
+        <div className="overview-youtube-copy">
+          <div className="overview-youtube-icon"><Video size={22} /></div>
+          <div>
+            <p className="eyebrow">YOUTUBE SEARCH</p>
+            <h2 id="youtube-search-title">Tìm video toán học trên YouTube</h2>
+            <p>
+              Tìm trực tiếp trên YouTube mà không cần API key. Truy vấn sẽ mở trang kết quả YouTube trong tab mới.
+            </p>
+          </div>
+        </div>
+
+        <form className="overview-youtube-box" onSubmit={runYoutubeSearch}>
+          <Search size={20} />
+          <input
+            value={youtubeQuery}
+            onChange={event => setYoutubeQuery(event.target.value)}
+            placeholder="Ví dụ: Riemann hypothesis visual explanation"
+            aria-label="Tìm video toán học trên YouTube"
+          />
+          <button type="submit" disabled={!youtubeQuery.trim()}>
+            <Video size={16} />
+            Tìm trên YouTube
+          </button>
+        </form>
+
+        {feed?.videos?.length ? (
+          <div className="overview-youtube-recent">
+            <span>Video mới từ các kênh đang theo dõi</span>
+            <div>
+              {feed.videos.slice(0, 4).map(video => (
+                <a key={video.id} href={video.url} target="_blank" rel="noreferrer">
+                  <Video size={15} />
+                  <span>
+                    <strong>{video.title}</strong>
+                    <small>{video.channel}{video.publishedAt ? ` · ${formatDate(video.publishedAt)}` : ''}</small>
+                  </span>
+                  <ExternalLink size={13} />
+                </a>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </section>
 
       <section id="research" className="overview-search-section">
