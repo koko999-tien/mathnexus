@@ -181,7 +181,6 @@ async function fetchOpenAlex({ query = '', limit = 8 } = {}) {
   const apiKey = cleanEnv(process.env.OPENALEX_API_KEY);
   const params = new URLSearchParams({
     per_page: String(Math.min(12, Math.max(1, limit))),
-    sort: 'publication_date:desc',
     select: 'id,title,doi,publication_date,language,type,cited_by_count,primary_location,authorships,open_access',
   });
 
@@ -190,6 +189,7 @@ async function fetchOpenAlex({ query = '', limit = 8 } = {}) {
     params.set('search', query.slice(0, 500));
     params.set('filter', `to_publication_date:${today},is_retracted:false`);
   } else {
+    params.set('sort', 'publication_date:desc');
     const from = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
     params.set(
       'filter',
@@ -340,44 +340,80 @@ async function fetchSemanticScholar(query, limit = 8) {
 async function fetchGdelt(query, { timespan = '30d', limit = 10 } = {}) {
   if (!query) return [];
 
-  const params = new URLSearchParams({
+  const baseParams = new URLSearchParams({
     query: query.slice(0, 700),
     mode: 'artlist',
     maxrecords: String(Math.min(25, Math.max(1, limit))),
     timespan,
     sort: 'datedesc',
-    format: 'jsonfeed',
   });
 
+  const mapArticle = article => {
+    const uri = String(article?.url || article?.external_url || article?.link || '');
+    const meta = [
+      article?.language ? String(article.language) : '',
+      article?.sourcecountry ? String(article.sourcecountry) : '',
+    ].filter(Boolean).join(' · ');
+
+    return {
+      title: String(article?.title || hostname(uri) || 'Untitled'),
+      uri,
+      domain: String(article?.domain || hostname(uri)),
+      kind: sourceKind(uri),
+      description: meta || String(article?.summary || article?.description || ''),
+      age: String(article?.date_published || article?.seendate || article?.pubDate || ''),
+      provider: 'GDELT',
+    };
+  };
+
   try {
-    const response = await fetch(`https://api.gdeltproject.org/api/v2/doc/doc?${params.toString()}`, {
-      signal: AbortSignal.timeout(12_000),
-    });
+    const jsonParams = new URLSearchParams(baseParams);
+    jsonParams.set('format', 'jsonfeed');
+    const response = await fetch(
+      `https://api.gdeltproject.org/api/v2/doc/doc?${jsonParams.toString()}`,
+      {
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; MathNexus/1.0)' },
+        signal: AbortSignal.timeout(12_000),
+      },
+    );
+
+    if (response.ok) {
+      const payload = await response.json().catch(() => null);
+      const items = Array.isArray(payload?.items)
+        ? payload.items
+        : Array.isArray(payload?.articles)
+          ? payload.articles
+          : [];
+      const mapped = items.map(mapArticle).filter(item => item.uri);
+      if (mapped.length) return mapped;
+    }
+  } catch {
+    // Fall through to RSS, which is also supported by DOC 2.0 ArticleList.
+  }
+
+  try {
+    const rssParams = new URLSearchParams(baseParams);
+    rssParams.set('format', 'rss');
+    const response = await fetch(
+      `https://api.gdeltproject.org/api/v2/doc/doc?${rssParams.toString()}`,
+      {
+        headers: {
+          Accept: 'application/rss+xml, application/xml, text/xml',
+          'User-Agent': 'Mozilla/5.0 (compatible; MathNexus/1.0)',
+        },
+        signal: AbortSignal.timeout(12_000),
+      },
+    );
     if (!response.ok) return [];
-    const payload = await response.json();
-    const items = Array.isArray(payload?.items)
-      ? payload.items
-      : Array.isArray(payload?.articles)
-        ? payload.articles
-        : [];
 
-    return items.map(article => {
-      const uri = String(article?.url || article?.external_url || '');
-      const meta = [
-        article?.language ? String(article.language) : '',
-        article?.sourcecountry ? String(article.sourcecountry) : '',
-      ].filter(Boolean).join(' · ');
-
-      return {
-        title: String(article?.title || hostname(uri) || 'Untitled'),
-        uri,
-        domain: String(article?.domain || hostname(uri)),
-        kind: sourceKind(uri),
-        description: meta || String(article?.summary || ''),
-        age: String(article?.date_published || article?.seendate || ''),
-        provider: 'GDELT',
-      };
-    }).filter(item => item.uri);
+    const xml = await response.text();
+    const items = xml.match(/<item>[\s\S]*?<\/item>/gi) || [];
+    return items.slice(0, limit).map(item => mapArticle({
+      title: tagValue(item, 'title'),
+      link: tagValue(item, 'link'),
+      pubDate: tagValue(item, 'pubDate'),
+      description: tagValue(item, 'description'),
+    })).filter(item => item.uri);
   } catch {
     return [];
   }
