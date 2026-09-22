@@ -29,11 +29,12 @@ export function getLibraryReadingRecords(): LibraryReadingRecord[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
-    const parsed = JSON.parse(raw);
+    const parsed: unknown = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
+    const items = parsed as unknown[];
 
-    return parsed
-      .filter(item => item && typeof item === 'object' && typeof item.id === 'string')
+    return items
+      .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object' && typeof (item as Record<string, unknown>).id === 'string')
       .map(item => ({
         id: String(item.id),
         title: String(item.title || 'Untitled'),
@@ -48,12 +49,12 @@ export function getLibraryReadingRecords(): LibraryReadingRecord[] {
         bookmarks: Array.isArray(item.bookmarks)
           ? item.bookmarks
             .filter((bookmark: unknown): bookmark is Record<string, unknown> => Boolean(bookmark) && typeof bookmark === 'object')
-            .map(bookmark => ({
+            .map((bookmark: Record<string, unknown>) => ({
               id: String(bookmark.id || ''),
               label: String(bookmark.label || ''),
               createdAt: String(bookmark.createdAt || ''),
             }))
-            .filter(bookmark => bookmark.id)
+            .filter((bookmark: { id: string }) => bookmark.id)
             .slice(0, 100)
           : [],
         updatedAt: String(item.updatedAt || ''),
