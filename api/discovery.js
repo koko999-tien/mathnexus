@@ -447,6 +447,94 @@ function providerWarning(providers) {
   return 'Các nguồn bên ngoài chưa phản hồi. Hãy thử lại sau.';
 }
 
+async function buildSearchPayload(query) {
+  const [gdelt, openAlex, crossref, semanticScholar, videos] = await Promise.all([
+    fetchGdelt(query, { timespan: '3m', limit: 10 }),
+    fetchOpenAlex({ query, limit: 8 }),
+    fetchCrossref(query, 8),
+    fetchSemanticScholar(query, 8),
+    fetchCuratedVideos(query),
+  ]);
+
+  const papers = mergePapers(semanticScholar, openAlex, crossref).slice(0, 16);
+  const providers = {
+    gdelt: gdelt.length > 0,
+    openAlex: openAlex.length > 0,
+    crossref: crossref.length > 0,
+    semanticScholar: semanticScholar.length > 0,
+    youtubeRss: videos.length > 0,
+  };
+
+  return {
+    mode: 'search',
+    query,
+    generatedAt: new Date().toISOString(),
+    synthesis: coverageSummary({ sources: gdelt, papers, videos, providers }),
+    briefing: '',
+    sources: mergeSources(gdelt),
+    queries: [],
+    papers,
+    videos,
+    model: null,
+    searchAvailable: gdelt.length > 0 || papers.length > 0 || videos.length > 0,
+    synthesisAvailable: false,
+    providers,
+    warning: providerWarning(providers),
+  };
+}
+
+async function buildFeedPayload() {
+  let gdelt = await fetchGdelt(GDELT_FEED_QUERY, { timespan: '30d', limit: 12 });
+  if (!gdelt.length) {
+    gdelt = await fetchGdelt('mathematics', { timespan: '30d', limit: 12 });
+  }
+
+  const [openAlex, crossref, videos] = await Promise.all([
+    fetchOpenAlex({ limit: 9 }),
+    fetchCrossref('mathematics', 6),
+    fetchCuratedVideos(),
+  ]);
+
+  const papers = mergePapers(openAlex, crossref).slice(0, 12);
+  const providers = {
+    gdelt: gdelt.length > 0,
+    openAlex: openAlex.length > 0,
+    crossref: crossref.length > 0,
+    semanticScholar: false,
+    youtubeRss: videos.length > 0,
+  };
+
+  return {
+    mode: 'feed',
+    generatedAt: new Date().toISOString(),
+    briefing: coverageSummary({ sources: gdelt, papers, videos, providers }),
+    synthesis: '',
+    sources: mergeSources(gdelt),
+    queries: [],
+    papers,
+    videos,
+    model: null,
+    searchAvailable: gdelt.length > 0 || papers.length > 0 || videos.length > 0,
+    synthesisAvailable: false,
+    providers,
+    warning: providerWarning(providers),
+  };
+}
+
+function requestQueryParam(request, key) {
+  const fromFramework = request?.query?.[key];
+  if (typeof fromFramework === 'string') return fromFramework.trim();
+  if (Array.isArray(fromFramework)) return String(fromFramework[0] || '').trim();
+
+  try {
+    const host = headerValue(request, 'host') || 'localhost';
+    const url = new URL(request?.url || '/', `https://${host}`);
+    return String(url.searchParams.get(key) || '').trim();
+  } catch {
+    return '';
+  }
+}
+
 export default async function handler(request, response) {
   response.setHeader('Content-Type', 'application/json; charset=utf-8');
   response.setHeader('X-Content-Type-Options', 'nosniff');
@@ -464,38 +552,25 @@ export default async function handler(request, response) {
   }
 
   if (request.method === 'GET') {
-    const [gdelt, openAlex, crossref, videos] = await Promise.all([
-      fetchGdelt(GDELT_FEED_QUERY, { timespan: '30d', limit: 12 }),
-      fetchOpenAlex({ limit: 9 }),
-      fetchCrossref('mathematics', 6),
-      fetchCuratedVideos(),
-    ]);
+    const query = requestQueryParam(request, 'q');
+    if (query) {
+      if (query.length > MAX_QUERY_LENGTH) {
+        return response.status(400).json({ error: 'Query is too long.', code: 'QUERY_TOO_LONG' });
+      }
+      const payload = await buildSearchPayload(query);
+      if (!payload.searchAvailable) {
+        return response.status(502).json({
+          error: 'Không nhận được kết quả từ các nguồn discovery.',
+          code: 'DISCOVERY_FAILED',
+        });
+      }
+      response.setHeader('Cache-Control', 'public, s-maxage=600, stale-while-revalidate=1800');
+      return response.status(200).json(payload);
+    }
 
-    const papers = mergePapers(openAlex, crossref).slice(0, 12);
-    const providers = {
-      gdelt: gdelt.length > 0,
-      openAlex: openAlex.length > 0,
-      crossref: crossref.length > 0,
-      semanticScholar: false,
-      youtubeRss: videos.length > 0,
-    };
-
+    const payload = await buildFeedPayload();
     response.setHeader('Cache-Control', 'public, s-maxage=1200, stale-while-revalidate=3600');
-    return response.status(200).json({
-      mode: 'feed',
-      generatedAt: new Date().toISOString(),
-      briefing: coverageSummary({ sources: gdelt, papers, videos, providers }),
-      synthesis: '',
-      sources: mergeSources(gdelt),
-      queries: [],
-      papers,
-      videos,
-      model: null,
-      searchAvailable: gdelt.length > 0 || papers.length > 0 || videos.length > 0,
-      synthesisAvailable: false,
-      providers,
-      warning: providerWarning(providers),
-    });
+    return response.status(200).json(payload);
   }
 
   if (request.method !== 'POST') {
@@ -518,44 +593,13 @@ export default async function handler(request, response) {
     return response.status(400).json({ error: 'Query is too long.', code: 'QUERY_TOO_LONG' });
   }
 
-  const [gdelt, openAlex, crossref, semanticScholar, videos] = await Promise.all([
-    fetchGdelt(query, { timespan: '3m', limit: 10 }),
-    fetchOpenAlex({ query, limit: 8 }),
-    fetchCrossref(query, 8),
-    fetchSemanticScholar(query, 8),
-    fetchCuratedVideos(query),
-  ]);
-
-  const papers = mergePapers(semanticScholar, openAlex, crossref).slice(0, 16);
-  const providers = {
-    gdelt: gdelt.length > 0,
-    openAlex: openAlex.length > 0,
-    crossref: crossref.length > 0,
-    semanticScholar: semanticScholar.length > 0,
-    youtubeRss: videos.length > 0,
-  };
-
-  if (!gdelt.length && !papers.length && !videos.length) {
+  const payload = await buildSearchPayload(query);
+  if (!payload.searchAvailable) {
     return response.status(502).json({
       error: 'Không nhận được kết quả từ các nguồn discovery.',
       code: 'DISCOVERY_FAILED',
     });
   }
 
-  return response.status(200).json({
-    mode: 'search',
-    query,
-    generatedAt: new Date().toISOString(),
-    synthesis: coverageSummary({ sources: gdelt, papers, videos, providers }),
-    briefing: '',
-    sources: mergeSources(gdelt),
-    queries: [],
-    papers,
-    videos,
-    model: null,
-    searchAvailable: true,
-    synthesisAvailable: false,
-    providers,
-    warning: providerWarning(providers),
-  });
+  return response.status(200).json(payload);
 }
