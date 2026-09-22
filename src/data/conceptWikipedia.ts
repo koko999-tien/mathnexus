@@ -1,4 +1,4 @@
-import { CONCEPT_BY_ID, MATH_CONCEPTS, MATH_DOMAINS, type MathConcept } from './mathKnowledge';
+import { CONCEPT_BY_ID, MATH_CONCEPTS, MATH_DOMAINS, type MathConcept } from './mathKnowledge.ts';
 
 export interface ConceptWikipediaProfile {
   conceptId: string;
