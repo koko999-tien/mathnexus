@@ -510,7 +510,10 @@ export default function Dashboard() {
                         <span className="overview-source-icon"><Icon size={15} /></span>
                         <span>
                           <strong>{source.title}</strong>
-                          <small>{sourceLabel[source.kind]} · {source.domain}</small>
+                          <small>
+                            {[source.provider, sourceLabel[source.kind], source.domain, source.age ? formatDate(source.age) : '']
+                              .filter(Boolean).join(' · ')}
+                          </small>
                         </span>
                         <ExternalLink size={14} />
                       </a>
@@ -528,14 +531,20 @@ export default function Dashboard() {
                       <div>
                         <strong>{paper.title}</strong>
                         <small>
-                          {[paper.database, paper.source, paper.date ? formatDate(paper.date) : '', paper.language?.toUpperCase()]
-                            .filter(Boolean).join(' · ')}
+                          {[
+                            paper.database,
+                            paper.source,
+                            paper.date ? formatDate(paper.date) : '',
+                            paper.language?.toUpperCase(),
+                            paper.openAccess ? 'Open access' : '',
+                            paper.citedBy > 0 ? `${paper.citedBy} trích dẫn` : '',
+                          ].filter(Boolean).join(' · ')}
                         </small>
                       </div>
                       <ExternalLink size={14} />
                     </a>
                   ))}
-                  {!searchResult.papers.length && <p className="overview-muted">OpenAlex chưa trả về paper phù hợp.</p>}
+                  {!searchResult.papers.length && <p className="overview-muted">Chưa có paper phù hợp từ các nguồn hiện tại.</p>}
                 </div>
               </div>
             </div>

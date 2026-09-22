@@ -351,16 +351,22 @@ async function fetchOpenAlex({ query = '', limit = 8 } = {}) {
   }
 }
 
-async function fetchCrossref(query, limit = 8) {
+async function fetchCrossref(query, limit = 8, recentDays = 0) {
   if (!query) return [];
   const today = new Date().toISOString().slice(0, 10);
+  const filters = [`until-pub-date:${today}`];
+  if (recentDays > 0) {
+    const from = new Date(Date.now() - recentDays * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    filters.unshift(`from-pub-date:${from}`);
+  }
+
   const params = new URLSearchParams({
     query: query.slice(0, 500),
     rows: String(Math.min(12, Math.max(1, limit))),
     sort: 'relevance',
     order: 'desc',
     select: 'DOI,title,URL,published,published-online,published-print,issued,container-title,author,type,is-referenced-by-count',
-    filter: `until-pub-date:${today}`,
+    filter: filters.join(','),
   });
 
   try {
@@ -701,7 +707,7 @@ async function buildFeedPayload() {
 
   const [openAlex, crossref, videos, editorialSources] = await Promise.all([
     fetchOpenAlex({ limit: 9 }),
-    fetchCrossref('mathematics', 6),
+    fetchCrossref('mathematics', 8, 60),
     fetchCuratedVideos(),
     fetchCuratedArticles(),
   ]);
