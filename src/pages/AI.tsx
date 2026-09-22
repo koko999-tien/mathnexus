@@ -4,6 +4,8 @@ import { Send, Sparkles, BookOpen, Trash2, ArrowUpRight, GraduationCap } from 'l
 import { buildKnowledgeContext } from '../utils/knowledgeSearch';
 import { buildTutorPlan, tutorModeLabel, type TutorMode, type TutorModePreference } from '../utils/tutorPlanner';
 import { useProgress } from '../hooks/useProgress';
+import { useLearningGoal } from '../hooks/useLearningGoal';
+import { buildGoalTutorContext } from '../learning/goalTutorContext';
 import { ChatText } from '../components/ui/ChatText';
 
 interface Message {
@@ -111,6 +113,8 @@ function friendlyGeminiError(payload: GeminiPayload, status: number): string {
 export default function AI() {
   const [searchParams] = useSearchParams();
   const progress = useProgress();
+  const { goal } = useLearningGoal();
+  const goalContext = buildGoalTutorContext(progress, goal);
   const [messages, setMessages] = useState<Message[]>(loadConversation);
   const [input, setInput] = useState(() => searchParams.get('q')?.slice(0, 12000) || '');
   const [loading, setLoading] = useState(false);
@@ -153,6 +157,15 @@ export default function AI() {
     busy.current = true;
     const context = buildKnowledgeContext(text, 6);
     const plan = buildTutorPlan(text, context.hits, progress, tutorPreference);
+    const turnGoalContext = buildGoalTutorContext(progress, goal);
+    const anchorConceptIds = [
+      ...plan.anchorConceptIds,
+      ...(turnGoalContext?.anchorConceptIds || []),
+    ].filter((id, index, all) => all.indexOf(id) === index).slice(0, 6);
+    const responseLinks = [
+      ...context.links,
+      ...(turnGoalContext?.links || []),
+    ].filter((link, index, all) => all.findIndex(item => item.to === link.to) === index).slice(0, 8);
     setActiveTutorMode(plan.mode);
 
     const controller = new AbortController();
@@ -189,7 +202,8 @@ export default function AI() {
             mode: plan.mode,
             directSolutionAllowed: plan.directSolutionAllowed,
             masterySummary: plan.masterySummary,
-            anchorConceptIds: plan.anchorConceptIds,
+            anchorConceptIds,
+            goalContext: turnGoalContext?.text || '',
           },
         }),
       });
@@ -213,7 +227,7 @@ export default function AI() {
           model: typeof payload.model === 'string' ? payload.model : undefined,
           fallbackUsed: payload.fallbackUsed === true,
           tutorMode: plan.mode,
-          links: context.links,
+          links: responseLinks,
         },
       ]);
     } catch (error) {
@@ -226,14 +240,17 @@ export default function AI() {
           : 'Chưa kết nối được Gemini.';
 
       const localContext = context.text || 'Thư viện chưa tìm thấy nội dung liên quan. Bạn có thể thử hỏi theo tên khái niệm, chủ đề hoặc mục tiêu học.';
+      const localGoal = turnGoalContext
+        ? `\n\n**Mục tiêu đang theo:** ${turnGoalContext.targetTitle} · ${turnGoalContext.progressPercent}% theo evidence.`
+        : '';
       setMessages(current => [
         ...current,
         {
           role: 'bot',
           source: 'local',
           tutorMode: plan.mode,
-          text: `${detail}\n\n**Cách tiếp cận ${tutorModeLabel(plan.mode)}:** ${plan.localOpening}\n\n${localContext}`,
-          links: context.links,
+          text: `${detail}\n\n**Cách tiếp cận ${tutorModeLabel(plan.mode)}:** ${plan.localOpening}\n\n${localContext}${localGoal}`,
+          links: responseLinks,
         },
       ]);
     } finally {
@@ -250,6 +267,10 @@ export default function AI() {
       <h1>Trợ lý MathNexus</h1>
       <p>Trợ lý chọn chiến lược theo câu hỏi, tri thức liên quan và bằng chứng học tập hiện có. Mặc định ưu tiên dẫn dắt; bạn vẫn có thể yêu cầu lời giải đầy đủ.</p>
     </div>
+
+    {goalContext && <div className="helper-text mb-3" role="status">
+      Đang dùng mục tiêu bạn đã đặt làm ngữ cảnh: <strong>{goalContext.targetTitle}</strong> · {goalContext.progressPercent}% theo evidence · <Link to={'/map?concept=' + encodeURIComponent(goalContext.targetConceptId)}>xem trên Knowledge Graph</Link>
+    </div>}
 
     <div className="tutor-mode-bar">
       <label>
