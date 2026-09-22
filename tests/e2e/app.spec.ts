@@ -4,8 +4,8 @@ test('dashboard, theme and complete navigation work at every screen size', async
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Một ngày mới');
-  await expect(page.getByRole('heading', { name: 'Kế hoạch hôm nay' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Theo dõi, tìm kiếm và học toán');
+  await expect(page.getByRole('heading', { name: 'Radar toán học' })).toBeVisible();
   await page.screenshot({ path: info.outputPath('dashboard.png'), fullPage: true });
   await page.getByRole('button', { name: 'Bật giao diện tối' }).click();
   await expect(page.locator('html')).toHaveClass('dark');
@@ -42,9 +42,10 @@ test('dashboard recommendations and knowledge map adapt to learning history', as
   });
   await page.reload();
 
-  await expect(page.getByRole('heading', { name: 'Nên học gì tiếp?' })).toBeVisible();
-  const recommendations = page.locator('.lesson-grid').first();
-  await expect(recommendations.getByRole('link', { name: /Giới hạn/ })).toBeVisible();
+  const continuePanel = page.locator('.overview-continue-panel');
+  await expect(continuePanel).toBeVisible();
+  await expect(continuePanel).toContainText('Giới hạn');
+  await expect(continuePanel.getByRole('link', { name: /Mở bài học/ })).toBeVisible();
 
   await page.goto('/progress');
   await expect(page.getByRole('heading', { name: 'Theo chuyên đề' })).toBeVisible();
@@ -303,10 +304,10 @@ test('dashboard and progress prioritize weak-question review', async ({ page }) 
   });
   await page.reload();
 
-  const practicePlan = page.locator('.plan-item').filter({ hasText: 'Ôn 1 câu đang yếu' });
-  await expect(practicePlan).toBeVisible();
-  await expect(practicePlan).toHaveAttribute('href', /mode=review/);
-  await expect(page.getByRole('link', { name: /Ôn câu đang yếu/ })).toBeVisible();
+  const dashboardProgress = page.locator('.overview-progress-data');
+  await expect(dashboardProgress).toBeVisible();
+  await expect(dashboardProgress).toContainText('1');
+  await expect(dashboardProgress).toContainText('câu đã làm');
 
   await page.goto('/progress');
   await expect(page.getByRole('heading', { name: 'Độ vững qua luyện tập' })).toBeVisible();
@@ -527,8 +528,12 @@ test('notes, personal goals and exported backup are usable', async ({ page }) =>
   expect(backup.canvas.objects[0].text).toBe('Taylor backup');
 
   await page.goto('/');
-  await expect(page.getByText('Chào Tiến,')).toBeVisible();
-  await expect(page.locator('.stat-card').filter({ hasText: 'Mục tiêu hôm nay' })).toContainText('0/3');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Theo dõi, tìm kiếm và học toán');
+  await expect(page.locator('.overview-goal-row')).toContainText('Chuỗi Taylor');
+
+  await page.goto('/progress');
+  await expect(page.getByLabel('Tên hiển thị')).toHaveValue('Tiến');
+  await expect(page.getByLabel('Mục tiêu câu hỏi mỗi ngày')).toHaveValue('3');
 });
 
 test('AI shows Socratic local fallback when the server is unavailable', async ({ page }) => {
@@ -677,19 +682,19 @@ test('learning goal persists from Knowledge Map to Dashboard and can be cleared'
   expect(storedGoal?.targetConceptId).toBe('taylor');
 
   await page.goto('/');
-  const goalCard = page.locator('.learning-goal-focus');
+  const goalCard = page.locator('.overview-goal-row');
   await expect(goalCard).toBeVisible();
   await expect(goalCard).toContainText('Chuỗi Taylor');
   await expect(goalCard).toContainText('0%');
-  await expect(goalCard.getByRole('link', { name: /Học “Hệ số và biểu diễn số”/ })).toHaveAttribute('href', '/lesson/frac');
+  await expect(goalCard).toHaveAttribute('href', /\/map\?concept=taylor/);
 
   await page.reload();
-  await expect(page.locator('.learning-goal-focus')).toContainText('Chuỗi Taylor');
+  await expect(page.locator('.overview-goal-row')).toContainText('Chuỗi Taylor');
 
   await page.goto('/map?concept=taylor');
   await page.getByRole('button', { name: 'Bỏ mục tiêu này' }).click();
   await page.goto('/');
-  await expect(page.locator('.learning-goal-focus')).toHaveCount(0);
+  await expect(page.locator('.overview-goal-row')).toHaveCount(0);
 });
 
 
