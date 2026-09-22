@@ -331,7 +331,7 @@ test('exploration state tracks intentional discovery without inventing mastery o
   expect(JSON.stringify(stored.exploration)).not.toMatch(/pointerPath|cameraVelocity|emotion|diagnosis/i);
 
   await page.goto('/progress');
-  await expect(page.getByRole('heading', { name: 'Khám phá tự chủ' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Hoạt động tự học' })).toBeVisible();
   await expect(page.getByTestId('exploration-concepts')).toContainText('1');
   await expect(page.getByTestId('exploration-atoms')).toContainText('1');
   await expect(page.getByTestId('exploration-simulations')).toContainText('1');
