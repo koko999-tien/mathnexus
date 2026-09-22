@@ -234,7 +234,7 @@ export default function LibraryBookDetail() {
           {archiveId && (
             <Link
               className="button button-dark"
-              to={`/library/book?archive=${encodeURIComponent(archiveId)}&title=${encodeURIComponent(displayTitle)}&ol=${encodeURIComponent(openLibraryUrl)}`}
+              to={`/library/book?archive=${encodeURIComponent(archiveId)}&title=${encodeURIComponent(displayTitle)}&ol=${encodeURIComponent(openLibraryUrl)}&key=${encodeURIComponent(key)}&authors=${encodeURIComponent(authors.join('|'))}&cover=${encodeURIComponent(cover)}`}
             >
               Đọc trong MathNexus
             </Link>
