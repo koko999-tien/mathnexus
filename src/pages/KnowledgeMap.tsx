@@ -1,8 +1,9 @@
 import { useEffect, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { AlertTriangle, ArrowRight, BookOpen, Check, CircleDot, Flag, FlagOff, Gauge, GitBranch, GraduationCap, Layers3, LockKeyhole, Network, Route, Sparkles, Wrench } from 'lucide-react';
+import { AlertTriangle, ArrowRight, BookOpen, Check, CircleDot, Flag, FlagOff, Gauge, GitBranch, Globe2, GraduationCap, Layers3, LockKeyhole, Network, Route, Sparkles, Wrench } from 'lucide-react';
 import { MATH_CONCEPTS, MATH_DOMAINS, type MathConcept } from '../data/mathKnowledge';
+import { wikipediaQueryForConcept } from '../data/conceptWikipedia';
 import { MATH_ATOMS, ONTOLOGY_KIND_META, type MathAtom, type OntologyKind } from '../data/mathOntology';
 import { FORMS } from '../data/formulas';
 import { LESSONS } from '../data/lessons';
@@ -152,6 +153,13 @@ export default function KnowledgeMap() {
               return formula ? <Link key={'formula-' + id} to={'/formula/' + id}><GitBranch size={15} /><span><strong>{formula.name}</strong><small>Công thức · {formula.cat}</small></span><ArrowRight size={14} /></Link> : null;
             })}
             {selected.toolPaths?.map(pathname => <Link key={pathname} to={pathname}><Wrench size={15} /><span><strong>{toolLabel(pathname)}</strong><small>Công cụ thực hành</small></span><ArrowRight size={14} /></Link>)}
+            <Link
+              to={`/library?tab=wikipedia&lang=vi&q=${encodeURIComponent(wikipediaQueryForConcept(selected.id, 'vi'))}`}
+            >
+              <Globe2 size={15} />
+              <span><strong>Wikipedia</strong><small>Tra cứu thêm về {selected.title}</small></span>
+              <ArrowRight size={14} />
+            </Link>
             {!selected.lessonIds?.length && !selected.formulaIds?.length && !selected.toolPaths?.length && <div className="resource-gap"><Route size={18} /><span><strong>Nút kiến thức chưa có tài nguyên riêng</strong><small>Đây là một khoảng trống nội dung mà MathNexus cần phát triển tiếp.</small></span></div>}
           </div>
         </div>
