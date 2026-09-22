@@ -12,6 +12,11 @@ const CURATED_VIDEO_CHANNELS = [
   { name: 'Mathologer', id: 'UC1_uAIS3r8Vu6JjXWvastJg' },
 ];
 
+const CURATED_ARTICLE_FEEDS = [
+  { name: 'Quanta Magazine · Mathematics', url: 'https://www.quantamagazine.org/mathematics/feed/', kind: 'web' },
+  { name: 'arXiv · Mathematics', url: 'https://rss.arxiv.org/rss/math', kind: 'paper' },
+];
+
 function headerValue(request, name) {
   const headers = request?.headers;
   if (!headers) return '';
@@ -164,6 +169,7 @@ function coverageSummary({ sources, papers, videos, providers }) {
     providers.crossref ? 'Crossref' : '',
     providers.semanticScholar ? 'Semantic Scholar' : '',
     providers.youtubeRss ? 'YouTube RSS' : '',
+    providers.editorialRss ? 'Quanta/arXiv RSS' : '',
   ].filter(Boolean);
 
   const parts = [];
@@ -419,6 +425,62 @@ async function fetchGdelt(query, { timespan = '30d', limit = 10 } = {}) {
   }
 }
 
+async function fetchCuratedArticles(query = '') {
+  const feeds = await Promise.all(CURATED_ARTICLE_FEEDS.map(async feed => {
+    try {
+      const response = await fetch(feed.url, {
+        headers: {
+          Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml',
+          'User-Agent': 'Mozilla/5.0 (compatible; MathNexus/1.0)',
+        },
+        signal: AbortSignal.timeout(8_000),
+      });
+      if (!response.ok) return [];
+
+      const xml = await response.text();
+      const rssItems = xml.match(/<item>[\s\S]*?<\/item>/gi) || [];
+      const atomEntries = xml.match(/<entry>[\s\S]*?<\/entry>/gi) || [];
+      const entries = rssItems.length ? rssItems : atomEntries;
+
+      return entries.slice(0, 12).map(entry => {
+        const atomLink = entry.match(/<link[^>]+href=["']([^"']+)["'][^>]*>/i)?.[1] || '';
+        const uri = tagValue(entry, 'link') || xmlDecode(atomLink);
+        const title = tagValue(entry, 'title');
+        const description = tagValue(entry, 'description') || tagValue(entry, 'summary');
+        const age = tagValue(entry, 'pubDate') || tagValue(entry, 'published') || tagValue(entry, 'updated');
+        return {
+          title,
+          uri,
+          domain: hostname(uri),
+          kind: feed.kind,
+          description: description.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 500),
+          age,
+          provider: feed.name,
+        };
+      }).filter(item => item.uri && item.title);
+    } catch {
+      return [];
+    }
+  }));
+
+  const all = feeds.flat();
+  if (!query) return all.slice(0, 10);
+
+  const tokens = normalizeTitle(query).split(' ').filter(token => token.length > 2);
+  if (!tokens.length) return all.slice(0, 10);
+
+  return all
+    .map(item => {
+      const haystack = normalizeTitle(`${item.title} ${item.description}`);
+      const score = tokens.reduce((sum, token) => sum + (haystack.includes(token) ? 1 : 0), 0);
+      return { item, score };
+    })
+    .filter(entry => entry.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 10)
+    .map(entry => entry.item);
+}
+
 async function fetchCuratedVideos(query = '') {
   const feeds = await Promise.all(CURATED_VIDEO_CHANNELS.map(async channel => {
     try {
@@ -476,7 +538,7 @@ async function fetchCuratedVideos(query = '') {
 
 function providerWarning(providers) {
   const academic = providers.openAlex || providers.crossref || providers.semanticScholar;
-  const live = providers.gdelt || providers.youtubeRss;
+  const live = providers.gdelt || providers.youtubeRss || providers.editorialRss;
   if (academic && live) return null;
   if (academic) return 'Nguồn học thuật đang hoạt động; nguồn web hoặc video tạm thời chưa phản hồi.';
   if (live) return 'Nguồn web/video đang hoạt động; một số cơ sở dữ liệu học thuật tạm thời chưa phản hồi.';
@@ -484,12 +546,13 @@ function providerWarning(providers) {
 }
 
 async function buildSearchPayload(query) {
-  const [gdelt, openAlex, crossref, semanticScholar, videos] = await Promise.all([
+  const [gdelt, openAlex, crossref, semanticScholar, videos, editorialSources] = await Promise.all([
     fetchGdelt(query, { timespan: '3m', limit: 10 }),
     fetchOpenAlex({ query, limit: 8 }),
     fetchCrossref(query, 8),
     fetchSemanticScholar(query, 8),
     fetchCuratedVideos(query),
+    fetchCuratedArticles(query),
   ]);
 
   const papers = mergePapers(semanticScholar, openAlex, crossref).slice(0, 16);
@@ -499,20 +562,23 @@ async function buildSearchPayload(query) {
     crossref: crossref.length > 0,
     semanticScholar: semanticScholar.length > 0,
     youtubeRss: videos.length > 0,
+    editorialRss: editorialSources.length > 0,
   };
+
+  const sources = mergeSources(gdelt, editorialSources);
 
   return {
     mode: 'search',
     query,
     generatedAt: new Date().toISOString(),
-    synthesis: coverageSummary({ sources: gdelt, papers, videos, providers }),
+    synthesis: coverageSummary({ sources, papers, videos, providers }),
     briefing: '',
-    sources: mergeSources(gdelt),
+    sources,
     queries: [],
     papers,
     videos,
     model: null,
-    searchAvailable: gdelt.length > 0 || papers.length > 0 || videos.length > 0,
+    searchAvailable: sources.length > 0 || papers.length > 0 || videos.length > 0,
     synthesisAvailable: false,
     providers,
     warning: providerWarning(providers),
@@ -525,10 +591,11 @@ async function buildFeedPayload() {
     gdelt = await fetchGdelt('mathematics', { timespan: '30d', limit: 12 });
   }
 
-  const [openAlex, crossref, videos] = await Promise.all([
+  const [openAlex, crossref, videos, editorialSources] = await Promise.all([
     fetchOpenAlex({ limit: 9 }),
     fetchCrossref('mathematics', 6),
     fetchCuratedVideos(),
+    fetchCuratedArticles(),
   ]);
 
   const papers = mergePapers(openAlex, crossref).slice(0, 12);
@@ -538,19 +605,22 @@ async function buildFeedPayload() {
     crossref: crossref.length > 0,
     semanticScholar: false,
     youtubeRss: videos.length > 0,
+    editorialRss: editorialSources.length > 0,
   };
+
+  const sources = mergeSources(gdelt, editorialSources);
 
   return {
     mode: 'feed',
     generatedAt: new Date().toISOString(),
-    briefing: coverageSummary({ sources: gdelt, papers, videos, providers }),
+    briefing: coverageSummary({ sources, papers, videos, providers }),
     synthesis: '',
-    sources: mergeSources(gdelt),
+    sources,
     queries: [],
     papers,
     videos,
     model: null,
-    searchAvailable: gdelt.length > 0 || papers.length > 0 || videos.length > 0,
+    searchAvailable: sources.length > 0 || papers.length > 0 || videos.length > 0,
     synthesisAvailable: false,
     providers,
     warning: providerWarning(providers),
