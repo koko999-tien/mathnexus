@@ -57,7 +57,7 @@ export default function Tools() {
     : null;
 
   return <section className="page-enter">
-    <div className="page-header"><p className="eyebrow">MATH WORKBENCH</p><h1>Công cụ toán học</h1><p>Tính, kiểm chứng và phân tích nhiều lớp toán học trong cùng một nơi — từ số học đến đại số tuyến tính, thống kê và vector.</p></div>
+    <div className="page-header"><p className="eyebrow">CÔNG CỤ TOÁN HỌC</p><h1>Công cụ toán học</h1><p>Tính, kiểm chứng và phân tích nhiều lớp toán học trong cùng một nơi — từ số học đến đại số tuyến tính, thống kê và vector.</p></div>
 
     <div className="panel precision-control" aria-label="Chính sách độ chính xác số">
       <div className="precision-control-copy"><span className="small-icon green"><ShieldCheck size={17} /></span><div><strong>Numerical Trust Layer</strong><small>{precisionPolicy.description}</small></div></div>
