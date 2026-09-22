@@ -67,9 +67,9 @@ export default function MathCosmos() {
   return <section className="math-cosmos-page page-enter">
     <div className="cosmos-page-head">
       <div>
-        <p className="eyebrow">MATH COSMOS · DIGITAL KNOWLEDGE UNIVERSE</p>
-        <h1>Vũ trụ tri thức toán học 3D</h1>
-        <p>Bay xuyên qua các lĩnh vực toán, chọn một concept để mở tầng vi mô gồm định nghĩa, định lý, phản ví dụ và kỹ năng con.</p>
+        <p className="eyebrow">BẢN ĐỒ TOÁN HỌC 3D</p>
+        <h1>Bản đồ toán học 3D</h1>
+        <p>Chọn một lĩnh vực hoặc khái niệm để xem quan hệ, định nghĩa, định lý, ví dụ và các nội dung liên quan.</p>
       </div>
       <div className="cosmos-runtime-badges">
         <span><Box size={14} />InstancedMesh</span>
@@ -94,28 +94,28 @@ export default function MathCosmos() {
         <label>
           <Search size={15} />
           <input
-            aria-label="Tìm node trong Math Cosmos"
+            aria-label="Tìm trong bản đồ toán học 3D"
             value={query}
             onChange={event => setQuery(event.target.value)}
             placeholder="Tìm Taylor, Bayes, vector riêng..."
           />
-          {query && <button type="button" aria-label="Xóa tìm kiếm Cosmos" onClick={() => setQuery('')}><X size={14} /></button>}
+          {query && <button type="button" aria-label="Xóa tìm kiếm" onClick={() => setQuery('')}><X size={14} /></button>}
         </label>
         {query && <div className="cosmos-search-results">
           {results.length ? results.map(node => <button type="button" key={node.id} onClick={() => selectNode(node)}>
             <span className={'cosmos-result-kind ' + node.kind}>{node.kind}</span>
             <span><strong>{node.title}</strong><small>{node.subtitle}</small></span>
-          </button>) : <p>Chưa thấy node phù hợp trong lớp đang mở.</p>}
+          </button>) : <p>Chưa có mục phù hợp trong phần đang mở.</p>}
         </div>}
       </div>
 
-      <div className="cosmos-quick-jumps" aria-label="Điểm nhảy nhanh trong Math Cosmos">
+      <div className="cosmos-quick-jumps" aria-label="Điểm truy cập nhanh trong bản đồ 3D">
         {QUICK_JUMPS.map(([id, label]) => <button type="button" key={id} onClick={() => jumpTo(id)}>{label}</button>)}
       </div>
 
       {selected && <aside className="cosmos-hud" aria-live="polite">
         <div className="cosmos-hud-top">
-          <span className={'cosmos-node-kind ' + selected.kind}>{selected.kind === 'domain' ? 'MACRO' : selected.kind === 'concept' ? 'CONCEPT' : 'MICRO'}</span>
+          <span className={'cosmos-node-kind ' + selected.kind}>{selected.kind === 'domain' ? 'LĨNH VỰC' : selected.kind === 'concept' ? 'KHÁI NIỆM' : 'CHI TIẾT'}</span>
           <span>{selected.subtitle}</span>
         </div>
         <h2>{selected.title}</h2>
@@ -131,18 +131,18 @@ export default function MathCosmos() {
     <div className="cosmos-explainer-grid">
       <article className="panel">
         <span className="small-icon green"><Network size={19} /></span>
-        <h2>Macro → Concept → Micro</h2>
-        <p>{MATH_DOMAINS.length} macro-domain chứa {MATH_CONCEPTS.length} concept. Khi chọn một concept, hệ thống mở tiếp ontology bên dưới từ {MATH_ATOMS.length} mảnh tri thức sâu hiện có.</p>
+        <h2>Lĩnh vực → Khái niệm → Nội dung</h2>
+        <p>{MATH_DOMAINS.length} lĩnh vực chứa {MATH_CONCEPTS.length} khái niệm. Khi chọn một khái niệm, MathNexus mở tiếp {MATH_ATOMS.length} mục nội dung chi tiết hiện có.</p>
       </article>
       <article className="panel">
         <span className="small-icon blue"><Sparkles size={19} /></span>
-        <h2>Camera có chủ đích</h2>
-        <p>Camera nội suy trực tiếp theo quỹ đạo ngắn đến node được chọn thay vì teleport. Nếu hệ điều hành bật giảm chuyển động, camera chuyển ngay không chạy animation.</p>
+        <h2>Di chuyển camera</h2>
+        <p>Camera di chuyển theo đường ngắn tới nút được chọn. Nếu thiết bị bật chế độ giảm chuyển động, vị trí sẽ được đổi ngay mà không chạy hiệu ứng.</p>
       </article>
       <article className="panel">
         <span className="small-icon lilac"><Cpu size={19} /></span>
-        <h2>Renderer hướng tới hàng nghìn node</h2>
-        <p>Node dùng một InstancedMesh chung. Force-layout chạy trong Web Worker, repulsion dùng spatial hash và renderer giảm node theo vùng camera để giữ main thread nhẹ hơn.</p>
+        <h2>Hiển thị nhiều nút</h2>
+        <p>Các nút dùng chung cơ chế hiển thị; phần bố trí chạy riêng trong Web Worker để giảm tải cho giao diện khi bản đồ có nhiều dữ liệu.</p>
       </article>
     </div>
   </section>;
