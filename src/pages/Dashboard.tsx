@@ -82,6 +82,7 @@ interface DiscoveryPayload {
     crossref?: boolean;
     semanticScholar?: boolean;
     youtubeRss?: boolean;
+    editorialRss?: boolean;
   };
   warning?: string | null;
 }
@@ -339,7 +340,15 @@ export default function Dashboard() {
             <div className="overview-panel-head">
               <div>
                 <span>WEB RADAR</span>
-                <strong>{feed?.searchAvailable ? 'GDELT · OpenAlex · Crossref · video RSS' : 'Nguồn nghiên cứu OpenAlex'}</strong>
+                <strong>
+                  {[
+                    feed?.providers?.gdelt ? 'GDELT' : '',
+                    feed?.providers?.editorialRss ? 'Quanta/arXiv RSS' : '',
+                    feed?.providers?.openAlex ? 'OpenAlex' : '',
+                    feed?.providers?.crossref ? 'Crossref' : '',
+                    feed?.providers?.youtubeRss ? 'YouTube RSS' : '',
+                  ].filter(Boolean).join(' · ') || 'OpenAlex'}
+                </strong>
               </div>
               <Globe2 size={19} />
             </div>
@@ -436,6 +445,7 @@ export default function Dashboard() {
 
         <div className="overview-search-notes">
           <span>GDELT</span>
+          <span>Quanta/arXiv RSS</span>
           <span>OpenAlex</span>
           <span>Crossref</span>
           <span>Semantic Scholar</span>
@@ -457,6 +467,7 @@ export default function Dashboard() {
                     searchResult.providers?.crossref ? 'Crossref' : '',
                     searchResult.providers?.semanticScholar ? 'Semantic Scholar' : '',
                     searchResult.providers?.youtubeRss ? 'YouTube RSS' : '',
+                    searchResult.providers?.editorialRss ? 'Quanta/arXiv RSS' : '',
                   ].filter(Boolean).join(' · ') || 'OpenAlex fallback'}
                 </small>
               </div>
@@ -613,8 +624,8 @@ export default function Dashboard() {
       <footer className="overview-data-note">
         <span>Phân tách nguồn:</span>
         <p>
-          Discovery sử dụng GDELT cho nguồn web, OpenAlex/Crossref/Semantic Scholar cho metadata học thuật và RSS công khai cho video.
-          Thư viện MathNexus vẫn là dữ liệu nội bộ; mọi nguồn ngoài đều mở tại trang gốc để người dùng kiểm tra trực tiếp.
+          Discovery sử dụng GDELT và RSS chuyên ngành cho nguồn cập nhật, OpenAlex/Crossref/Semantic Scholar cho metadata học thuật,
+          cùng RSS công khai của các kênh toán học cho video. Thư viện MathNexus vẫn là dữ liệu nội bộ; mọi nguồn ngoài đều mở tại trang gốc để kiểm tra trực tiếp.
         </p>
       </footer>
     </section>
