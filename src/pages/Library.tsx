@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
+  BookmarkCheck,
   BookOpen,
   ChevronLeft,
   ChevronRight,
@@ -22,9 +23,10 @@ import { LIBRARY_DOMAIN_PROFILE_BY_ID } from '../data/libraryCatalog';
 import { LessonCard } from '../components/ui/LessonCard';
 import { useProgress } from '../hooks/useProgress';
 import { matchesSearch } from '../utils/search';
+import { getLibraryReadingRecords, type LibraryReadingRecord } from '../utils/libraryReading';
 import './library.css';
 
-type LibraryTab = 'lessons' | 'wikipedia' | 'openlibrary';
+type LibraryTab = 'lessons' | 'wikipedia' | 'openlibrary' | 'reading';
 
 interface WikipediaItem {
   id: string;
@@ -75,7 +77,7 @@ const CATS = ['Tất cả', ...new Set(LESSONS.map(lesson => lesson.cat))];
 const LEVELS = ['Tất cả', ...new Set(LESSONS.map(lesson => lesson.lv))];
 
 function normalizeTab(value: string | null): LibraryTab {
-  if (value === 'wikipedia' || value === 'openlibrary') return value;
+  if (value === 'wikipedia' || value === 'openlibrary' || value === 'reading') return value;
   return 'lessons';
 }
 
@@ -103,6 +105,7 @@ export default function Library() {
   const [bookData, setBookData] = useState<OpenLibraryResponse | null>(null);
   const [externalLoading, setExternalLoading] = useState(false);
   const [externalError, setExternalError] = useState('');
+  const [savedBooks, setSavedBooks] = useState<LibraryReadingRecord[]>(() => getLibraryReadingRecords());
 
   const setFilter = (name: string, value: string) => setParams(current => {
     if (!value || value === 'Tất cả') current.delete(name);
@@ -125,6 +128,10 @@ export default function Library() {
   }, [search, tab]);
 
   useEffect(() => {
+    if (tab === 'reading') {
+      setSavedBooks(getLibraryReadingRecords());
+      return;
+    }
     if (tab === 'lessons') return;
     const controller = new AbortController();
 
@@ -289,6 +296,9 @@ export default function Library() {
           <button type="button" aria-pressed={tab === 'openlibrary'} onClick={() => switchTab('openlibrary')}>
             <LibraryBig size={16} /> Sách mở
           </button>
+          <button type="button" aria-pressed={tab === 'reading'} onClick={() => switchTab('reading')}>
+            <BookmarkCheck size={16} /> Đang đọc
+          </button>
         </div>
       </div>
 
@@ -336,6 +346,55 @@ export default function Library() {
               <h3>Chưa có bài học phù hợp</h3>
               <p>Thử đổi từ khóa hoặc chọn lại cấp học.</p>
               <button className="button button-light" onClick={() => setParams({})}>Xóa bộ lọc</button>
+            </div>
+          )}
+        </>
+      ) : tab === 'reading' ? (
+        <>
+          <div className="library-source-summary">
+            <span><strong>{savedBooks.length}</strong> sách đã lưu trên thiết bị này</span>
+            <span>Dữ liệu cục bộ</span>
+          </div>
+
+          {savedBooks.length ? (
+            <div className="openlibrary-grid">
+              {savedBooks.map(book => (
+                <article key={book.id} className="openbook-card">
+                  <div className="openbook-cover">
+                    {book.cover
+                      ? <img src={book.cover} alt="" loading="lazy" />
+                      : <div className="openbook-cover-placeholder"><BookOpen size={23} /></div>}
+                  </div>
+                  <div className="openbook-body">
+                    <div className="openbook-meta">{book.status === 'finished' ? 'Đã đọc' : book.status === 'reading' ? 'Đang đọc' : 'Đã lưu'} · {book.progress}%</div>
+                    <h3>{book.title}</h3>
+                    <div className="openbook-authors">{book.authors.join(', ') || 'Chưa rõ tác giả'}</div>
+                    <div className="library-reading-progress" aria-label={`Tiến độ ${book.title}`}>
+                      <span style={{ width: `${book.progress}%` }} />
+                    </div>
+                    <div className="library-card-actions">
+                      <Link
+                        className="primary"
+                        to={`/library/book-info?key=${encodeURIComponent(book.openLibraryKey)}&archive=${encodeURIComponent(book.archiveId)}&title=${encodeURIComponent(book.title)}&authors=${encodeURIComponent(book.authors.join('|'))}&cover=${encodeURIComponent(book.cover)}`}
+                      >
+                        Mở ghi chú
+                      </Link>
+                      {book.archiveId && (
+                        <Link to={`/library/book?archive=${encodeURIComponent(book.archiveId)}&title=${encodeURIComponent(book.title)}&ol=${encodeURIComponent(book.openLibraryUrl)}&key=${encodeURIComponent(book.openLibraryKey)}&authors=${encodeURIComponent(book.authors.join('|'))}&cover=${encodeURIComponent(book.cover)}`}>
+                          Đọc sách
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state">
+              <BookmarkCheck size={30} />
+              <h3>Chưa có sách nào được lưu</h3>
+              <p>Mở tab Sách mở, chọn một cuốn rồi lưu vào danh sách đọc.</p>
+              <button className="button button-light" onClick={() => switchTab('openlibrary')}>Tìm sách</button>
             </div>
           )}
         </>
@@ -470,6 +529,11 @@ export default function Library() {
                       <span className={`openbook-status ${book.readState === 'public' ? 'public' : ''}`}>{book.readLabel}</span>
 
                       <div className="library-card-actions">
+                        <Link
+                          to={`/library/book-info?key=${encodeURIComponent(book.key)}&archive=${encodeURIComponent(book.archiveId)}&title=${encodeURIComponent(book.title)}&authors=${encodeURIComponent(book.authors.join('|'))}&cover=${encodeURIComponent(book.cover)}`}
+                        >
+                          Chi tiết
+                        </Link>
                         {book.readState === 'public' && book.archiveId ? (
                           <Link
                             className="primary"
