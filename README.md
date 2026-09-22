@@ -108,6 +108,7 @@ Output: `dist/`
 
 - Dashboard theo ba tác vụ: theo dõi nội dung mới, tìm tài liệu theo ý tưởng, học/tra cứu.
 - Research Search có lịch sử truy vấn, chủ đề lưu, lọc Paper/Nguồn/Video, sắp xếp citation/ngày và Open Access.
+- Radar cá nhân hóa tự theo dõi tối đa 4 chủ đề lưu gần nhất bằng arXiv + OpenAlex và đánh dấu paper mới kể từ lần truy cập trước.
 - Research Shelf lưu paper/nguồn/video cục bộ và xuất các paper đã giữ thành BibTeX.
 - Có lối tra cứu trực tiếp sang arXiv, Google Scholar và YouTube từ cùng truy vấn.
 - Cửa sổ YouTube Search độc lập trên trang chính, dùng tìm kiếm trực tiếp của YouTube và RSS công khai.

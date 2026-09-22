@@ -773,6 +773,37 @@ async function buildSearchPayload(query) {
   };
 }
 
+async function buildWatchPayload(topics) {
+  const safeTopics = [...new Set((topics || [])
+    .map(topic => String(topic || '').trim())
+    .filter(Boolean))]
+    .slice(0, 4);
+
+  const topicResults = await Promise.all(safeTopics.map(async topic => {
+    const [openAlex, arxiv] = await Promise.all([
+      fetchOpenAlex({ query: topic, limit: 6 }),
+      fetchArxiv(topic, 6),
+    ]);
+    const papers = rankPapers(mergePapers(arxiv, openAlex), topic).slice(0, 6);
+
+    return {
+      topic,
+      papers,
+      providers: {
+        openAlex: openAlex.length > 0,
+        arxiv: arxiv.length > 0,
+      },
+    };
+  }));
+
+  return {
+    mode: 'watch',
+    generatedAt: new Date().toISOString(),
+    topics: topicResults,
+    searchAvailable: topicResults.some(item => item.papers.length > 0),
+  };
+}
+
 async function buildFeedPayload() {
   let gdelt = await fetchGdelt(GDELT_FEED_QUERY, { timespan: '30d', limit: 12 });
   if (!gdelt.length) {
@@ -847,6 +878,26 @@ export default async function handler(request, response) {
   }
 
   if (request.method === 'GET') {
+    const watch = requestQueryParam(request, 'watch');
+    if (watch) {
+      const topics = watch
+        .split('|')
+        .map(topic => topic.trim())
+        .filter(Boolean)
+        .slice(0, 4);
+
+      if (!topics.length) {
+        return response.status(400).json({ error: 'At least one watch topic is required.', code: 'EMPTY_WATCH' });
+      }
+      if (topics.some(topic => topic.length > 240)) {
+        return response.status(400).json({ error: 'Watch topic is too long.', code: 'WATCH_TOPIC_TOO_LONG' });
+      }
+
+      const payload = await buildWatchPayload(topics);
+      response.setHeader('Cache-Control', 'public, s-maxage=900, stale-while-revalidate=1800');
+      return response.status(200).json(payload);
+    }
+
     const query = requestQueryParam(request, 'q');
     if (query) {
       if (query.length > MAX_QUERY_LENGTH) {

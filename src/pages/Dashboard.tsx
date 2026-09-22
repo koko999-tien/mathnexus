@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   ArrowRight,
   BookOpen,
+  Bell,
   Bookmark,
   Brain,
   Calculator,
@@ -84,6 +85,22 @@ interface VideoResult {
   language: string;
 }
 
+interface TopicWatchResult {
+  topic: string;
+  papers: ResearchPaper[];
+  providers: {
+    openAlex?: boolean;
+    arxiv?: boolean;
+  };
+}
+
+interface WatchPayload {
+  mode: 'watch';
+  generatedAt: string;
+  topics: TopicWatchResult[];
+  searchAvailable: boolean;
+}
+
 interface DiscoveryPayload {
   mode: 'feed' | 'search';
   generatedAt: string;
@@ -112,6 +129,9 @@ const FEED_CACHE_KEY = 'mathnexus:discovery-feed:v4';
 const FEED_CACHE_MS = 15 * 60 * 1000;
 const SEARCH_HISTORY_KEY = 'mathnexus:research-history:v1';
 const SAVED_TOPICS_KEY = 'mathnexus:saved-research-topics:v1';
+const RADAR_LAST_SEEN_KEY = 'mathnexus:radar-last-seen:v1';
+const WATCH_CACHE_KEY = 'mathnexus:topic-watch-cache:v1';
+const WATCH_CACHE_MS = 15 * 60 * 1000;
 
 const RESEARCH_SEEDS = [
   'algebraic topology',
@@ -200,6 +220,38 @@ function paperTimestamp(value: string) {
   return Number.isFinite(stamp) ? stamp : 0;
 }
 
+function readRadarLastSeen() {
+  try {
+    const value = localStorage.getItem(RADAR_LAST_SEEN_KEY);
+    const stamp = value ? Date.parse(value) : 0;
+    return Number.isFinite(stamp) ? stamp : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function readWatchCache(topicKey: string): WatchPayload | null {
+  if (!topicKey) return null;
+  try {
+    const raw = sessionStorage.getItem(WATCH_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { savedAt?: number; topicKey?: string; data?: WatchPayload };
+    if (!parsed.savedAt || parsed.topicKey !== topicKey || !parsed.data) return null;
+    if (Date.now() - parsed.savedAt > WATCH_CACHE_MS) return null;
+    return parsed.data;
+  } catch {
+    return null;
+  }
+}
+
+function writeWatchCache(topicKey: string, data: WatchPayload) {
+  try {
+    sessionStorage.setItem(WATCH_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), topicKey, data }));
+  } catch {
+    // Personalized radar cache is optional.
+  }
+}
+
 async function fetchOpenAlexFallback(query = ''): Promise<ResearchPaper[]> {
   const params = new URLSearchParams({
     per_page: '8',
@@ -268,6 +320,13 @@ export default function Dashboard() {
   const [paperTextFilter, setPaperTextFilter] = useState('');
   const [openAccessOnly, setOpenAccessOnly] = useState(false);
   const [researchShelf, setResearchShelf] = useState<ResearchShelfItem[]>(() => getResearchShelf());
+  const [watchData, setWatchData] = useState<WatchPayload | null>(null);
+  const [watchLoading, setWatchLoading] = useState(false);
+  const [watchError, setWatchError] = useState('');
+  const [radarLastSeen] = useState(() => readRadarLastSeen());
+
+  const watchedTopics = useMemo(() => savedTopics.slice(0, 4), [savedTopics]);
+  const watchTopicKey = watchedTopics.join('|');
 
   const domains = useMemo(() => MATH_DOMAINS.map(domain => {
     const concepts = MATH_CONCEPTS.filter(concept => concept.domain === domain.id);
@@ -324,6 +383,55 @@ export default function Dashboard() {
     if (feed) return;
     void loadFeed();
   }, []);
+
+  const loadPersonalRadar = async (force = false) => {
+    if (!watchedTopics.length) {
+      setWatchData(null);
+      setWatchError('');
+      setWatchLoading(false);
+      return;
+    }
+
+    if (!force) {
+      const cached = readWatchCache(watchTopicKey);
+      if (cached) {
+        setWatchData(cached);
+        setWatchLoading(false);
+        return;
+      }
+    }
+
+    setWatchLoading(true);
+    setWatchError('');
+
+    try {
+      const response = await fetch(`/api/discovery?watch=${encodeURIComponent(watchTopicKey)}`, {
+        headers: { Accept: 'application/json' },
+      });
+      if (!response.ok) throw new Error('Topic watch unavailable');
+      const data = await response.json() as WatchPayload;
+      setWatchData(data);
+      writeWatchCache(watchTopicKey, data);
+      try {
+        localStorage.setItem(RADAR_LAST_SEEN_KEY, data.generatedAt || new Date().toISOString());
+      } catch {
+        // Last-seen tracking is optional.
+      }
+    } catch {
+      setWatchError('Chưa cập nhật được các chủ đề đang theo dõi.');
+    } finally {
+      setWatchLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadPersonalRadar();
+  }, [watchTopicKey]);
+
+  const openTrackedTopic = (topic: string) => {
+    void executeSearch(topic);
+    window.setTimeout(() => document.getElementById('research')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
+  };
 
   const runYoutubeSearch = (event: FormEvent) => {
     event.preventDefault();
@@ -542,12 +650,86 @@ export default function Dashboard() {
           <button
             type="button"
             className="overview-refresh"
-            onClick={() => void loadFeed(true)}
-            disabled={feedLoading}
+            onClick={() => {
+              void loadFeed(true);
+              void loadPersonalRadar(true);
+            }}
+            disabled={feedLoading || watchLoading}
           >
-            <RefreshCcw size={15} className={feedLoading ? 'is-spinning' : ''} />
+            <RefreshCcw size={15} className={feedLoading || watchLoading ? 'is-spinning' : ''} />
             Cập nhật
           </button>
+        </div>
+
+        <div className="overview-personal-radar">
+          <div className="overview-personal-head">
+            <div>
+              <div className="overview-personal-title">
+                <Bell size={16} />
+                <strong>Theo chủ đề của bạn</strong>
+              </div>
+              <small>
+                {watchedTopics.length
+                  ? `Theo dõi ${watchedTopics.length} chủ đề lưu gần nhất bằng arXiv và OpenAlex.`
+                  : 'Lưu một truy vấn ở Research Search để Radar bắt đầu theo dõi chủ đề đó.'}
+              </small>
+            </div>
+            {radarLastSeen > 0 && <span>Lần trước: {formatDate(new Date(radarLastSeen).toISOString())}</span>}
+          </div>
+
+          {watchLoading && !watchData && (
+            <div className="overview-loading"><LoaderCircle size={18} className="is-spinning" /> Đang kiểm tra chủ đề đã lưu…</div>
+          )}
+          {watchError && <p className="overview-error">{watchError}</p>}
+
+          {watchData?.topics.length ? (
+            <div className="overview-topic-watch-grid">
+              {watchData.topics.map(topicResult => {
+                const freshPapers = radarLastSeen > 0
+                  ? topicResult.papers.filter(paper => paperTimestamp(paper.date) > radarLastSeen)
+                  : [];
+                return (
+                  <article key={topicResult.topic} className="overview-topic-watch-card">
+                    <div className="overview-topic-watch-head">
+                      <div>
+                        <strong>{topicResult.topic}</strong>
+                        <small>
+                          {[
+                            topicResult.providers.arxiv ? 'arXiv' : '',
+                            topicResult.providers.openAlex ? 'OpenAlex' : '',
+                          ].filter(Boolean).join(' · ') || 'Đang chờ nguồn'}
+                        </small>
+                      </div>
+                      {radarLastSeen > 0 ? (
+                        <span className={freshPapers.length ? 'has-new' : ''}>{freshPapers.length} mới</span>
+                      ) : (
+                        <span>Đã thiết lập</span>
+                      )}
+                    </div>
+
+                    <div className="overview-topic-paper-list">
+                      {topicResult.papers.slice(0, 3).map(paper => (
+                        <a key={paper.id} href={paper.url || paper.id} target="_blank" rel="noreferrer">
+                          <strong>{paper.title}</strong>
+                          <small>
+                            {[paper.database, paper.date ? formatDate(paper.date) : '', paper.openAccess ? 'Open access' : '']
+                              .filter(Boolean).join(' · ')}
+                          </small>
+                        </a>
+                      ))}
+                      {!topicResult.papers.length && <small>Chưa có paper phù hợp từ các nguồn hiện tại.</small>}
+                    </div>
+
+                    <button type="button" onClick={() => openTrackedTopic(topicResult.topic)}>
+                      Mở tìm kiếm <ArrowRight size={13} />
+                    </button>
+                  </article>
+                );
+              })}
+            </div>
+          ) : !watchLoading && watchedTopics.length > 0 ? (
+            <p className="overview-muted">Chưa có kết quả mới cho các chủ đề đang theo dõi.</p>
+          ) : null}
         </div>
 
         <div className="overview-radar-grid">
