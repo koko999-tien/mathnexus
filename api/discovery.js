@@ -62,9 +62,9 @@ function cleanEnv(value) {
 
 function sourceKind(uri = '') {
   const lower = uri.toLowerCase();
-  if (/youtube\.com|youtu\.be|vimeo\.com/.test(lower)) return 'video';
-  if (/arxiv\.org|doi\.org|openalex\.org|springer\.com|sciencedirect\.com|nature\.com|ams\.org|cambridge\.org|wiley\.com|jstor\.org/.test(lower)) return 'paper';
-  if (/github\.com|observablehq\.com|desmos\.com/.test(lower)) return 'tool';
+  if (/youtube\.com|youtu\.be|vimeo\.com|bilibili\.com/.test(lower)) return 'video';
+  if (/arxiv\.org|doi\.org|openalex\.org|springer\.com|sciencedirect\.com|nature\.com|ams\.org|cambridge\.org|wiley\.com|jstor\.org|projecteuclid\.org/.test(lower)) return 'paper';
+  if (/github\.com|observablehq\.com|desmos\.com|geogebra\.org/.test(lower)) return 'tool';
   return 'web';
 }
 
@@ -74,6 +74,20 @@ function hostname(uri = '') {
   } catch {
     return '';
   }
+}
+
+function mergeSources(...groups) {
+  const seen = new Set();
+  const merged = [];
+  for (const group of groups) {
+    for (const item of group || []) {
+      if (!item?.uri || seen.has(item.uri)) continue;
+      seen.add(item.uri);
+      merged.push(item);
+      if (merged.length >= 18) return merged;
+    }
+  }
+  return merged;
 }
 
 function extractGeminiText(payload) {
@@ -98,6 +112,9 @@ function extractGrounding(payload) {
       uri,
       domain: hostname(uri),
       kind: sourceKind(uri),
+      description: '',
+      age: '',
+      provider: 'google',
     });
     if (sources.length >= 14) break;
   }
@@ -182,6 +199,80 @@ async function callGroundedSearch(prompt) {
   }
 }
 
+async function fetchBraveWeb(query, freshness = '') {
+  const apiKey = cleanEnv(process.env.BRAVE_SEARCH_API_KEY);
+  if (!apiKey || !query) return [];
+
+  const params = new URLSearchParams({
+    q: query.slice(0, 560),
+    count: '10',
+    safesearch: 'moderate',
+    text_decorations: 'false',
+    extra_snippets: 'true',
+  });
+  if (freshness) params.set('freshness', freshness);
+
+  try {
+    const response = await fetch(`https://api.search.brave.com/res/v1/web/search?${params.toString()}`, {
+      headers: {
+        Accept: 'application/json',
+        'X-Subscription-Token': apiKey,
+      },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!response.ok) return [];
+    const payload = await response.json();
+    const results = Array.isArray(payload?.web?.results) ? payload.web.results : [];
+    return results.map(item => ({
+      title: String(item?.title || hostname(item?.url || '')),
+      uri: String(item?.url || ''),
+      domain: hostname(item?.url || ''),
+      kind: sourceKind(item?.url || ''),
+      description: String(item?.description || ''),
+      age: String(item?.age || item?.page_age || ''),
+      provider: 'brave',
+    })).filter(item => item.uri);
+  } catch {
+    return [];
+  }
+}
+
+async function fetchBraveVideos(query, freshness = '') {
+  const apiKey = cleanEnv(process.env.BRAVE_SEARCH_API_KEY);
+  if (!apiKey || !query) return [];
+
+  const params = new URLSearchParams({
+    q: query.slice(0, 380),
+    count: '8',
+    safesearch: 'moderate',
+  });
+  if (freshness) params.set('freshness', freshness);
+
+  try {
+    const response = await fetch(`https://api.search.brave.com/res/v1/videos/search?${params.toString()}`, {
+      headers: {
+        Accept: 'application/json',
+        'X-Subscription-Token': apiKey,
+      },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!response.ok) return [];
+    const payload = await response.json();
+    const results = Array.isArray(payload?.results) ? payload.results : [];
+    return results.map((item, index) => ({
+      id: String(item?.url || `brave-video-${index}`),
+      title: String(item?.title || ''),
+      url: String(item?.url || ''),
+      channel: String(item?.video?.creator || hostname(item?.url || '')),
+      publishedAt: String(item?.page_age || item?.age || ''),
+      description: String(item?.description || ''),
+      language: '',
+    })).filter(item => item.url && item.title);
+  } catch {
+    return [];
+  }
+}
+
 function openAlexWork(work) {
   const primary = work?.primary_location;
   const source = primary?.source?.display_name || '';
@@ -199,7 +290,7 @@ function openAlexWork(work) {
     || '';
 
   return {
-    id: String(work?.id || url || Math.random()),
+    id: String(work?.id || url || `${work?.title || 'work'}-${work?.publication_date || ''}`),
     title: String(work?.title || 'Untitled'),
     url,
     date: String(work?.publication_date || ''),
@@ -220,11 +311,16 @@ async function fetchOpenAlex({ query = '', limit = 8 } = {}) {
     select: 'id,title,doi,publication_date,language,type,cited_by_count,primary_location,authorships,open_access',
   });
 
+  const today = new Date().toISOString().slice(0, 10);
   if (query) {
     params.set('search', query.slice(0, 500));
+    params.set('filter', `to_publication_date:${today},is_retracted:false`);
   } else {
-    const from = new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-    params.set('filter', `primary_topic.field.id:26,from_publication_date:${from}`);
+    const from = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    params.set(
+      'filter',
+      `primary_topic.field.id:26,from_publication_date:${from},to_publication_date:${today},is_retracted:false`,
+    );
   }
 
   if (apiKey) params.set('api_key', apiKey);
@@ -286,33 +382,51 @@ Dùng Google Search để rà soát các nội dung toán học mới hoặc đ�
 - nguồn từ nhiều quốc gia và nhiều ngôn ngữ; không ưu tiên tiếng Anh chỉ vì ngôn ngữ;
 - nội dung xuất bản gần đây, nhưng có thể đưa một nội dung cũ nếu vừa được thảo luận lại vì có giá trị rõ ràng.
 
-Không viết quảng cáo, không dùng các cụm như "cực kỳ thú vị", "đột phá" nếu nguồn không chứng minh điều đó.
+Không viết quảng cáo. Không dùng các cụm "đột phá", "cách mạng", "cực kỳ thú vị" nếu nguồn không chứng minh điều đó.
 Không bịa tiêu đề, tác giả, ngày tháng hoặc đường dẫn.
 Viết bằng tiếng Việt, giữ nguyên tiêu đề gốc khi nhắc tới nguồn.
 Trình bày 5-7 tín hiệu ngắn, mỗi tín hiệu gồm: tiêu đề gốc — loại nội dung — lý do đáng xem trong 1 câu.
 `.trim();
 
+const BRAVE_FEED_QUERY = [
+  'mathematics',
+  'math research',
+  'theorem',
+  'geometry',
+  'topology',
+  'number theory',
+  'analysis',
+  'probability',
+  'mathematical physics',
+].join(' OR ');
+
 function searchPrompt(query) {
   return `
-Người dùng đang nghiên cứu hoặc phát triển một ý tưởng toán học. Truy vấn của họ là:
+Người dùng đang nghiên cứu hoặc phát triển một ý tưởng toán học. Truy vấn:
 
 "${query}"
 
-Dùng Google Search để tìm tài liệu liên quan trực tiếp. Phạm vi phải rộng hơn tìm kiếm bài báo:
+Dùng Google Search để tìm tài liệu liên quan trực tiếp. Phạm vi:
 - paper, preprint, journal article;
 - lecture, seminar, conference talk, video chuyên môn;
 - notes, textbook chapter, blog kỹ thuật, project, software, visualization;
 - nội dung ở bất kỳ ngôn ngữ nào nếu liên quan tốt.
 
 Yêu cầu:
-1. Ưu tiên nguồn gốc/nguồn sơ cấp khi có thể.
-2. Phân biệt rõ kết quả nghiên cứu với nội dung giải thích hoặc video.
+1. Ưu tiên nguồn gốc hoặc nguồn sơ cấp khi có thể.
+2. Phân biệt kết quả nghiên cứu với nội dung giải thích hoặc video.
 3. Không suy đoán mức độ liên quan nếu chỉ nhìn thấy tiêu đề.
 4. Không bịa URL hoặc tài liệu.
-5. Trả lời bằng tiếng Việt, nhưng giữ nguyên tiêu đề nguồn.
-6. Mở đầu bằng 2-4 câu tổng hợp hướng tìm kiếm; sau đó liệt kê tối đa 8 nguồn/nhánh đáng kiểm tra.
+5. Trả lời bằng tiếng Việt, giữ nguyên tiêu đề nguồn.
+6. Mở đầu bằng 2-4 câu tổng hợp hướng tìm kiếm; sau đó liệt kê tối đa 8 nguồn hoặc nhánh đáng kiểm tra.
 7. Nếu truy vấn mơ hồ, nêu các cách hiểu hợp lý thay vì tự chọn một nghĩa duy nhất.
 `.trim();
+}
+
+function providerWarning({ grounded, braveAvailable }) {
+  if (grounded.ok) return null;
+  if (braveAvailable) return 'Gemini synthesis tạm thời không khả dụng; kết quả web vẫn được lấy trực tiếp từ Brave Search.';
+  return grounded.error || 'Tìm kiếm web tạm thời không khả dụng.';
 }
 
 export default async function handler(request, response) {
@@ -332,22 +446,48 @@ export default async function handler(request, response) {
   }
 
   if (request.method === 'GET') {
-    const [grounded, papers] = await Promise.all([
+    const [grounded, braveSources, braveVideos, papers] = await Promise.all([
       callGroundedSearch(FEED_PROMPT),
+      fetchBraveWeb(BRAVE_FEED_QUERY, 'pm'),
+      fetchBraveVideos('mathematics lecture seminar research', 'pm'),
       fetchOpenAlex({ limit: 8 }),
     ]);
+
+    const braveVideoSources = braveVideos.map(video => ({
+      title: video.title,
+      uri: video.url,
+      domain: hostname(video.url),
+      kind: 'video',
+      description: video.description,
+      age: video.publishedAt,
+      provider: 'brave',
+    }));
+
+    const sources = mergeSources(
+      grounded.ok ? grounded.sources : [],
+      braveSources,
+      braveVideoSources,
+    );
+    const braveAvailable = braveSources.length > 0 || braveVideos.length > 0;
 
     response.setHeader('Cache-Control', 'public, s-maxage=1200, stale-while-revalidate=3600');
     return response.status(200).json({
       mode: 'feed',
       generatedAt: new Date().toISOString(),
       briefing: grounded.ok ? grounded.text : '',
-      sources: grounded.ok ? grounded.sources : [],
+      sources,
       queries: grounded.ok ? grounded.queries : [],
       papers,
+      videos: braveVideos,
       model: grounded.ok ? grounded.model : null,
-      searchAvailable: grounded.ok,
-      warning: grounded.ok ? null : grounded.error,
+      searchAvailable: grounded.ok || braveAvailable,
+      synthesisAvailable: grounded.ok,
+      providers: {
+        googleGrounding: grounded.ok,
+        brave: braveAvailable,
+        openAlex: papers.length > 0,
+      },
+      warning: providerWarning({ grounded, braveAvailable }),
     });
   }
 
@@ -371,13 +511,22 @@ export default async function handler(request, response) {
     return response.status(400).json({ error: 'Query is too long.', code: 'QUERY_TOO_LONG' });
   }
 
-  const [grounded, papers, videos] = await Promise.all([
+  const [grounded, braveSources, braveVideos, papers, youtubeVideos] = await Promise.all([
     callGroundedSearch(searchPrompt(query)),
+    fetchBraveWeb(query),
+    fetchBraveVideos(query),
     fetchOpenAlex({ query, limit: 8 }),
     fetchYouTube(query),
   ]);
 
-  if (!grounded.ok && papers.length === 0 && videos.length === 0) {
+  const sources = mergeSources(
+    grounded.ok ? grounded.sources : [],
+    braveSources,
+  );
+  const videos = youtubeVideos.length ? youtubeVideos : braveVideos;
+  const braveAvailable = braveSources.length > 0 || braveVideos.length > 0;
+
+  if (!grounded.ok && !braveAvailable && papers.length === 0 && videos.length === 0) {
     return response.status(502).json({
       error: grounded.error || 'Không tìm thấy dữ liệu.',
       code: grounded.code || 'DISCOVERY_FAILED',
@@ -389,12 +538,19 @@ export default async function handler(request, response) {
     query,
     generatedAt: new Date().toISOString(),
     synthesis: grounded.ok ? grounded.text : '',
-    sources: grounded.ok ? grounded.sources : [],
+    sources,
     queries: grounded.ok ? grounded.queries : [],
     papers,
     videos,
     model: grounded.ok ? grounded.model : null,
-    searchAvailable: grounded.ok,
-    warning: grounded.ok ? null : grounded.error,
+    searchAvailable: grounded.ok || braveAvailable,
+    synthesisAvailable: grounded.ok,
+    providers: {
+      googleGrounding: grounded.ok,
+      brave: braveAvailable,
+      openAlex: papers.length > 0,
+      youtube: youtubeVideos.length > 0,
+    },
+    warning: providerWarning({ grounded, braveAvailable }),
   });
 }
