@@ -245,7 +245,7 @@ async function fetchCrossref(query, limit = 8) {
     rows: String(Math.min(12, Math.max(1, limit))),
     sort: 'relevance',
     order: 'desc',
-    select: 'DOI,title,URL,published,published-online,published-print,issued,container-title,author,type,is-referenced-by-count,language',
+    select: 'DOI,title,URL,published,published-online,published-print,issued,container-title,author,type,is-referenced-by-count',
     filter: `until-pub-date:${today}`,
   });
 
@@ -279,7 +279,7 @@ async function fetchCrossref(query, limit = 8) {
         title: title || 'Untitled',
         url,
         date,
-        language: String(item?.language || ''),
+        language: '',
         type: String(item?.type || 'work'),
         citedBy: Number(item?.['is-referenced-by-count'] || 0),
         source: container,
@@ -346,7 +346,7 @@ async function fetchGdelt(query, { timespan = '30d', limit = 10 } = {}) {
     maxrecords: String(Math.min(25, Math.max(1, limit))),
     timespan,
     sort: 'datedesc',
-    format: 'json',
+    format: 'jsonfeed',
   });
 
   try {
@@ -355,10 +355,14 @@ async function fetchGdelt(query, { timespan = '30d', limit = 10 } = {}) {
     });
     if (!response.ok) return [];
     const payload = await response.json();
-    const articles = Array.isArray(payload?.articles) ? payload.articles : [];
+    const items = Array.isArray(payload?.items)
+      ? payload.items
+      : Array.isArray(payload?.articles)
+        ? payload.articles
+        : [];
 
-    return articles.map(article => {
-      const uri = String(article?.url || '');
+    return items.map(article => {
+      const uri = String(article?.url || article?.external_url || '');
       const meta = [
         article?.language ? String(article.language) : '',
         article?.sourcecountry ? String(article.sourcecountry) : '',
@@ -369,8 +373,8 @@ async function fetchGdelt(query, { timespan = '30d', limit = 10 } = {}) {
         uri,
         domain: String(article?.domain || hostname(uri)),
         kind: sourceKind(uri),
-        description: meta,
-        age: String(article?.seendate || ''),
+        description: meta || String(article?.summary || ''),
+        age: String(article?.date_published || article?.seendate || ''),
         provider: 'GDELT',
       };
     }).filter(item => item.uri);
@@ -384,7 +388,13 @@ async function fetchCuratedVideos(query = '') {
     try {
       const response = await fetch(
         `https://www.youtube.com/feeds/videos.xml?channel_id=${encodeURIComponent(channel.id)}`,
-        { signal: AbortSignal.timeout(8_000) },
+        {
+          headers: {
+            Accept: 'application/atom+xml, application/xml, text/xml',
+            'User-Agent': 'Mozilla/5.0 (compatible; MathNexus/1.0)',
+          },
+          signal: AbortSignal.timeout(8_000),
+        },
       );
       if (!response.ok) return [];
       const xml = await response.text();
