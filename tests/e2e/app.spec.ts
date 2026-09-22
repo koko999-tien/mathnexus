@@ -473,7 +473,7 @@ test('knowledge library can search Wikipedia, read an article, and browse open b
   });
 
   await page.goto('/library');
-  await page.getByRole('button', { name: 'Wikipedia' }).click();
+  await page.getByRole('button', { name: 'Wikipedia', exact: true }).click();
   await page.getByRole('textbox', { name: 'Tìm Wikipedia' }).fill('đạo hàm');
   await page.getByRole('button', { name: 'Tìm', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Đạo hàm' })).toBeVisible();
