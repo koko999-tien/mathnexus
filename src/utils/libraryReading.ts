@@ -47,13 +47,13 @@ export function getLibraryReadingRecords(): LibraryReadingRecord[] {
         note: String(item.note || ''),
         bookmarks: Array.isArray(item.bookmarks)
           ? item.bookmarks
-            .filter((bookmark: unknown) => bookmark && typeof bookmark === 'object')
-            .map((bookmark: any) => ({
+            .filter((bookmark: unknown): bookmark is Record<string, unknown> => Boolean(bookmark) && typeof bookmark === 'object')
+            .map(bookmark => ({
               id: String(bookmark.id || ''),
               label: String(bookmark.label || ''),
               createdAt: String(bookmark.createdAt || ''),
             }))
-            .filter((bookmark: { id: string }) => bookmark.id)
+            .filter(bookmark => bookmark.id)
             .slice(0, 100)
           : [],
         updatedAt: String(item.updatedAt || ''),
