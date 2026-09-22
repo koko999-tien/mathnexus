@@ -1,99 +1,334 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, ArrowUpRight, BookOpen, Brain, CalendarDays, ChartSpline, Check, Circle, Flag, Flame, Lightbulb, PenTool, Sigma, Sparkles, Target } from 'lucide-react';
+import {
+  Activity,
+  ArrowRight,
+  ArrowUpRight,
+  BookOpen,
+  Brain,
+  Calculator,
+  ChartSpline,
+  CircleDot,
+  Compass,
+  Flame,
+  Layers3,
+  Library,
+  Lightbulb,
+  Network,
+  PenTool,
+  Sigma,
+  Sparkles,
+  Target,
+} from 'lucide-react';
 import { LESSONS } from '../data/lessons';
+import { BOOKS } from '../data/books';
+import { FORMS } from '../data/formulas';
 import { THINK } from '../data/think';
-import { QUIZ } from '../data/quiz';
+import { MATH_CONCEPTS, MATH_DOMAINS } from '../data/mathKnowledge';
 import { useProgress } from '../hooks/useProgress';
-import { useExplorationSummary } from '../hooks/useExplorationSummary';
 import { useLearningGoal } from '../hooks/useLearningGoal';
-import { emptyActivity, localDate } from '../utils/storage';
-import { recommendLessons, todayPlan } from '../utils/learningInsights';
-import { buildLearningCompass } from '../utils/learningCompass';
-import { buildGoalDiagnosticPlan, buildLearningGoalState } from '../learning/learningGoal';
-import { practiceOverview } from '../utils/practiceInsights';
-import { LessonCard } from '../components/ui/LessonCard';
-import { MathArtwork } from '../components/ui/MathArtwork';
+import { recommendLessons } from '../utils/learningInsights';
+import { buildLearningGoalState } from '../learning/learningGoal';
+import './dashboard.css';
+
+const EXPERIENCE_PORTALS = [
+  {
+    to: '/map',
+    Icon: Network,
+    eyebrow: 'NHÌN TOÀN CẢNH',
+    title: 'Bản đồ toán học',
+    text: 'Đi xuyên qua các khái niệm và xem chúng nối với nhau bằng tiền đề, định lý và ứng dụng.',
+    action: 'Mở bản đồ',
+    tone: 'sage',
+  },
+  {
+    to: '/cosmos',
+    Icon: CircleDot,
+    eyebrow: 'KHÁM PHÁ KHÔNG GIAN',
+    title: 'Math Cosmos 3D',
+    text: 'Nhìn toán học như một vũ trụ thay vì một danh sách chương mục. Bay, quan sát và tìm đường giữa các ý tưởng.',
+    action: 'Bước vào Cosmos',
+    tone: 'night',
+  },
+  {
+    to: '/graph',
+    Icon: ChartSpline,
+    eyebrow: 'NHÌN THẤY HÀM SỐ',
+    title: 'Đồ thị tương tác',
+    text: 'Thay tham số và nhìn hình dạng biến đổi ngay trước mắt. Dùng trực giác thị giác để hiểu công thức.',
+    action: 'Chạm vào đồ thị',
+    tone: 'blue',
+  },
+  {
+    to: '/canvas',
+    Icon: Layers3,
+    eyebrow: 'TỰ XÂY Ý TƯỞNG',
+    title: 'Math Canvas',
+    text: 'Đặt công thức, khái niệm, ghi chú và mô phỏng lên một mặt phẳng vô hạn để suy nghĩ bằng chính cấu trúc của bạn.',
+    action: 'Mở canvas',
+    tone: 'paper',
+  },
+  {
+    to: '/ai',
+    Icon: Sparkles,
+    eyebrow: 'ĐỐI THOẠI',
+    title: 'Trợ lý toán học',
+    text: 'Hỏi vì sao, yêu cầu phản ví dụ, truy nguồn một định lý hoặc đào sâu một ý tưởng theo nhịp tò mò của bạn.',
+    action: 'Bắt đầu đối thoại',
+    tone: 'violet',
+  },
+  {
+    to: '/books',
+    Icon: Library,
+    eyebrow: 'ĐỌC ĐỂ THẤY TOÁN ĐẸP',
+    title: 'Tủ sách toán',
+    text: 'Từ Pólya, Euclid đến Tao: đọc toán như đọc một lịch sử của ý tưởng, không phải chỉ để lấy công thức.',
+    action: 'Vào tủ sách',
+    tone: 'warm',
+  },
+];
+
+const CURIOSITY_PATHS = [
+  { to: '/library', Icon: BookOpen, title: 'Muốn hiểu một khái niệm', text: 'Đi từ trực giác đến định nghĩa, ví dụ và liên hệ.' },
+  { to: '/think', Icon: Brain, title: 'Muốn bị một câu hỏi ám ảnh', text: 'Câu đố và câu hỏi mở để kéo tư duy ra khỏi lối mòn.' },
+  { to: '/formulas', Icon: Sigma, title: 'Muốn hiểu một công thức', text: 'Không chỉ “dùng thế nào”, mà còn “vì sao nó có dạng đó”.' },
+  { to: '/tools', Icon: Calculator, title: 'Muốn tính, kiểm tra, thử nghiệm', text: 'Dùng công cụ như một phòng thí nghiệm nhỏ cho giả thuyết.' },
+  { to: '/calculus', Icon: Activity, title: 'Muốn chơi với biến thiên', text: 'Giới hạn, đạo hàm, tích phân và các trực giác của giải tích.' },
+  { to: '/simulations/gravity', Icon: CircleDot, title: 'Muốn thấy toán bước ra thế giới', text: 'Quan sát mô hình động và mối quan hệ giữa phương trình với hiện tượng.' },
+  { to: '/practice', Icon: PenTool, title: 'Muốn thử sức', text: 'Luyện tập vẫn ở đây — như một cách thử độ chắc của hiểu biết, không phải trung tâm của trải nghiệm.' },
+  { to: '/canvas', Icon: Layers3, title: 'Muốn tạo một hệ ý tưởng riêng', text: 'Vẽ, nối, nhóm và lưu cách bạn nhìn một vấn đề toán học.' },
+];
 
 export default function Dashboard() {
-  const p = useProgress();
-  const exploration = useExplorationSummary();
+  const progress = useProgress();
   const learningGoal = useLearningGoal();
+  const recommended = recommendLessons(progress, 3);
   const now = new Date();
-  const today = now.toLocaleDateString('vi-VI', { weekday: 'long', day: 'numeric', month: 'long' });
-  const challengeIndex = Number(localDate().replaceAll('-', '')) % THINK.length;
-  const challenge = THINK[challengeIndex];
-  const recommended = recommendLessons(p, 3);
-  const nextLesson = recommended[0] || LESSONS[0];
-  const plan = todayPlan(p);
-  const planDone = plan.filter(item => item.done).length;
-  const day = p.activity[localDate()] || emptyActivity();
-  const goalProgress = Math.min(100, Math.round(day.questions / p.dailyGoal * 100));
-  const practice = practiceOverview(QUIZ, p);
-  const compass = buildLearningCompass(p, exploration, 3);
-  const focusGoal = buildLearningGoalState(p, learningGoal.goal);
-  const goalDiagnostic = buildGoalDiagnosticPlan(p, learningGoal.goal);
+  const dayIndex = Number(
+    `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`,
+  );
+  const curiosity = THINK[dayIndex % THINK.length];
+  const featuredLesson = recommended[0] || LESSONS[0];
+  const focusGoal = buildLearningGoalState(progress, learningGoal.goal);
 
-  return <section className="dashboard page-enter">
-    <div className="dashboard-heading"><div><p className="eyebrow">GÓC HỌC TẬP CỦA BẠN</p><h1>Một ngày mới, một ý tưởng mới<span className="heading-dot">.</span></h1><p>Chào {p.displayName === 'Bạn học Toán' ? 'bạn' : p.displayName}, cùng khám phá vẻ đẹp của toán học nhé.</p></div><span className="date-pill"><CalendarDays size={15} />{today}</span></div>
+  const domains = MATH_DOMAINS.map(domain => {
+    const concepts = MATH_CONCEPTS.filter(concept => concept.domain === domain.id);
+    const anchor = concepts[0];
+    return {
+      ...domain,
+      count: concepts.length,
+      to: anchor ? `/map?concept=${encodeURIComponent(anchor.id)}` : '/map',
+    };
+  });
 
-    <div className="hero-grid">
-      <div className="hero-card"><div className="hero-copy"><span className="hero-label"><span /> HỌC ĐỂ HIỂU, KHÔNG CHỈ ĐỂ NHỚ</span><h2>Những ý tưởng lớn<br />bắt đầu từ <em>sự tò mò.</em></h2><p>{p.lastLesson ? 'Tiếp tục từ nhịp học gần nhất với “' + nextLesson.t + '”.' : 'Từ một công thức quen thuộc đến cả một thế giới đáng khám phá. Đi theo nhịp học của riêng bạn.'}</p><Link to={'/lesson/' + nextLesson.id} className="button button-dark">{p.lessonsRead.length || p.lastLesson ? 'Học bài tiếp theo' : 'Bắt đầu khám phá'}<ArrowRight size={17} /></Link><div className="hero-caption"><BookOpen size={14} /> {LESSONS.length} bài học · Từ THCS đến đại học</div></div><MathArtwork /></div>
-      <div className="challenge-card"><div className="card-eyebrow"><span className="small-icon peach"><Lightbulb size={18} /></span><span>THỬ THÁCH HÔM NAY</span></div><span className="challenge-tag">Một chút tư duy</span><h2>{challenge.t}</h2><p>{challenge.q}</p><Link to={'/think?item=' + challengeIndex} className="text-link">Bạn có lời giải chứ?<ArrowRight size={16} /></Link><span className="challenge-decoration" aria-hidden="true">?</span></div>
-    </div>
+  const displayName = progress.displayName === 'Bạn học Toán' ? 'bạn' : progress.displayName;
 
-    <div className="stats-grid">{[
-      { Icon: BookOpen, value: p.lessonsRead.length, label: 'Bài học hoàn thành', tone: 'green', detail: 'trong ' + LESSONS.length + ' bài học' },
-      { Icon: PenTool, value: p.questionsDone, label: 'Câu hỏi đã luyện', tone: 'blue', detail: p.questionsDone ? p.questionsCorrect + ' câu trả lời đúng' : 'Sẵn sàng thử sức?' },
-      { Icon: Target, value: day.questions + '/' + p.dailyGoal, label: 'Mục tiêu hôm nay', tone: 'lilac', detail: goalProgress === 100 ? 'Tuyệt vời, bạn đã làm được!' : 'Mỗi câu hỏi, một bước tiến' },
-      { Icon: Flame, value: p.streak, label: 'Ngày học liên tiếp', tone: 'peach', detail: p.streak ? 'Giữ ngọn lửa tò mò nhé' : 'Bắt đầu từ hôm nay' },
-    ].map(({ Icon, value, label, tone, detail }) => <Link to="/progress" key={label} className="stat-card"><div className="stat-top"><span className={'small-icon ' + tone}><Icon size={20} /></span><strong>{value}</strong></div><h3>{label}</h3><p>{detail}</p></Link>)}</div>
+  return (
+    <section className="math-home page-enter">
+      <div className="math-home-hero">
+        <div className="math-home-hero-copy">
+          <p className="math-home-kicker"><Compass size={15} /> KHÔNG GIAN DÀNH CHO SỰ TÒ MÒ</p>
+          <h1>
+            Toán học không phải một danh sách bài phải làm.
+            <span> Đây là nơi để đi thật xa với một câu hỏi.</span>
+          </h1>
+          <p className="math-home-lead">
+            Chào {displayName}. Từ số học sơ cấp đến giải tích, đại số tuyến tính, xác suất, vật lý toán và những ý tưởng còn khó gọi tên —
+            MathNexus được sắp lại để bạn có thể học, nhìn, thử, đọc, sáng tạo và khám phá toán theo cách mình muốn.
+          </p>
 
-    <div className="today-plan panel">
-      <div className="today-plan-head"><div><span className="eyebrow">KHÔNG CẦN HỌC LAN MAN</span><h2>Kế hoạch hôm nay</h2><p>Ba việc nhỏ để giữ nhịp học đều và có chủ đích.</p></div><div className="plan-score" aria-label={planDone + ' trên ' + plan.length + ' việc đã hoàn thành'}><strong>{planDone}/{plan.length}</strong><span>đã xong</span></div></div>
-      <div className="plan-grid">{plan.map(item => <Link key={item.id} to={item.to} className={'plan-item' + (item.done ? ' is-done' : '')}>
-        <span className="plan-check">{item.done ? <Check size={17} /> : <Circle size={17} />}</span>
-        <span className="plan-copy"><strong>{item.title}</strong><small>{item.detail}</small></span>
-        <span className="plan-progress">{item.progressLabel}<ArrowRight size={15} /></span>
-      </Link>)}</div>
-    </div>
+          <div className="math-home-hero-actions">
+            <Link to="/map" className="button button-dark">
+              <Network size={17} /> Khám phá bản đồ toán học
+            </Link>
+            <Link to="/cosmos" className="button button-light">
+              <CircleDot size={17} /> Bước vào Math Cosmos 3D
+            </Link>
+            <Link to="/canvas" className="math-home-text-action">
+              Tạo không gian ý tưởng riêng <ArrowRight size={16} />
+            </Link>
+          </div>
 
-    {focusGoal && <div className={'learning-goal-focus panel ' + focusGoal.status}>
-      <div className="learning-goal-focus-head">
-        <span className="small-icon lilac"><Flag size={20} /></span>
-        <div><span className="eyebrow">MỤC TIÊU DÀI HƠI ĐANG THEO ĐUỔI</span><h2>{focusGoal.target.title}</h2><p>{focusGoal.status === 'complete' ? 'Đã có đủ bằng chứng trực tiếp để coi mục tiêu này hoàn thành.' : focusGoal.status === 'blocked' ? 'Lộ trình đang chạm một khoảng trống nội dung; MathNexus chỉ rõ nút chặn thay vì bỏ qua.' : focusGoal.remainingCount + ' nút trong lộ trình vẫn cần thêm bằng chứng.'}</p></div>
-        <strong>{focusGoal.progressPercent}%</strong>
-      </div>
-      <div className="progress-track" role="progressbar" aria-label={'Tiến độ mục tiêu ' + focusGoal.target.title} aria-valuenow={focusGoal.progressPercent} aria-valuemin={0} aria-valuemax={100}><span style={{ width: focusGoal.progressPercent + '%' }} /></div>
-      <div className="learning-goal-focus-actions">
-        <span>{focusGoal.satisfiedCount}/{focusGoal.totalCount} nút có bằng chứng</span>
-        <div>
-          <Link to={'/map?concept=' + encodeURIComponent(focusGoal.target.id)} className="button button-light">Xem toàn bộ lộ trình</Link>
-          {goalDiagnostic && goalDiagnostic.questionIds.length > 0 && <Link to="/practice?mode=goal&size=5" className="button button-light"><Brain size={15} />Chẩn đoán lộ trình · {goalDiagnostic.questionIds.length} câu</Link>}
-          {focusGoal.nextAction && <Link to={focusGoal.nextAction.to} className="button button-dark">{focusGoal.nextAction.title}<ArrowRight size={15} /></Link>}
-          {focusGoal.status === 'complete' && <button type="button" className="button button-light" onClick={learningGoal.clearGoal}>Kết thúc mục tiêu</button>}
+          <div className="math-home-hero-facts" aria-label="Quy mô nội dung MathNexus">
+            <span><strong>{MATH_CONCEPTS.length}</strong> khái niệm có liên kết</span>
+            <span><strong>{LESSONS.length}</strong> bài học</span>
+            <span><strong>{FORMS.length}</strong> công thức</span>
+            <span><strong>{BOOKS.length}</strong> đầu sách gợi ý</span>
+          </div>
+        </div>
+
+        <div className="math-home-orbit-card" aria-label="Các cách khám phá toán học">
+          <div className="math-home-orbit-core">
+            <span>∞</span>
+            <strong>MATH</strong>
+            <small>không có điểm kết thúc</small>
+          </div>
+          <span className="math-home-orbit orbit-one" />
+          <span className="math-home-orbit orbit-two" />
+          <span className="math-home-orbit orbit-three" />
+          <span className="math-home-orbit-node node-a">π</span>
+          <span className="math-home-orbit-node node-b">∫</span>
+          <span className="math-home-orbit-node node-c">λ</span>
+          <span className="math-home-orbit-node node-d">Σ</span>
+          <span className="math-home-orbit-node node-e">e<sup>iπ</sup></span>
+          <p>Đại số · Hình học · Giải tích · Xác suất · Logic · Vật lý toán · và còn nữa</p>
         </div>
       </div>
-    </div>}
 
-    <div className="section-heading"><div><span className="eyebrow">LEARNING COMPASS · DỰA TRÊN BẰNG CHỨNG</span><h2>Bước tiếp theo có lý do</h2></div><Link to="/map" className="text-link">Mở Knowledge Graph<ArrowRight size={16} /></Link></div>
-    <div className="quick-tools">{compass.map(item => {
-      const Icon = item.kind === 'repair' ? Brain : item.kind === 'advance' ? Target : item.kind === 'explore' ? Sparkles : PenTool;
-      const tone = item.kind === 'repair' ? 'peach' : item.kind === 'advance' ? 'green' : item.kind === 'explore' ? 'blue' : 'lilac';
-      return <Link key={item.kind + '-' + (item.conceptId || item.to)} to={item.to} className="quick-tool">
-        <span className={'small-icon ' + tone}><Icon size={21} /></span>
-        <div><h3>{item.title}</h3><p>{item.detail}</p></div><ArrowUpRight size={18} />
-      </Link>;
-    })}</div>
+      <div className="math-home-intent">
+        <div className="math-home-section-head">
+          <div>
+            <p className="eyebrow">BẮT ĐẦU TỪ HAM MUỐN, KHÔNG PHẢI TỪ BÀI TẬP</p>
+            <h2>Hôm nay bạn muốn làm gì với toán học?</h2>
+            <p>Không cần đi theo một lộ trình cố định. Chọn trạng thái tò mò phù hợp với bạn lúc này.</p>
+          </div>
+        </div>
 
-    <div className="section-heading"><div><span className="eyebrow">ĐỀ XUẤT THEO NHỊP HỌC CỦA BẠN</span><h2>{p.lastLesson ? 'Nên học gì tiếp?' : 'Bắt đầu từ đâu?'}</h2></div><Link to="/library" className="text-link">Tất cả bài học<ArrowRight size={16} /></Link></div>
-    <div className="lesson-grid">{recommended.map(lesson => <LessonCard key={lesson.id} lesson={lesson} done={p.lessonsRead.includes(lesson.id)} />)}</div>
+        <div className="math-home-intent-grid">
+          {CURIOSITY_PATHS.map(({ to, Icon, title, text }) => (
+            <Link key={title} to={to} className="math-home-intent-card">
+              <span className="math-home-intent-icon"><Icon size={21} /></span>
+              <div>
+                <h3>{title}</h3>
+                <p>{text}</p>
+              </div>
+              <ArrowUpRight size={17} />
+            </Link>
+          ))}
+        </div>
+      </div>
 
-    <div className="dashboard-bottom"><div><div className="section-heading"><div><span className="eyebrow">THỬ NGHIỆM ĐỂ HIỂU SÂU HƠN</span><h2>Bàn làm việc toán học</h2></div></div><div className="quick-tools">{[
-      { to: '/graph', Icon: ChartSpline, title: 'Chạm vào đồ thị', text: 'Thay hệ số, thấy sự khác biệt.', tone: 'green' },
-      { to: '/formulas', Icon: Sigma, title: 'Hiểu một công thức', text: 'Ý nghĩa đằng sau ký hiệu.', tone: 'blue' },
-      { to: '/ai', Icon: Sparkles, title: 'Hỏi trợ lý AI', text: 'Gỡ rối từng bước suy luận.', tone: 'lilac' },
-    ].map(({ to, Icon, title, text, tone }) => <Link key={to} to={to} className="quick-tool"><span className={'small-icon ' + tone}><Icon size={21} /></span><div><h3>{title}</h3><p>{text}</p></div><ArrowUpRight size={18} /></Link>)}</div></div>
-      <div className="daily-goal"><div className="goal-heading"><span className="small-icon green">{practice.reviewQuestions > 0 ? <Brain size={20} /> : goalProgress === 100 ? <Check size={20} /> : <Target size={20} />}</span><span>THÓI QUEN NHỎ, TIẾN BỘ LỚN</span></div><h3>{practice.reviewQuestions > 0 ? 'Có ' + practice.reviewQuestions + ' câu nên ôn lại' : goalProgress === 100 ? 'Bạn đã hoàn thành mục tiêu!' : 'Dành ít phút cho ' + p.dailyGoal + ' câu hỏi'}</h3><p>{practice.reviewQuestions > 0 ? 'MathNexus đã gom các câu bạn từng vấp để bạn xử lý đúng điểm yếu trước.' : 'Không cần nhanh hơn ai. Chỉ cần tiến xa hơn chính mình ngày hôm qua.'}</p><div className="goal-label"><span>Mục tiêu hôm nay</span><strong>{day.questions}/{p.dailyGoal} câu</strong></div><div className="progress-track" role="progressbar" aria-label="Mục tiêu hôm nay" aria-valuenow={goalProgress} aria-valuemin={0} aria-valuemax={100}><span style={{ width: goalProgress + '%' }} /></div><Link to={practice.reviewQuestions > 0 ? "/practice?mode=review" : "/practice"} className="text-link">{practice.reviewQuestions > 0 ? 'Ôn câu đang yếu' : 'Luyện tập ngay'}<ArrowRight size={16} /></Link></div>
-    </div>
-  </section>;
+      <div className="math-home-section">
+        <div className="math-home-section-head">
+          <div>
+            <p className="eyebrow">CÁC CỔNG KHÁM PHÁ</p>
+            <h2>Một ý tưởng toán học có thể được nhìn bằng nhiều cách</h2>
+            <p>Đọc nó, vẽ nó, mô phỏng nó, đặt câu hỏi cho nó hoặc xây một bản đồ quanh nó.</p>
+          </div>
+        </div>
+
+        <div className="math-home-portal-grid">
+          {EXPERIENCE_PORTALS.map(({ to, Icon, eyebrow, title, text, action, tone }) => (
+            <Link key={to} to={to} className={`math-home-portal ${tone}`}>
+              <div className="math-home-portal-top">
+                <span className="math-home-portal-icon"><Icon size={23} /></span>
+                <span>{eyebrow}</span>
+              </div>
+              <h3>{title}</h3>
+              <p>{text}</p>
+              <strong>{action}<ArrowRight size={15} /></strong>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      <div className="math-home-cosmos-band">
+        <div className="math-home-cosmos-copy">
+          <p className="eyebrow">VŨ TRỤ KIẾN THỨC</p>
+          <h2>11 miền toán học, không phải 11 ngăn kéo tách biệt</h2>
+          <p>
+            Các miền dưới đây là những cửa vào. Bản đồ tri thức sẽ cho bạn thấy nơi chúng giao nhau,
+            nơi một khái niệm trở thành điều kiện cho khái niệm khác và nơi toán học chạm vào thế giới thật.
+          </p>
+          <Link to="/map" className="math-home-text-action">Xem toàn bộ mạng tri thức <ArrowRight size={16} /></Link>
+        </div>
+
+        <div className="math-home-domain-grid">
+          {domains.map(domain => (
+            <Link key={domain.id} to={domain.to} className="math-home-domain">
+              <span>{String(domain.order).padStart(2, '0')}</span>
+              <div>
+                <strong>{domain.name}</strong>
+                <small>{domain.description}</small>
+              </div>
+              <em>{domain.count} nút</em>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      <div className="math-home-discovery-grid">
+        <article className="math-home-curiosity-card">
+          <div className="math-home-card-label"><Lightbulb size={17} /> CỬA SỔ TÒ MÒ HÔM NAY</div>
+          <h2>{curiosity.t}</h2>
+          <p>{curiosity.q}</p>
+          <Link to={`/think?item=${dayIndex % THINK.length}`} className="math-home-text-action">
+            Đi theo câu hỏi này <ArrowRight size={16} />
+          </Link>
+          <span className="math-home-question-mark" aria-hidden="true">?</span>
+        </article>
+
+        <article className="math-home-feature-card">
+          <div className="math-home-card-label"><Sparkles size={17} /> MỘT Ý TƯỞNG ĐỂ ĐI SÂU</div>
+          <span className="math-home-feature-meta">{featuredLesson.lv} · {featuredLesson.cat} · {featuredLesson.m}</span>
+          <h2>{featuredLesson.t}</h2>
+          <p>
+            Nếu bạn muốn bắt đầu từ một điểm cụ thể, đây là một cánh cửa hợp lý dựa trên nhịp khám phá hiện tại của bạn.
+          </p>
+          <Link to={`/lesson/${featuredLesson.id}`} className="button button-dark">
+            Mở bài này <ArrowRight size={16} />
+          </Link>
+        </article>
+      </div>
+
+      <div className="math-home-personal">
+        <div className="math-home-section-head">
+          <div>
+            <p className="eyebrow">DẤU VẾT CỦA RIÊNG BẠN</p>
+            <h2>Tiến độ là bản ghi hành trình, không phải áp lực</h2>
+            <p>Phần này giúp bạn nhớ mình đã đi qua đâu. Nó đứng sau sự tò mò, không đứng trước nó.</p>
+          </div>
+          <Link to="/progress" className="math-home-text-action">Xem toàn bộ dữ liệu <ArrowRight size={16} /></Link>
+        </div>
+
+        <div className="math-home-personal-grid">
+          <Link to="/progress" className="math-home-stat">
+            <BookOpen size={20} />
+            <strong>{progress.lessonsRead.length}</strong>
+            <span>bài đã đọc</span>
+          </Link>
+          <Link to="/progress" className="math-home-stat">
+            <Brain size={20} />
+            <strong>{progress.questionsDone}</strong>
+            <span>câu đã thử</span>
+          </Link>
+          <Link to="/progress" className="math-home-stat">
+            <Flame size={20} />
+            <strong>{progress.streak}</strong>
+            <span>ngày có hoạt động</span>
+          </Link>
+          <Link to="/map" className="math-home-stat">
+            <Target size={20} />
+            <strong>{focusGoal ? focusGoal.progressPercent + '%' : '—'}</strong>
+            <span>{focusGoal ? 'mục tiêu dài hơi' : 'chưa cần đặt mục tiêu'}</span>
+          </Link>
+        </div>
+
+        {focusGoal && (
+          <div className="math-home-goal">
+            <div>
+              <span className="eyebrow">MỤC TIÊU ĐANG THEO</span>
+              <h3>{focusGoal.target.title}</h3>
+              <p>{focusGoal.satisfiedCount}/{focusGoal.totalCount} nút đã có bằng chứng học tập.</p>
+            </div>
+            <div className="math-home-goal-actions">
+              <span>{focusGoal.progressPercent}%</span>
+              <Link to={`/map?concept=${encodeURIComponent(focusGoal.target.id)}`} className="button button-light">
+                Xem lộ trình <ArrowRight size={15} />
+              </Link>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="math-home-footer-idea">
+        <div>
+          <span>MathNexus không nên hỏi “bạn đã làm bao nhiêu bài?” trước tiên.</span>
+          <h2>Nó nên hỏi: “Điều gì trong toán học đang khiến bạn tò mò?”</h2>
+        </div>
+        <Link to="/ai" className="button button-dark">
+          <Sparkles size={17} /> Hỏi một điều bất kỳ
+        </Link>
+      </div>
+    </section>
+  );
 }
