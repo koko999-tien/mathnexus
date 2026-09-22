@@ -17,7 +17,6 @@ import {
   RefreshCcw,
   Search,
   Sigma,
-  Sparkles,
   Target,
   Video,
 } from 'lucide-react';
@@ -52,6 +51,7 @@ interface ResearchPaper {
   source: string;
   authors: string[];
   openAccess: boolean;
+  database?: string;
 }
 
 interface VideoResult {
@@ -77,15 +77,17 @@ interface DiscoveryPayload {
   searchAvailable: boolean;
   synthesisAvailable?: boolean;
   providers?: {
-    googleGrounding?: boolean;
-    brave?: boolean;
+    gdelt?: boolean;
     openAlex?: boolean;
-    youtube?: boolean;
+    crossref?: boolean;
+    semanticScholar?: boolean;
+    youtubeRss?: boolean;
+    editorialRss?: boolean;
   };
   warning?: string | null;
 }
 
-const FEED_CACHE_KEY = 'mathnexus:discovery-feed:v2';
+const FEED_CACHE_KEY = 'mathnexus:discovery-feed:v3';
 const FEED_CACHE_MS = 15 * 60 * 1000;
 
 const LEARNING_TOOLS = [
@@ -178,6 +180,7 @@ async function fetchOpenAlexFallback(query = ''): Promise<ResearchPaper[]> {
       source: String(primary?.source?.display_name || ''),
       authors: authorships.map(item => item.author?.display_name || '').filter(Boolean).slice(0, 4),
       openAccess: Boolean(openAccess?.is_oa),
+      database: 'OpenAlex',
     };
   });
 }
@@ -236,7 +239,7 @@ export default function Dashboard() {
           papers,
           videos: [],
           searchAvailable: false,
-          warning: 'Web discovery cần backend Vercel; danh sách paper đang lấy trực tiếp từ OpenAlex.',
+          warning: 'Discovery backend chưa phản hồi; danh sách paper đang lấy trực tiếp từ OpenAlex.',
         };
         setFeed(fallback);
       } catch {
@@ -282,7 +285,7 @@ export default function Dashboard() {
           papers,
           videos: [],
           searchAvailable: false,
-          warning: 'Tìm kiếm web có AI cần backend Vercel. Kết quả hiện tại đến từ OpenAlex.',
+          warning: 'Discovery backend chưa phản hồi. Kết quả hiện tại đến từ OpenAlex.',
         });
       } catch {
         setSearchError('Không thực hiện được tìm kiếm lúc này.');
@@ -337,7 +340,15 @@ export default function Dashboard() {
             <div className="overview-panel-head">
               <div>
                 <span>WEB RADAR</span>
-                <strong>{feed?.synthesisAvailable ? 'Google Search grounding + nguồn trực tiếp' : feed?.searchAvailable ? 'Nguồn trực tiếp từ web' : 'Nguồn nghiên cứu OpenAlex'}</strong>
+                <strong>
+                  {[
+                    feed?.providers?.gdelt ? 'GDELT' : '',
+                    feed?.providers?.editorialRss ? 'Quanta/arXiv RSS' : '',
+                    feed?.providers?.openAlex ? 'OpenAlex' : '',
+                    feed?.providers?.crossref ? 'Crossref' : '',
+                    feed?.providers?.youtubeRss ? 'YouTube RSS' : '',
+                  ].filter(Boolean).join(' · ') || 'OpenAlex'}
+                </strong>
               </div>
               <Globe2 size={19} />
             </div>
@@ -376,7 +387,7 @@ export default function Dashboard() {
 
             <div className="overview-live-meta">
               <span><Clock size={13} /> {feed?.generatedAt ? formatDate(feed.generatedAt) : '—'}</span>
-              <span>{feed?.searchAvailable ? 'Live web search' : 'OpenAlex fallback'}</span>
+              <span>{feed?.searchAvailable ? 'Nguồn mở, không yêu cầu API trả phí' : 'OpenAlex fallback'}</span>
             </div>
           </div>
 
@@ -395,7 +406,7 @@ export default function Dashboard() {
                   <div>
                     <strong>{paper.title}</strong>
                     <small>
-                      {[paper.source, paper.date ? formatDate(paper.date) : '', paper.language?.toUpperCase()]
+                      {[paper.database, paper.source, paper.date ? formatDate(paper.date) : '', paper.language?.toUpperCase()]
                         .filter(Boolean).join(' · ')}
                     </small>
                   </div>
@@ -413,8 +424,8 @@ export default function Dashboard() {
           <p className="eyebrow">RESEARCH SEARCH</p>
           <h2>Tìm nội dung liên quan đến một ý tưởng</h2>
           <p>
-            Truy vấn không bị giới hạn ở thư viện MathNexus. Hệ thống tìm paper, preprint, lecture, video, notes,
-            dự án và nội dung kỹ thuật trên web; ngôn ngữ của nguồn không bị giới hạn.
+            Truy vấn được gửi đồng thời tới GDELT, OpenAlex, Crossref và Semantic Scholar; video được lấy từ các kênh toán học
+            theo dõi qua RSS. Kết quả giữ nguyên tiêu đề và ngôn ngữ của nguồn.
           </p>
         </div>
 
@@ -427,16 +438,19 @@ export default function Dashboard() {
             aria-label="Tìm kiếm tài liệu toán học trên web"
           />
           <button type="submit" disabled={!query.trim() || searchLoading}>
-            {searchLoading ? <LoaderCircle size={16} className="is-spinning" /> : <Sparkles size={16} />}
-            Tìm kiếm
+            {searchLoading ? <LoaderCircle size={16} className="is-spinning" /> : <Search size={16} />}
+            Tra cứu
           </button>
         </form>
 
         <div className="overview-search-notes">
-          <span>Google Search grounding</span>
+          <span>GDELT</span>
+          <span>Quanta/arXiv RSS</span>
           <span>OpenAlex</span>
-          <span>mọi ngôn ngữ</span>
-          <span>YouTube trực tiếp khi có API key</span>
+          <span>Crossref</span>
+          <span>Semantic Scholar</span>
+          <span>YouTube RSS</span>
+          <span>không yêu cầu API trả phí</span>
         </div>
 
         {searchError && <p className="overview-error">{searchError}</p>}
@@ -445,8 +459,17 @@ export default function Dashboard() {
           <div className="overview-search-results">
             <div className="overview-search-summary">
               <div className="overview-result-head">
-                <span>SEARCH SYNTHESIS</span>
-                <small>{searchResult.synthesisAvailable ? searchResult.model || 'Gemini + Google Search' : searchResult.providers?.brave ? 'Brave Search + OpenAlex' : 'OpenAlex fallback'}</small>
+                <span>PHẠM VI KẾT QUẢ</span>
+                <small>
+                  {[
+                    searchResult.providers?.gdelt ? 'GDELT' : '',
+                    searchResult.providers?.openAlex ? 'OpenAlex' : '',
+                    searchResult.providers?.crossref ? 'Crossref' : '',
+                    searchResult.providers?.semanticScholar ? 'Semantic Scholar' : '',
+                    searchResult.providers?.youtubeRss ? 'YouTube RSS' : '',
+                    searchResult.providers?.editorialRss ? 'Quanta/arXiv RSS' : '',
+                  ].filter(Boolean).join(' · ') || 'OpenAlex fallback'}
+                </small>
               </div>
               {searchResult.synthesis ? (
                 <div className="overview-briefing"><ChatText text={searchResult.synthesis} /></div>
@@ -484,7 +507,7 @@ export default function Dashboard() {
                       <div>
                         <strong>{paper.title}</strong>
                         <small>
-                          {[paper.source, paper.date ? formatDate(paper.date) : '', paper.language?.toUpperCase()]
+                          {[paper.database, paper.source, paper.date ? formatDate(paper.date) : '', paper.language?.toUpperCase()]
                             .filter(Boolean).join(' · ')}
                         </small>
                       </div>
@@ -601,8 +624,8 @@ export default function Dashboard() {
       <footer className="overview-data-note">
         <span>Phân tách nguồn:</span>
         <p>
-          Web discovery dùng dữ liệu trực tuyến; OpenAlex cung cấp metadata nghiên cứu; thư viện MathNexus là dữ liệu nội bộ.
-          Các nguồn ngoài được mở tại trang gốc để người dùng kiểm tra trực tiếp.
+          Discovery sử dụng GDELT và RSS chuyên ngành cho nguồn cập nhật, OpenAlex/Crossref/Semantic Scholar cho metadata học thuật,
+          cùng RSS công khai của các kênh toán học cho video. Thư viện MathNexus vẫn là dữ liệu nội bộ; mọi nguồn ngoài đều mở tại trang gốc để kiểm tra trực tiếp.
         </p>
       </footer>
     </section>

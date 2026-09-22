@@ -49,33 +49,25 @@ Trang Tổng quan dùng endpoint:
 api/discovery.js
 ```
 
-Endpoint này kết hợp nhiều nguồn thay vì phụ thuộc vào một nhà cung cấp duy nhất:
+Discovery được thiết kế để chạy mà không cần dịch vụ tìm kiếm trả phí:
 
-- **Google Search grounding qua Gemini**: tổng hợp và dẫn nguồn trực tuyến.
-- **OpenAlex**: metadata paper, preprint và công trình nghiên cứu.
-- **Brave Search**: web search và video search độc lập, dùng làm nguồn trực tiếp và fallback khi Gemini Search không khả dụng.
-- **YouTube Data API**: tùy chọn để lấy metadata video trực tiếp.
+- **GDELT DOC API**: nguồn web/tin tức toàn cầu, dùng cho Radar và truy vấn nội dung gần đây.
+- **Quanta Mathematics RSS + arXiv Mathematics RSS**: nguồn biên tập/chuyên ngành cập nhật, dùng làm lớp fallback ổn định cho Radar.
+- **OpenAlex**: metadata paper, preprint, tác giả, nguồn xuất bản và open-access status.
+- **Crossref REST API**: DOI và metadata từ các nhà xuất bản/thành viên Crossref.
+- **Semantic Scholar Academic Graph API**: tìm paper theo độ liên quan, citation count và open-access PDF khi endpoint công khai chưa bị throttling.
+- **YouTube RSS**: theo dõi video mới từ một tập kênh toán học được chọn sẵn, không cần YouTube API key.
 
-Các biến môi trường:
+Không cần `BRAVE_SEARCH_API_KEY`, thẻ thanh toán hoặc tài khoản Search API.
+
+Biến môi trường tùy chọn:
 
 ```
-# Có thể dùng chung với trợ lý AI
-GEMINI_API_KEY=...
-
-# Khuyến nghị cho web/video discovery độc lập
-BRAVE_SEARCH_API_KEY=...
-
-# Tùy chọn: tăng quota OpenAlex
+# Chỉ dùng nếu muốn tăng quota/polite access của OpenAlex
 OPENALEX_API_KEY=...
-
-# Tùy chọn: kết quả video YouTube trực tiếp
-YOUTUBE_API_KEY=...
-
-# Tùy chọn: model riêng cho Search grounding
-GEMINI_SEARCH_MODEL=gemini-3.8-flash
 ```
 
-Không có `BRAVE_SEARCH_API_KEY` hoặc khi quota Gemini hết, trang vẫn có thể hiển thị research feed và tìm paper qua OpenAlex. Để có tìm kiếm web/video đầy đủ, cấu hình ít nhất một web-search provider trên Vercel.
+Trợ lý AI ở `/ai` vẫn là tính năng riêng và tiếp tục dùng `GEMINI_API_KEY`. Discovery trên trang Tổng quan không phụ thuộc Gemini.
 
 ## Deploy bằng Vercel
 
@@ -102,10 +94,12 @@ Output: `dist/`
 - KaTeX
 - React Router
 - Gemini Generate Content API
-- Google Search grounding
+- GDELT DOC API
+- Quanta/arXiv RSS feeds
 - OpenAlex API
-- Brave Search API (optional)
-- YouTube Data API (optional)
+- Crossref REST API
+- Semantic Scholar Academic Graph API
+- YouTube RSS feeds
 - PWA-ready
 
 ## Features
