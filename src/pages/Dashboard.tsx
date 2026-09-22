@@ -75,6 +75,13 @@ interface DiscoveryPayload {
   videos?: VideoResult[];
   model?: string | null;
   searchAvailable: boolean;
+  synthesisAvailable?: boolean;
+  providers?: {
+    googleGrounding?: boolean;
+    brave?: boolean;
+    openAlex?: boolean;
+    youtube?: boolean;
+  };
   warning?: string | null;
 }
 
@@ -330,7 +337,7 @@ export default function Dashboard() {
             <div className="overview-panel-head">
               <div>
                 <span>WEB RADAR</span>
-                <strong>Thông tin được đối chiếu bằng Google Search grounding</strong>
+                <strong>{feed?.synthesisAvailable ? 'Google Search grounding + nguồn trực tiếp' : feed?.searchAvailable ? 'Nguồn trực tiếp từ web' : 'Nguồn nghiên cứu OpenAlex'}</strong>
               </div>
               <Globe2 size={19} />
             </div>
@@ -439,7 +446,7 @@ export default function Dashboard() {
             <div className="overview-search-summary">
               <div className="overview-result-head">
                 <span>SEARCH SYNTHESIS</span>
-                <small>{searchResult.searchAvailable ? searchResult.model || 'Gemini + Google Search' : 'OpenAlex fallback'}</small>
+                <small>{searchResult.synthesisAvailable ? searchResult.model || 'Gemini + Google Search' : searchResult.providers?.brave ? 'Brave Search + OpenAlex' : 'OpenAlex fallback'}</small>
               </div>
               {searchResult.synthesis ? (
                 <div className="overview-briefing"><ChatText text={searchResult.synthesis} /></div>
