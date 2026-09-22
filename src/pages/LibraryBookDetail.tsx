@@ -6,6 +6,7 @@ import {
   BookOpen,
   Check,
   ExternalLink,
+  Globe2,
   LoaderCircle,
   Search,
   Trash2,
@@ -18,6 +19,8 @@ import {
   type LibraryReadingRecord,
   type ReadingStatus,
 } from '../utils/libraryReading';
+import { MATH_DOMAINS } from '../data/mathKnowledge';
+import { relatedConceptsForText, wikipediaQueryForConcept } from '../data/conceptWikipedia';
 import './library.css';
 
 interface OpenLibraryDetail {
@@ -77,6 +80,12 @@ export default function LibraryBookDetail() {
   const displayTitle = detail?.title || titleParam || 'Sách Open Library';
   const cover = detail?.cover || coverParam;
   const openLibraryUrl = detail?.openLibraryUrl || (key ? `https://openlibrary.org${key}` : 'https://openlibrary.org');
+  const relatedConcepts = useMemo(() => relatedConceptsForText([
+    displayTitle,
+    detail?.subtitle || '',
+    detail?.description || '',
+    ...(detail?.subjects || []),
+  ].join(' '), 8), [displayTitle, detail]);
 
   useEffect(() => {
     const existing = getLibraryReadingRecords().find(item => item.id === bookId) || null;
@@ -274,6 +283,34 @@ export default function LibraryBookDetail() {
               </div>
             </section>
           ) : null}
+
+          {relatedConcepts.length > 0 && (
+            <section className="library-book-section">
+              <h2>Liên quan trong MathNexus</h2>
+              <p className="helper-text">Các khái niệm dưới đây được đối chiếu từ tiêu đề, mô tả và chủ đề của sách.</p>
+              <div className="library-related-concepts">
+                {relatedConcepts.map(concept => {
+                  const domain = MATH_DOMAINS.find(item => item.id === concept.domain);
+                  const wikiQuery = wikipediaQueryForConcept(concept.id, 'vi');
+                  return (
+                    <article key={concept.id}>
+                      <div>
+                        <strong>{concept.title}</strong>
+                        <small>{domain?.short} · {concept.level}</small>
+                        <p>{concept.description}</p>
+                      </div>
+                      <div className="library-related-actions">
+                        <Link to={`/map?concept=${encodeURIComponent(concept.id)}`}>Bản đồ kiến thức</Link>
+                        <Link to={`/library?tab=wikipedia&lang=vi&q=${encodeURIComponent(wikiQuery)}`}>
+                          <Globe2 size={12} /> Wikipedia
+                        </Link>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
+          )}
 
           <section className="library-book-section">
             <h2>Tiến độ đọc</h2>
