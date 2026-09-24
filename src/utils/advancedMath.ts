@@ -54,8 +54,10 @@ function finite(values: number[]) {
   return values.every(Number.isFinite);
 }
 
-function nearZero(value: number, scale = 1) {
-  return Math.abs(value) <= EPS * Math.max(1, Math.abs(scale));
+// Compare against the magnitude of the actual terms: a fixed scale of 1
+// would incorrectly treat small but invertible matrices as singular.
+function nearZero(value: number, scale: number) {
+  return scale === 0 ? value === 0 : Math.abs(value) <= EPS * Math.abs(scale);
 }
 
 export function solveLinearSystem2(
@@ -65,7 +67,13 @@ export function solveLinearSystem2(
   if (!finite([a, b, e, c, d, f])) return null;
 
   const det = a * d - b * c;
-  const scale = Math.max(Math.abs(a * d), Math.abs(b * c), 1);
+  // A zero-coefficient row with a nonzero right-hand side is inconsistent,
+  // even when all 2x2 minors happen to be zero.
+  if ((a === 0 && b === 0 && e !== 0) || (c === 0 && d === 0 && f !== 0)) {
+    return { kind: 'none', determinant: det };
+  }
+
+  const scale = Math.max(Math.abs(a * d), Math.abs(b * c));
 
   if (!nearZero(det, scale)) {
     return {
@@ -81,7 +89,6 @@ export function solveLinearSystem2(
   const consistencyScale = Math.max(
     Math.abs(e * d), Math.abs(b * f),
     Math.abs(a * f), Math.abs(e * c),
-    1,
   );
 
   return {
@@ -93,7 +100,7 @@ export function solveLinearSystem2(
 export function invertMatrix2(a: number, b: number, c: number, d: number): Matrix2Inverse | null {
   if (!finite([a, b, c, d])) return null;
   const determinant = a * d - b * c;
-  const scale = Math.max(Math.abs(a * d), Math.abs(b * c), 1);
+  const scale = Math.max(Math.abs(a * d), Math.abs(b * c));
   if (nearZero(determinant, scale)) return { determinant, inverse: null };
 
   return {
