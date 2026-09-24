@@ -1,0 +1,33 @@
+/* Readable, keyboard-friendly navigation and global search. */
+.nav-link { font-size: .875rem; }
+.nav-group { font-size: .75rem; letter-spacing: .08em; }
+.breadcrumb { font-size: .875rem; min-width: 0; }
+.breadcrumb a { color: var(--color-accent); text-decoration: underline; text-underline-offset: 3px; }
+.breadcrumb strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.topbar-search { font-size: .875rem; min-height: 44px; width: 270px; flex-shrink: 0; }
+.topbar-search kbd { font-size: .75rem; }
+.global-search-dialog { width: 640px; }
+.global-search-dialog .search-field { padding-right: 5px; }
+.global-search-dialog .search-field input { font-size: 1rem; min-height: 52px; }
+.search-clear { min-width: 44px; width: 44px; height: 44px; }
+.search-summary { font-size: .875rem; color: var(--color-muted); margin: 0 0 12px; }
+.global-search-dialog .search-result { min-height: 76px; padding: 12px; border: 1px solid transparent; }
+.global-search-dialog .search-result > div { min-width: 0; overflow-wrap: anywhere; }
+.global-search-dialog .search-result:focus-visible { outline-offset: -2px; background: var(--color-mist); }
+.global-search-dialog .search-result strong { font-size: 1rem; line-height: 1.5; }
+.global-search-dialog .search-result small { font-size: .875rem; margin-top: 3px; }
+.global-search-dialog .search-type { font-size: .75rem; letter-spacing: .04em; }
+.global-search-dialog .dialog-hint { font-size: .75rem; }
+.global-search-dialog .empty-state { padding: 24px 12px; font-size: 1rem; }
+.recovery-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+.recovery-actions .button { font-size: .875rem; min-height: 44px; }
+@media (max-width: 1023px) {
+  .bottom-nav a { font-size: .75rem; }
+  .drawer .dialog-header { position: sticky; top: 0; background: var(--color-panel); z-index: 1; }
+}
+@media (max-width: 639px) {
+  .topbar-search { width: 44px; min-height: 44px; }
+  .global-search-dialog .search-field { margin: 4px 14px 10px; }
+  .global-search-dialog .search-results { padding: 10px 14px; }
+  .global-search-dialog .dialog-hint { padding: 12px 14px; }
+}

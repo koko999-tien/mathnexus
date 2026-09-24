@@ -17,7 +17,11 @@ export function Modal({ title, onClose, children, className = '' }: { title: str
     };
   }, []);
   return (
-    <dialog ref={ref} aria-label={title} onCancel={onClose} onClick={e => { if (e.target === e.currentTarget) onClose(); }} className={`app-dialog ${className}`}>
+    <dialog ref={ref} aria-label={title} onCancel={onClose} onClick={event => {
+      if (event.target !== event.currentTarget) return;
+      const bounds = event.currentTarget.getBoundingClientRect();
+      if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) onClose();
+    }} className={`app-dialog ${className}`}>
       <div className="dialog-header"><h2>{title}</h2><button className="icon-button" onClick={onClose} aria-label="Đóng"><X size={20} /></button></div>
       {children}
     </dialog>

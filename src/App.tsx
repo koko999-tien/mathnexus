@@ -5,8 +5,8 @@ import { Sidebar } from './components/layout/Sidebar';
 import { TopBar } from './components/layout/TopBar';
 import { BottomNav } from './components/layout/BottomNav';
 import { AppStatus } from './components/layout/AppStatus';
-import { ErrorBoundary } from './components/ui/ErrorBoundary';
-import { NAVIGATION } from './data/navigation';
+import { RouteErrorBoundary } from './components/ui/ErrorBoundary';
+import { getRouteNavigation } from './data/navigation';
 import NotFound from './pages/NotFound';
 
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -54,7 +54,7 @@ function RouteEffects() {
       document.getElementById('main-content')?.focus({ preventScroll: true });
     }
 
-    document.title = `${NAVIGATION.find(item => item.to === pathname)?.label || 'Khám phá'} · MathNexus`;
+    document.title = `${getRouteNavigation(pathname).title} · MathNexus`;
   }, [pathname]);
 
   return null;
@@ -73,7 +73,7 @@ export default function App() {
         <div className="app-content">
           <TopBar dark={theme.dark} toggleTheme={theme.toggle} />
           <main id="main-content" tabIndex={-1} className="main-content">
-            <ErrorBoundary>
+            <RouteErrorBoundary>
             <Suspense fallback={<Loader />}>
               <Routes>
                 <Route path="/" element={<Dashboard />} />
@@ -101,7 +101,7 @@ export default function App() {
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
-            </ErrorBoundary>
+            </RouteErrorBoundary>
           </main>
           <footer className="app-footer">
             <div><span className="footer-brand">MathNexus<span>·</span></span><span>Mỗi ngày, hiểu thêm một chút.</span><Link to="/progress">Dữ liệu của bạn</Link></div>
