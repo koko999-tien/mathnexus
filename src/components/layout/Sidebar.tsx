@@ -1,7 +1,7 @@
 import { Fragment } from 'react';
-import { NavLink, Link } from 'react-router-dom';
+import { NavLink, Link, useLocation } from 'react-router-dom';
 import { ArrowUpRight, Sprout } from 'lucide-react';
-import { NAVIGATION } from '../../data/navigation';
+import { NAVIGATION, getRouteNavigation } from '../../data/navigation';
 import { useProgress } from '../../hooks/useProgress';
 
 export function Brand() {
@@ -9,10 +9,12 @@ export function Brand() {
 }
 
 export function Navigation({ onNavigate }: { onNavigate?: () => void }) {
+  const { pathname } = useLocation();
+  const { section } = getRouteNavigation(pathname);
   return <nav className="sidebar-nav" aria-label="Điều hướng chính">{NAVIGATION.map(({ to, icon: Icon, label, group }, index) => (
     <Fragment key={to}>
       {(index === 0 || NAVIGATION[index - 1].group !== group) && <p className="nav-group">{group}</p>}
-      <NavLink to={to} end={to === '/'} onClick={onNavigate} className={({ isActive }) => `nav-link ${isActive ? 'is-active' : ''}`}><Icon size={19} strokeWidth={1.7} /><span>{label}</span></NavLink>
+      <NavLink to={to} end={to === '/'} aria-current={section?.to === to ? 'page' : undefined} onClick={onNavigate} className={`nav-link ${section?.to === to ? 'is-active' : ''}`}><Icon size={19} strokeWidth={1.7} /><span>{label}</span></NavLink>
     </Fragment>
   ))}</nav>;
 }

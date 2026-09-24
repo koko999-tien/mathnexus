@@ -18,3 +18,19 @@ export const NAVIGATION = [
   { to: '/canvas', icon: Layers3, label: 'Math Canvas', group: 'Cá nhân' },
   { to: '/progress', icon: ChartNoAxesCombined, label: 'Tiến độ học tập', group: 'Cá nhân' },
 ];
+
+/** Keep detail routes attached to their section without loading page content. */
+export function getRouteNavigation(pathname: string) {
+  const path = pathname.replace(/\/+$/, '') || '/';
+  const exact = NAVIGATION.find(item => item.to === path);
+  if (exact) return { title: exact.label, section: exact };
+
+  const details = [
+    { prefix: '/lesson/', title: 'Bài học', parent: '/library' },
+    { prefix: '/book/', title: 'Chi tiết sách', parent: '/books' },
+    { prefix: '/formula/', title: 'Chi tiết công thức', parent: '/formulas' },
+    { prefix: '/library/', title: 'Không gian đọc', parent: '/library' },
+  ];
+  const detail = details.find(item => path.startsWith(item.prefix));
+  return { title: detail?.title || 'Không tìm thấy trang', section: NAVIGATION.find(item => item.to === detail?.parent) };
+}
