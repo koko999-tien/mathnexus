@@ -77,13 +77,12 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <Modal title="Bạn muốn tìm hiểu điều gì?" onClose={onClose} className="global-search-dialog">
+    <Modal title="Bạn muốn tìm hiểu điều gì?" onClose={onClose} className="global-search-dialog" initialFocusRef={inputRef}>
       <div onKeyDown={handleResultKeys}>
         <div className="search-field">
           <Search size={20} aria-hidden="true" />
           <input
             ref={inputRef}
-            autoFocus
             aria-label="Tìm kiếm toàn bộ MathNexus"
             aria-describedby="global-search-hint"
             autoComplete="off"

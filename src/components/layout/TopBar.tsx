@@ -31,7 +31,7 @@ export function TopBar({ dark, toggleTheme }: { dark: boolean; toggleTheme: () =
       <button className="icon-button mobile-menu-button" onClick={() => setMenuOpen(true)} aria-label="Mở menu" aria-expanded={menuOpen}><Menu size={22} /></button>
       <Link to="/" className="mobile-brand">MathNexus<span>·</span></Link>
       <nav className="breadcrumb" aria-label="Vị trí hiện tại">{section && section.to !== pathname ? <Link to={section.to}>{section.label}</Link> : <span>Không gian học tập</span>}<ChevronRight size={14} aria-hidden="true" /><strong aria-current="page">{title}</strong></nav>
-      <button className="topbar-search" onClick={() => setSearchOpen(true)} aria-label="Tìm kiếm"><Search size={18} /><span>Tìm kiếm kiến thức…</span><kbd>Ctrl K</kbd></button>
+      <button className="topbar-search" onClick={event => { event.currentTarget.focus(); setSearchOpen(true); }} aria-label="Tìm kiếm"><Search size={18} /><span>Tìm kiếm kiến thức…</span><kbd>Ctrl K</kbd></button>
       <button onClick={toggleTheme} className="icon-button" aria-label={dark ? 'Bật giao diện sáng' : 'Bật giao diện tối'}>{dark ? <Sun size={19} /> : <Moon size={19} />}</button>
       <span className="topbar-divider" />
       <Link to="/progress" className="avatar topbar-avatar" aria-label="Tiến độ cá nhân">{p.displayName.charAt(0).toUpperCase()}</Link>
