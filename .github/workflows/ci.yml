@@ -27,6 +27,7 @@ jobs:
       - run: npm run audit:prod
       - run: npm run lint
       - run: npm test
+      - run: npm run knowledge:check
       - run: npm run build
       - run: npm run bundle:check
       - run: npx playwright install --with-deps chromium webkit
