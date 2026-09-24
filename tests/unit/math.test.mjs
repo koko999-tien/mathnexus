@@ -61,6 +61,26 @@ test('linear algebra engine solves systems and matrix inverses', () => {
   assert.equal(invertMatrix2(1, 2, 2, 4)?.inverse, null);
 });
 
+test('linear systems detect inconsistent zero-coefficient rows', () => {
+  assert.equal(solveLinearSystem2(0, 0, 1, 0, 0, 0)?.kind, 'none');
+  assert.equal(solveLinearSystem2(0, 0, 0, 0, 0, 1)?.kind, 'none');
+  assert.equal(solveLinearSystem2(0, 0, 0, 0, 0, 0)?.kind, 'infinite');
+  assert.equal(solveLinearSystem2(0, 0, 0, 2, -3, 5)?.kind, 'infinite');
+  assert.equal(solveLinearSystem2(1, 0, 0, 1, 0, 1e-12)?.kind, 'none');
+});
+
+test('small but invertible 2x2 systems and matrices are not treated as singular', () => {
+  const system = solveLinearSystem2(1e-12, 0, 2e-12, 0, 1e-12, 3e-12);
+  assert.equal(system?.kind, 'unique');
+  assert.ok(Math.abs((system?.x ?? NaN) - 2) < 1e-10);
+  assert.ok(Math.abs((system?.y ?? NaN) - 3) < 1e-10);
+
+  const matrix = invertMatrix2(1e-12, 0, 0, 1e-12);
+  assert.ok(matrix?.inverse);
+  assert.ok(Math.abs((matrix?.inverse?.[0] ?? NaN) / 1e12 - 1) < 1e-10);
+  assert.ok(Math.abs((matrix?.inverse?.[3] ?? NaN) / 1e12 - 1) < 1e-10);
+});
+
 test('statistics, sequences and vectors produce stable mathematical summaries', () => {
   const stats = descriptiveStatistics([2, 4, 6, 8]);
   assert.equal(stats?.mean, 5);
