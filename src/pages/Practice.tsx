@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { ArrowRight, Brain, Check, CircleAlert, Flag, Gauge, RotateCcw, Target, Trophy, X } from 'lucide-react';
 import { QUIZ, type Quiz, type QuizDifficulty } from '../data/quiz';
+import { GENERATED_BANK, GENERATED_CATS, countGenerated, generateSession } from '../utils/generatedQuiz';
 import { MATH_CONCEPTS } from '../data/mathKnowledge';
 import { QUIZ_CONCEPT_MAP } from '../data/mathOntology';
 import { useProgress } from '../hooks/useProgress';
@@ -13,35 +14,55 @@ import { practiceCategoryInsights, practiceOverview, questionAccuracy, questions
 
 const CATS = ['Tất cả', ...new Set(QUIZ.map(q => q.cat))];
 const DIFFICULTIES: Array<'Tất cả' | QuizDifficulty> = ['Tất cả', 'Cơ bản', 'Vừa', 'Khó'];
+const GEN_DIFFICULTIES: Array<'Tất cả' | QuizDifficulty> = ['Tất cả', 'Cơ bản', 'Vừa'];
 const SESSION_SIZES = ['5', '10', 'all'] as const;
 
 export default function Practice() {
   const [params, setParams] = useSearchParams();
   const progress = useProgress();
   const learningGoal = useLearningGoal();
-  const requested = params.get('cat') || 'Tất cả';
-  const cat = CATS.includes(requested) ? requested : 'Tất cả';
-  const requestedDifficulty = params.get('difficulty') || 'Tất cả';
-  const difficulty = DIFFICULTIES.includes(requestedDifficulty as 'Tất cả' | QuizDifficulty) ? requestedDifficulty as 'Tất cả' | QuizDifficulty : 'Tất cả';
-  const requestedSize = params.get('size') || '5';
-  const size = SESSION_SIZES.includes(requestedSize as typeof SESSION_SIZES[number]) ? requestedSize as typeof SESSION_SIZES[number] : '5';
   const mode = params.get('mode') === 'review' ? 'review' : params.get('mode') === 'goal' ? 'goal' : 'normal';
   const requestedConcept = params.get('concept') || '';
   const concept = MATH_CONCEPTS.find(item => item.id === requestedConcept);
+  const requestedSrc = params.get('src') === 'gen' ? 'gen' : 'bank';
+  // Sinh đề chỉ có ý nghĩa ở lane thường và ôn yếu (không gắn khái niệm/mục tiêu cụ thể).
+  const src = (concept || mode === 'goal') ? 'bank' : requestedSrc;
+  const seedParam = Number(params.get('seed') || '0');
+  const [autoSeed] = useState(() => Date.now());
+  const seed = Number.isFinite(seedParam) && seedParam > 0 ? Math.floor(seedParam) : autoSeed;
+  const cats = src === 'gen' ? ['Tất cả', ...GENERATED_CATS] : CATS;
+  const difficulties = src === 'gen' ? GEN_DIFFICULTIES : DIFFICULTIES;
+  const requested = params.get('cat') || 'Tất cả';
+  const cat = cats.includes(requested) ? requested : 'Tất cả';
+  const requestedDifficulty = params.get('difficulty') || 'Tất cả';
+  const difficulty = difficulties.includes(requestedDifficulty as 'Tất cả' | QuizDifficulty) ? requestedDifficulty as 'Tất cả' | QuizDifficulty : 'Tất cả';
+  const requestedSize = params.get('size') || '5';
+  const size = SESSION_SIZES.includes(requestedSize as typeof SESSION_SIZES[number]) ? requestedSize as typeof SESSION_SIZES[number] : '5';
+  const bank = src === 'gen' ? GENERATED_BANK : QUIZ;
   const conceptQuestionIds = concept
     ? new Set(Object.entries(QUIZ_CONCEPT_MAP).filter(([, conceptId]) => conceptId === concept.id).map(([questionId]) => questionId))
     : null;
   const goalDiagnostic = buildGoalDiagnosticPlan(progress, learningGoal.goal);
   const goalQuestionIds = mode === 'goal' ? new Set(goalDiagnostic?.questionIds || []) : null;
 
-  const overview = practiceOverview(QUIZ, progress);
-  const insights = practiceCategoryInsights(QUIZ, progress).filter(item => item.attempts > 0).slice(0, 5);
-  const filtered = QUIZ.filter(question =>
+  const overview = practiceOverview(bank, progress);
+  const insights = practiceCategoryInsights(bank, progress).filter(item => item.attempts > 0).slice(0, 5);
+  const filtered = bank.filter(question =>
     (goalQuestionIds === null || goalQuestionIds.has(question.id)) &&
     (conceptQuestionIds === null || conceptQuestionIds.has(question.id)) &&
     (cat === 'Tất cả' || question.cat === cat) &&
     (difficulty === 'Tất cả' || question.difficulty === difficulty)
   );
+
+  const genPoolSize = src === 'gen' ? countGenerated(cat, difficulty) : 0;
+  const genLimit = size === 'all' ? Math.max(genPoolSize, 1) : Number(size);
+  const generated = src === 'gen' ? generateSession(seed, genLimit, cat, difficulty) : [];
+  const weakTemplateIds = src === 'gen' && mode === 'review'
+    ? new Set(questionsNeedingReview(GENERATED_BANK, progress).map(question => question.id))
+    : null;
+  const sessionQuestions = src === 'gen'
+    ? (weakTemplateIds ? generated.filter(question => weakTemplateIds.has(question.templateId)) : generated)
+    : null;
 
   const updateParam = (key: string, value: string, defaultValue?: string) => {
     const next = new URLSearchParams(params);
@@ -59,13 +80,35 @@ export default function Practice() {
     setParams(next, { replace: true });
   };
 
-  const sessionKey = [goalDiagnostic?.targetConceptId || '', concept?.id || '', cat, difficulty, size, mode].join('|');
+  const setSrc = (nextSrc: 'bank' | 'gen') => {
+    const next = new URLSearchParams(params);
+    if (nextSrc === 'gen') {
+      next.set('src', 'gen');
+      next.set('seed', String(Date.now()));
+    } else {
+      next.delete('src');
+      next.delete('seed');
+    }
+    next.delete('mode');
+    next.delete('concept');
+    next.delete('cat');
+    next.delete('difficulty');
+    setParams(next, { replace: true });
+  };
+
+  const newSeed = () => {
+    const next = new URLSearchParams(params);
+    next.set('seed', String(Date.now()));
+    setParams(next, { replace: true });
+  };
+
+  const sessionKey = [src, seed, goalDiagnostic?.targetConceptId || '', concept?.id || '', cat, difficulty, size, mode].join('|');
 
   return <section className="page-enter">
     <div className="page-header"><p className="eyebrow">LUYỆN TẬP</p><h1>Luyện tập theo kết quả trước</h1><p>{mode === 'goal' ? goalDiagnostic ? 'Đang kiểm tra lộ trình tới “' + goalDiagnostic.targetTitle + '”. MathNexus chỉ lấy các câu hỏi thuộc những khái niệm trên đường tới mục tiêu mà bạn chưa có đủ dữ liệu.' : 'Chưa có mục tiêu học tập hợp lệ để tạo phiên kiểm tra.' : concept ? 'Phiên này chỉ tập trung vào khái niệm “' + concept.title + '”. MathNexus chỉ lấy các câu hỏi đã được gắn trực tiếp với khái niệm này.' : 'Các câu bạn thường làm sai sẽ được ưu tiên trong những lần ôn tiếp theo.'}</p></div>
 
     <div className="practice-overview">
-      <div className="practice-overview-card"><span className="small-icon green"><Target size={20} /></span><div><strong>{overview.attemptedQuestions}/{QUIZ.length}</strong><small>Câu đã từng làm</small></div></div>
+      <div className="practice-overview-card"><span className="small-icon green"><Target size={20} /></span><div><strong>{overview.attemptedQuestions}/{src === 'gen' ? GENERATED_BANK.length : QUIZ.length}</strong><small>{src === 'gen' ? 'Kỹ năng đã luyện' : 'Câu đã từng làm'}</small></div></div>
       <div className="practice-overview-card"><span className="small-icon blue"><Gauge size={20} /></span><div><strong>{overview.accuracy === null ? '—' : overview.accuracy + '%'}</strong><small>Độ chính xác</small></div></div>
       <button className={'practice-overview-card review-card' + (mode === 'review' ? ' is-active' : '')} onClick={() => setMode(mode === 'review' ? 'normal' : 'review')} aria-pressed={mode === 'review'}>
         <span className="small-icon peach"><CircleAlert size={20} /></span><div><strong>{overview.reviewQuestions}</strong><small>{mode === 'review' ? 'Đang ôn câu yếu' : 'Câu cần ôn lại'}</small></div><ArrowRight size={17} />
@@ -73,29 +116,35 @@ export default function Practice() {
     </div>
 
     <div className="practice-controls panel">
-      <div className="practice-control-block"><span className="control-label">Chuyên đề</span><div className="filter-row" aria-label="Chuyên đề luyện tập">{CATS.map(c => <button key={c} className="filter-chip" aria-pressed={cat === c} onClick={() => updateParam('cat', c, 'Tất cả')}>{c}</button>)}</div></div>
+      <div className="practice-control-block"><span className="control-label">Nguồn đề</span><div className="filter-row" aria-label="Nguồn đề luyện tập">
+        <button className="filter-chip" aria-pressed={src === 'bank'} onClick={() => setSrc('bank')}>Bộ có sẵn ({QUIZ.length} câu)</button>
+        <button className="filter-chip" aria-pressed={src === 'gen'} onClick={() => setSrc('gen')}>Sinh đề mới (vô hạn)</button>
+      </div></div>
+      <div className="practice-control-block"><span className="control-label">Chuyên đề</span><div className="filter-row" aria-label="Chuyên đề luyện tập">{cats.map(c => <button key={c} className="filter-chip" aria-pressed={cat === c} onClick={() => updateParam('cat', c, 'Tất cả')}>{c}</button>)}</div></div>
       <div className="practice-control-grid">
-        <label className="field">Độ khó<select aria-label="Độ khó luyện tập" value={difficulty} onChange={event => updateParam('difficulty', event.target.value, 'Tất cả')}>{DIFFICULTIES.map(value => <option key={value}>{value}</option>)}</select></label>
+        <label className="field">Độ khó<select aria-label="Độ khó luyện tập" value={difficulty} onChange={event => updateParam('difficulty', event.target.value, 'Tất cả')}>{difficulties.map(value => <option key={value}>{value}</option>)}</select></label>
         <label className="field">Độ dài phiên<select aria-label="Độ dài phiên luyện tập" value={size} onChange={event => updateParam('size', event.target.value, '5')}><option value="5">5 câu</option><option value="10">10 câu</option><option value="all">Toàn bộ câu phù hợp</option></select></label>
+        {src === 'gen' && <button type="button" className="button button-light" onClick={newSeed}><RotateCcw size={16} />Đổi đề mới</button>}
         <button type="button" className={'button ' + (mode === 'review' ? 'button-dark' : 'button-light')} onClick={() => setMode(mode === 'review' ? 'normal' : 'review')}><Brain size={16} />{mode === 'review' ? 'Thoát ôn câu yếu' : 'Ôn câu cần nhớ'}{overview.reviewQuestions > 0 && <span className="practice-count-badge">{overview.reviewQuestions}</span>}</button>
         {learningGoal.goal && <button type="button" className={'button ' + (mode === 'goal' ? 'button-dark' : 'button-light')} onClick={() => setMode(mode === 'goal' ? 'normal' : 'goal')}><Flag size={16} />{mode === 'goal' ? 'Thoát kiểm tra mục tiêu' : 'Kiểm tra mục tiêu'}</button>}
       </div>
-      <p className="helper-text">{mode === 'goal' && goalDiagnostic ? 'Mục tiêu: “' + goalDiagnostic.targetTitle + '” · ' + goalDiagnostic.conceptIds.length + ' khái niệm chưa đủ dữ liệu · ' : concept ? 'Khái niệm đang chọn: “' + concept.title + '”. ' : ''}{mode === 'review' ? 'Chế độ ôn tập chỉ lấy những câu bạn từng làm sai và chưa trả lời đúng liên tiếp 2 lần.' : filtered.length + ' câu phù hợp với bộ lọc hiện tại.'}</p>
+      <p className="helper-text">{src === 'gen' ? `Đề sinh tự động theo seed ${seed} — mỗi lần Đổi đề là một bộ số mới, đáp án tính chính xác ngay trên máy. ` : ''}{mode === 'goal' && goalDiagnostic ? 'Mục tiêu: “' + goalDiagnostic.targetTitle + '” · ' + goalDiagnostic.conceptIds.length + ' khái niệm chưa đủ dữ liệu · ' : concept ? 'Khái niệm đang chọn: “' + concept.title + '”. ' : ''}{mode === 'review' ? src === 'gen' ? 'Chế độ ôn tập sinh đề mới cho đúng những kỹ năng bạn từng sai.' : 'Chế độ ôn tập chỉ lấy những câu bạn từng làm sai và chưa trả lời đúng liên tiếp 2 lần.' : (src === 'gen' ? (sessionQuestions?.length || 0) : filtered.length) + ' câu phù hợp với bộ lọc hiện tại.'}</p>
     </div>
 
     {insights.length > 0 && <div className="practice-insights panel"><div className="panel-heading-row"><div><p className="eyebrow">DỮ LIỆU TỪ CHÍNH CÁC LẦN BẠN LÀM</p><h2 className="panel-title">Điểm cần chú ý theo chuyên đề</h2></div><Link to="/progress" className="text-link">Mở trang tiến độ<ArrowRight size={15} /></Link></div>
       <div className="practice-insight-grid">{insights.map(item => <div className="practice-insight" key={item.name}><div><strong>{item.name}</strong><span>{item.attempted}/{item.total} câu đã gặp</span></div><div className="practice-insight-score"><strong>{item.accuracy === null ? '—' : item.accuracy + '%'}</strong><small>{item.needsReview ? item.needsReview + ' cần ôn' : 'Đang ổn'}</small></div></div>)}</div>
     </div>}
 
-    <PracticeSession key={sessionKey} candidates={filtered} mode={mode} size={size} cat={cat} difficulty={difficulty} conceptId={concept?.id || ''} goalTargetId={goalDiagnostic?.targetConceptId || ''} />
+    <PracticeSession key={sessionKey} candidates={filtered} mode={mode} size={size} cat={cat} difficulty={difficulty} conceptId={concept?.id || ''} goalTargetId={goalDiagnostic?.targetConceptId || ''} preset={sessionQuestions} src={src} />
   </section>;
 }
 
-function PracticeSession({ candidates, mode, size, cat, difficulty, conceptId, goalTargetId }: { candidates: Quiz[]; mode: 'normal' | 'review' | 'goal'; size: typeof SESSION_SIZES[number]; cat: string; difficulty: 'Tất cả' | QuizDifficulty; conceptId: string; goalTargetId: string }) {
+function PracticeSession({ candidates, mode, size, cat, difficulty, conceptId, goalTargetId, preset, src }: { candidates: Quiz[]; mode: 'normal' | 'review' | 'goal'; size: typeof SESSION_SIZES[number]; cat: string; difficulty: 'Tất cả' | QuizDifficulty; conceptId: string; goalTargetId: string; preset?: Quiz[] | null; src: 'bank' | 'gen' }) {
   const progress = useProgress();
   const learningGoal = useLearningGoal();
   const [sessionBaseline, setSessionBaseline] = useState(() => progress);
   const [questions] = useState(() => {
+    if (preset) return preset;
     const pool = mode === 'review' ? questionsNeedingReview(candidates, progress) : candidates;
     const limit = size === 'all' ? pool.length : Number(size);
     return pool.slice(0, limit);
@@ -105,7 +154,7 @@ function PracticeSession({ candidates, mode, size, cat, difficulty, conceptId, g
   const [finished, setFinished] = useState(false);
 
   if (!questions.length) {
-    return <div className="panel practice-empty"><span className="small-icon green"><Check size={20} /></span><h2>{mode === 'review' ? 'Không còn câu nào cần ôn trong bộ lọc này' : mode === 'goal' ? 'Chưa có câu kiểm tra cho phần còn thiếu' : 'Chưa có câu hỏi phù hợp'}</h2><p>{mode === 'review' ? 'Các câu bạn từng sai đã được làm đúng liên tiếp đủ để tạm rời danh sách ôn.' : mode === 'goal' ? 'Một số phần trên lộ trình chưa có câu hỏi trực tiếp. Hãy mở bản đồ kiến thức để xem phần còn thiếu.' : 'Hãy đổi chuyên đề hoặc độ khó để bắt đầu một phiên khác.'}</p>{mode === 'review' && <Link to={buildPracticeHref(cat, difficulty, size, conceptId)} className="button button-light">Luyện bình thường</Link>}{mode === 'goal' && goalTargetId && <Link to={'/map?concept=' + encodeURIComponent(goalTargetId)} className="button button-light">Mở lộ trình mục tiêu</Link>}</div>;
+    return <div className="panel practice-empty"><span className="small-icon green"><Check size={20} /></span><h2>{mode === 'review' ? 'Không còn câu nào cần ôn trong bộ lọc này' : mode === 'goal' ? 'Chưa có câu kiểm tra cho phần còn thiếu' : 'Chưa có câu hỏi phù hợp'}</h2><p>{mode === 'review' ? 'Các câu bạn từng sai đã được làm đúng liên tiếp đủ để tạm rời danh sách ôn.' : mode === 'goal' ? 'Một số phần trên lộ trình chưa có câu hỏi trực tiếp. Hãy mở bản đồ kiến thức để xem phần còn thiếu.' : 'Hãy đổi chuyên đề hoặc độ khó để bắt đầu một phiên khác.'}</p>{mode === 'review' && <Link to={buildPracticeHref(cat, difficulty, size, conceptId, src)} className="button button-light">Luyện bình thường</Link>}{mode === 'goal' && goalTargetId && <Link to={'/map?concept=' + encodeURIComponent(goalTargetId)} className="button button-light">Mở lộ trình mục tiêu</Link>}</div>;
   }
 
   const q = questions[index];
@@ -134,7 +183,7 @@ function PracticeSession({ candidates, mode, size, cat, difficulty, conceptId, g
     {debrief && <DiagnosticDebriefPanel debrief={debrief} />}
     <div className="flex flex-wrap justify-center gap-3 my-6">
       <button className="button button-dark" onClick={restart}><RotateCcw size={16} />Luyện lại phiên này</button>
-      {mode !== 'goal' && wrongQuestions.length > 0 && <Link to={buildReviewHref(cat, difficulty, size, conceptId)} className="button button-light"><Brain size={16} />Ôn câu yếu</Link>}
+      {mode !== 'goal' && wrongQuestions.length > 0 && <Link to={src === 'gen' ? buildGenReviewHref(cat, difficulty, size) : buildReviewHref(cat, difficulty, size, conceptId)} className="button button-light"><Brain size={16} />Ôn câu yếu</Link>}
       <Link to="/progress" className="button button-light">Xem tiến độ</Link>
     </div>
     {wrongQuestions.map(question => <div key={question.id} className="review-question"><div className="review-question-head"><strong>{question.q}</strong><span className={'difficulty-tag ' + difficultyClass(question.difficulty)}>{question.difficulty}</span></div><p>Đáp án đúng: {question.a[question.i]}</p><small>{question.ex}</small></div>)}
@@ -186,14 +235,29 @@ function difficultyClass(difficulty: QuizDifficulty) {
   return difficulty === 'Cơ bản' ? 'easy' : difficulty === 'Vừa' ? 'medium' : 'hard';
 }
 
-function buildPracticeHref(cat: string, difficulty: 'Tất cả' | QuizDifficulty, size: typeof SESSION_SIZES[number], conceptId = '') {
+function buildPracticeHref(cat: string, difficulty: 'Tất cả' | QuizDifficulty, size: typeof SESSION_SIZES[number], conceptId = '', src: 'bank' | 'gen' = 'bank') {
   const params = new URLSearchParams();
   if (conceptId) params.set('concept', conceptId);
+  if (src === 'gen' && !conceptId) {
+    params.set('src', 'gen');
+    params.set('seed', String(Date.now()));
+  }
   if (cat !== 'Tất cả') params.set('cat', cat);
   if (difficulty !== 'Tất cả') params.set('difficulty', difficulty);
   if (size !== '5') params.set('size', size);
   const query = params.toString();
   return '/practice' + (query ? '?' + query : '');
+}
+
+function buildGenReviewHref(cat: string, difficulty: 'Tất cả' | QuizDifficulty, size: typeof SESSION_SIZES[number]) {
+  const href = new URLSearchParams();
+  href.set('src', 'gen');
+  href.set('seed', String(Date.now()));
+  if (cat !== 'Tất cả') href.set('cat', cat);
+  if (difficulty !== 'Tất cả') href.set('difficulty', difficulty);
+  if (size !== '5') href.set('size', size);
+  href.set('mode', 'review');
+  return '/practice?' + href.toString();
 }
 
 function buildReviewHref(cat: string, difficulty: 'Tất cả' | QuizDifficulty, size: typeof SESSION_SIZES[number], conceptId = '') {

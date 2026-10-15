@@ -614,6 +614,20 @@ test('adaptive practice remembers weak questions and filters by difficulty', asy
 });
 
 
+test('generated practice creates fresh solvable sessions from a seed', async ({ page }) => {
+  await page.goto('/practice?src=gen&seed=7');
+  await expect(page.getByRole('button', { name: /Sinh đề mới/ })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('button', { name: 'Đổi đề mới' })).toBeVisible();
+
+  for (let round = 0; round < 5; round += 1) {
+    await page.locator('.answer-option').first().click();
+    const nextButton = page.getByRole('button', { name: round === 4 ? 'Xem kết quả' : 'Câu tiếp theo' });
+    await nextButton.click();
+  }
+  await expect(page.getByRole('heading', { name: /Bạn đã làm đúng \d+\/\d+ câu!/ })).toBeVisible();
+});
+
+
 test('dashboard and progress prioritize weak-question review', async ({ page }) => {
   await page.goto('/');
   await page.evaluate(() => {
