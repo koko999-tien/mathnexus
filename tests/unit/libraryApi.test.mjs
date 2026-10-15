@@ -193,3 +193,38 @@ test('library endpoint validates source and method', async () => {
   assert.equal(response.code, 405);
   assert.equal(response.payload.code, 'METHOD_NOT_ALLOWED');
 });
+
+test('library endpoint rejects cross-origin browser requests', async () => {
+  let fetchCalls = 0;
+  globalThis.fetch = async () => { fetchCalls += 1; throw new Error('must not call upstream'); };
+
+  const response = makeResponse();
+  await handler({
+    method: 'GET',
+    query: { source: 'wikipedia', q: 'đạo hàm' },
+    url: '/api/library',
+    headers: { origin: 'https://evil.example', host: 'mathnexus.example' },
+  }, response);
+
+  assert.equal(response.code, 403);
+  assert.equal(response.payload.code, 'ORIGIN_REJECTED');
+  assert.equal(fetchCalls, 0);
+});
+
+test('library endpoint throttles a client hammering upstream sources', async () => {
+  globalThis.fetch = async () => new Response(JSON.stringify({ query: { pages: [] } }), { status: 200 });
+
+  let lastCode = 200;
+  for (let index = 0; index < 31; index += 1) {
+    const response = makeResponse();
+    await handler({
+      method: 'GET',
+      query: { source: 'wikipedia', q: 'đạo hàm' },
+      url: '/api/library',
+      headers: { 'x-forwarded-for': '198.51.100.23' },
+    }, response);
+    lastCode = response.code;
+  }
+
+  assert.equal(lastCode, 429);
+});

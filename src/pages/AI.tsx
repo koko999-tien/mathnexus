@@ -6,6 +6,7 @@ import { buildTutorPlan, tutorModeLabel, type TutorMode, type TutorModePreferenc
 import { useProgress } from '../hooks/useProgress';
 import { useLearningGoal } from '../hooks/useLearningGoal';
 import { buildGoalTutorContext } from '../learning/goalTutorContext';
+import { createSseParser } from '../utils/sseClient';
 import { ChatText } from '../components/ui/ChatText';
 
 interface Message {
@@ -394,7 +395,6 @@ export default function AI() {
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
-        let buffer = '';
         let streamed = '';
         let doneMeta: { model?: string; fallbackUsed?: boolean } = {};
         let streamFailed = false;
@@ -412,34 +412,23 @@ export default function AI() {
           if (container) container.scrollTop = container.scrollHeight;
         };
 
+        const parser = createSseParser(eventPayload => {
+          if (eventPayload.type === 'delta' && typeof eventPayload.delta === 'string') {
+            applyDelta(eventPayload.delta);
+          } else if (eventPayload.type === 'done') {
+            doneMeta = { model: eventPayload.model, fallbackUsed: eventPayload.fallbackUsed };
+          } else if (eventPayload.type === 'error') {
+            streamFailed = true;
+          }
+        });
+
         try {
           for (;;) {
             const { done, value } = await reader.read();
             if (done) break;
-            buffer += decoder.decode(value, { stream: true });
-            const events = buffer.split('\n\n');
-            buffer = events.pop() || '';
-            for (const event of events) {
-              for (const line of event.split('\n')) {
-                const trimmed = line.trim();
-                if (!trimmed.startsWith('data:')) continue;
-                let eventPayload: { type?: string; delta?: string; model?: string; fallbackUsed?: boolean; error?: string } | null = null;
-                try {
-                  eventPayload = JSON.parse(trimmed.slice(5).trim());
-                } catch {
-                  continue;
-                }
-                if (!eventPayload) continue;
-                if (eventPayload.type === 'delta' && typeof eventPayload.delta === 'string') {
-                  applyDelta(eventPayload.delta);
-                } else if (eventPayload.type === 'done') {
-                  doneMeta = { model: eventPayload.model, fallbackUsed: eventPayload.fallbackUsed };
-                } else if (eventPayload.type === 'error') {
-                  streamFailed = true;
-                }
-              }
-            }
+            parser.feed(decoder.decode(value, { stream: true }));
           }
+          parser.finish();
         } catch (readError) {
           if (readError instanceof Error && readError.name === 'AbortError') return;
           streamFailed = true;

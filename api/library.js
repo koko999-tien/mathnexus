@@ -3,6 +3,60 @@ const CACHE_HEADER = 'public, s-maxage=1800, stale-while-revalidate=3600';
 const ARCHIVE_ID_RE = /^[A-Za-z0-9._-]{1,180}$/;
 const OPEN_LIBRARY_KEY_RE = /^\/(?:works\/OL\d+W|books\/OL\d+M)$/i;
 const ARCHIVE_HOST_RE = /^[a-z0-9.-]+\.archive\.org$/i;
+const RATE_WINDOW_MS = 60_000;
+const RATE_LIMIT = 30;
+const rateBuckets = new Map();
+
+function headerValue(request, name) {
+  const headers = request?.headers;
+  if (!headers) return '';
+  if (typeof headers.get === 'function') return String(headers.get(name) || '').trim();
+  const direct = headers[name] ?? headers[name.toLowerCase()] ?? headers[name.toUpperCase()];
+  return Array.isArray(direct) ? String(direct[0] || '').trim() : String(direct || '').trim();
+}
+
+function sameOriginBrowserRequest(request) {
+  const origin = headerValue(request, 'origin');
+  if (!origin) return true;
+  const host = headerValue(request, 'x-forwarded-host') || headerValue(request, 'host');
+  if (!host) return true;
+  try {
+    return new URL(origin).host === host;
+  } catch {
+    return false;
+  }
+}
+
+function clientAddress(request) {
+  return headerValue(request, 'x-forwarded-for').split(',')[0]?.trim()
+    || headerValue(request, 'x-real-ip')
+    || '';
+}
+
+function consumeRateLimit(request, now = Date.now()) {
+  const key = clientAddress(request);
+  if (!key) return { allowed: true, remaining: RATE_LIMIT, retryAfterSeconds: 0 };
+
+  if (rateBuckets.size > 2048) {
+    for (const [bucketKey, bucket] of rateBuckets) {
+      if (bucket.resetAt <= now) rateBuckets.delete(bucketKey);
+    }
+  }
+
+  const existing = rateBuckets.get(key);
+  const bucket = !existing || existing.resetAt <= now
+    ? { count: 0, resetAt: now + RATE_WINDOW_MS }
+    : existing;
+
+  bucket.count += 1;
+  rateBuckets.set(key, bucket);
+
+  return {
+    allowed: bucket.count <= RATE_LIMIT,
+    remaining: Math.max(0, RATE_LIMIT - bucket.count),
+    retryAfterSeconds: Math.max(1, Math.ceil((bucket.resetAt - now) / 1000)),
+  };
+}
 
 function clean(value, max = 500) {
   return String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
@@ -299,6 +353,18 @@ export default async function handler(request, response) {
   if (request.method !== 'GET') {
     response.setHeader('Allow', 'GET');
     return response.status(405).json({ error: 'Method not allowed.', code: 'METHOD_NOT_ALLOWED' });
+  }
+
+  if (!sameOriginBrowserRequest(request)) {
+    return response.status(403).json({ error: 'Cross-origin request rejected.', code: 'ORIGIN_REJECTED' });
+  }
+
+  const rate = consumeRateLimit(request);
+  response.setHeader('X-RateLimit-Limit', String(RATE_LIMIT));
+  response.setHeader('X-RateLimit-Remaining', String(rate.remaining));
+  if (!rate.allowed) {
+    response.setHeader('Retry-After', String(rate.retryAfterSeconds));
+    return response.status(429).json({ error: 'Too many library requests.', code: 'RATE_LIMITED' });
   }
 
   const source = requestParam(request, 'source').toLowerCase();
