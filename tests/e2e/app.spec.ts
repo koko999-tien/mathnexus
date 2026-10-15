@@ -628,6 +628,39 @@ test('generated practice creates fresh solvable sessions from a seed', async ({ 
 });
 
 
+test('bookshelf finds real open copies of a curated book', async ({ page }) => {
+  await page.route('**/api/library?*', route => {
+    const url = new URL(route.request().url());
+    if (url.searchParams.get('source') !== 'openlibrary') return route.fallback();
+    return route.fulfill({
+      status: 200,
+      json: {
+        source: 'openlibrary',
+        mode: 'search',
+        total: 1,
+        items: [{
+          key: '/works/OL82563W',
+          title: 'How to Solve It',
+          authors: ['George Pólya'],
+          firstPublishYear: 1945,
+          cover: '',
+          readState: 'borrow',
+          readLabel: 'Mượn đọc',
+          archiveId: '',
+          openLibraryUrl: 'https://openlibrary.org/works/OL82563W',
+        }],
+      },
+    });
+  });
+
+  await page.goto('/books');
+  await page.getByRole('button', { name: 'Tìm bản đọc mở' }).first().click();
+  await expect(page.getByText('How to Solve It').nth(1)).toBeVisible();
+  await expect(page.getByText('Mượn đọc')).toBeVisible();
+  await expect(page.getByRole('link', { name: /Chi tiết & ghi chú/ }).first()).toHaveAttribute('href', /library\/book-info\?key=/);
+});
+
+
 test('dashboard and progress prioritize weak-question review', async ({ page }) => {
   await page.goto('/');
   await page.evaluate(() => {

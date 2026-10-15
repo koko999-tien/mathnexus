@@ -303,6 +303,14 @@ svg { flex-shrink: 0; }
 .chat-photo-preview img { max-width: 120px; border-radius: 8px; border: 1px solid var(--color-line); }
 .chat-caret { animation: chat-blink 1s steps(2) infinite; color: var(--color-accent); }
 @keyframes chat-blink { 50% { opacity: 0; } }
+.book-lookup { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--color-line); }
+.book-matches { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.book-matches li { display: flex; gap: 10px; align-items: flex-start; }
+.book-matches img { width: 44px; border-radius: 6px; border: 1px solid var(--color-line); flex-shrink: 0; }
+.book-matches .openbook-cover-placeholder { width: 44px; height: 64px; display: inline-grid; place-items: center; border: 1px solid var(--color-line); border-radius: 6px; color: var(--color-muted); flex-shrink: 0; }
+.book-matches strong { display: block; font-size: 13px; }
+.book-matches small { display: block; color: var(--color-muted); font-size: 12px; }
+.book-match-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; font-size: 12px; }
 .dark .green { --tone-bg: #31452b; --tone-ink: #b2cd99; }
 .dark .blue { --tone-bg: #283c4c; --tone-ink: #a0bedb; }
 .dark .peach { --tone-bg: #423b2c; --tone-ink: #d8b781; }
