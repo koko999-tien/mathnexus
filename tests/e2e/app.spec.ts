@@ -628,6 +628,18 @@ test('generated practice creates fresh solvable sessions from a seed', async ({ 
 });
 
 
+test('placement check runs an 8-question entry session with per-topic summary', async ({ page }) => {
+  await page.goto('/practice?mode=placement&seed=11');
+  await expect(page.getByRole('heading', { name: 'Kiểm tra trình độ đầu vào' })).toBeVisible();
+  for (let round = 0; round < 8; round += 1) {
+    await page.locator('.answer-option').first().click();
+    await page.getByRole('button', { name: round === 7 ? 'Xem kết quả' : 'Câu tiếp theo' }).click();
+  }
+  await expect(page.getByText('KẾT QUẢ KIỂM TRA ĐẦU VÀO')).toBeVisible();
+  await expect(page.getByRole('link', { name: /Mở bản đồ kiến thức/ })).toBeVisible();
+});
+
+
 test('bookshelf finds real open copies of a curated book', async ({ page }) => {
   await page.route('**/api/library?*', route => {
     const url = new URL(route.request().url());

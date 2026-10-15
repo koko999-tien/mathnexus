@@ -451,6 +451,7 @@ svg { flex-shrink: 0; }
 .skeleton-live { font-size: 13px; color: var(--color-muted); }
 @keyframes skeleton-shimmer { to { background-position: -200% 0; } }
 .overview-panel-note { display: block; font-size: 11px; color: var(--color-muted); font-weight: 400; margin-top: 2px; }
+.placement-banner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 16px; border-color: var(--color-sage); }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
