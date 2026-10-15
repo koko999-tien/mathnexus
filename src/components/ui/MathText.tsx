@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { renderMath } from '../../utils/math';
 
 interface MathTextProps {
@@ -6,11 +7,13 @@ interface MathTextProps {
   className?: string;
 }
 
-export function MathText({ expr, display = false, className = '' }: MathTextProps) {
+// Memoized: KaTeX parse là phần đắt nhất khi chat streaming (mỗi delta
+// render lại toàn bộ tin nhắn). Props đều nguyên thủy nên so sánh nông đủ.
+export const MathText = memo(function MathText({ expr, display = false, className = '' }: MathTextProps) {
   return (
     <span
       className={className}
       dangerouslySetInnerHTML={{ __html: renderMath(expr, display) }}
     />
   );
-}
+});

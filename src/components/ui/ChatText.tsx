@@ -1,8 +1,9 @@
-import { Fragment } from 'react';
+import { Fragment, memo } from 'react';
 import { MathText } from './MathText';
 
 // Render a small, safe subset of formatting without interpreting HTML from a model.
-export function ChatText({ text }: { text: string }) {
+// Memoized: tin nhắn đã xong không parse lại khi tin nhắn khác đang stream.
+export const ChatText = memo(function ChatText({ text }: { text: string }) {
   return <>{text.split(/(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\$[^$\n]+\$|\*\*[^*]+\*\*)/g).map((part, index) => {
     if (part.startsWith('$$') || part.startsWith('\\[')) return <MathText key={index} expr={part.slice(2, -2)} display className="block max-w-full overflow-x-auto" />;
     if (part.startsWith('\\(')) return <MathText key={index} expr={part.slice(2, -2)} />;
@@ -10,4 +11,4 @@ export function ChatText({ text }: { text: string }) {
     if (part.startsWith('**')) return <strong key={index}>{part.slice(2, -2)}</strong>;
     return <Fragment key={index}>{part}</Fragment>;
   })}</>;
-}
+});
