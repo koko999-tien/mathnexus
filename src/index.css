@@ -84,6 +84,8 @@ svg { flex-shrink: 0; }
 .breadcrumb strong { color: var(--color-ink); font-weight: 500; }
 .icon-button { display: inline-grid; place-items: center; min-width: 40px; width: 40px; height: 40px; border-radius: 10px; color: var(--color-muted); background: transparent; border: 0; flex-shrink: 0; }
 .icon-button:hover { background: var(--color-mist); color: var(--color-ink); }
+.icon-button:disabled { opacity: .36; cursor: not-allowed; }
+.icon-button[aria-pressed="true"] { background: #f3d9d4; color: #a44b47; }
 .topbar-search { margin-left: auto; display: flex; align-items: center; gap: 10px; font-size: 11px; color: var(--color-muted); min-height: 36px; border: 1px solid var(--color-line); background: var(--color-panel); border-radius: 8px; padding: 6px 11px; width: 240px; }
 .topbar-search kbd { margin-left: auto; font-size: 9px; border: 1px solid var(--color-line); padding: 1px 5px; border-radius: 4px; }
 .topbar-divider { width: 1px; height: 22px; background: var(--color-line); }
