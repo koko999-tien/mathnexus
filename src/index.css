@@ -296,6 +296,11 @@ svg { flex-shrink: 0; }
 .chat-links > a { display: flex; align-items: center; gap: 5px; color: var(--color-accent); font-size: 11px; border: 1px solid var(--color-line); background: var(--color-panel); border-radius: 7px; padding: 8px 10px; }
 .chat-input { display: flex; gap: 8px; border-top: 1px solid var(--color-line); padding: 13px; }
 .chat-input input { flex: 1; min-width: 0; border: 1px solid var(--color-line); background: var(--color-bg); color: var(--color-ink); padding: 10px 13px; border-radius: 9px; font-size: 14px; }
+.chat-photo { max-width: 240px; border-radius: 8px; margin-bottom: 10px; display: block; }
+.chat-photo-preview { display: flex; align-items: center; gap: 10px; padding: 10px 13px 0; }
+.chat-photo-preview img { max-width: 120px; border-radius: 8px; border: 1px solid var(--color-line); }
+.chat-caret { animation: chat-blink 1s steps(2) infinite; color: var(--color-accent); }
+@keyframes chat-blink { 50% { opacity: 0; } }
 .dark .green { --tone-bg: #31452b; --tone-ink: #b2cd99; }
 .dark .blue { --tone-bg: #283c4c; --tone-ink: #a0bedb; }
 .dark .peach { --tone-bg: #423b2c; --tone-ink: #d8b781; }

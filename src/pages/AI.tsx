@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Send, Sparkles, BookOpen, Trash2, ArrowUpRight, GraduationCap } from 'lucide-react';
+import { Send, Sparkles, BookOpen, Trash2, ArrowUpRight, GraduationCap, Mic, ImagePlus, Volume2, VolumeX, X } from 'lucide-react';
 import { buildKnowledgeContext } from '../utils/knowledgeSearch';
 import { buildTutorPlan, tutorModeLabel, type TutorMode, type TutorModePreference } from '../utils/tutorPlanner';
 import { useProgress } from '../hooks/useProgress';
@@ -16,6 +16,8 @@ interface Message {
   fallbackUsed?: boolean;
   tutorMode?: TutorMode;
   links?: { to: string; label: string }[];
+  imagePreview?: string;
+  streaming?: boolean;
 }
 
 interface GeminiPayload {
@@ -98,6 +100,77 @@ function loadTutorPreference(): TutorModePreference {
   }
 }
 
+interface SpeechRecognitionResultLike {
+  isFinal: boolean;
+  0: { transcript: string };
+}
+
+interface SpeechRecognitionEventLike {
+  resultIndex: number;
+  results: ArrayLike<SpeechRecognitionResultLike>;
+}
+
+interface SpeechRecognitionInstance {
+  lang: string;
+  interimResults: boolean;
+  maxAlternatives: number;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+  abort: () => void;
+}
+
+function getSpeechRecognitionConstructor(): (new () => SpeechRecognitionInstance) | null {
+  if (typeof window === 'undefined') return null;
+  const scope = window as unknown as {
+    SpeechRecognition?: new () => SpeechRecognitionInstance;
+    webkitSpeechRecognition?: new () => SpeechRecognitionInstance;
+  };
+  return scope.SpeechRecognition || scope.webkitSpeechRecognition || null;
+}
+
+function downscalePhoto(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const maxSide = 1536;
+      const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(img.width * scale));
+      canvas.height = Math.max(1, Math.round(img.height * scale));
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Không xử lý được ảnh này.'));
+        return;
+      }
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL('image/jpeg', 0.82));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Không đọc được ảnh này.'));
+    };
+    img.src = url;
+  });
+}
+
+function speakableText(text: string): string {
+  return text
+    .split('\\[').join(' công thức ')
+    .split('\\]').join(' ')
+    .replace(/\$\$[\s\S]*?\$\$|\\\([\s\S]*?\\\)|\$[^$\n]+\$/g, ' công thức ')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/[#*_`>|()]/g, '')
+    .replace(/[[\\\]]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 2000);
+}
+
 function friendlyGeminiError(payload: GeminiPayload, status: number): string {
   const code = typeof payload.code === 'string' ? payload.code : '';
   const upstreamStatus = typeof payload.upstreamStatus === 'number' ? payload.upstreamStatus : null;
@@ -123,13 +196,25 @@ export default function AI() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const controllerRef = useRef<AbortController | null>(null);
   const busy = useRef(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
+  const [listening, setListening] = useState(false);
+  const [speakingIndex, setSpeakingIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const container = scrollRef.current;
     if (container) container.scrollTop = container.scrollHeight;
 
     try {
-      sessionStorage.setItem(CHAT_KEY, JSON.stringify(messages.slice(-30)));
+      const persistable = messages.slice(-30).map(message => {
+        const { imagePreview, streaming, ...rest } = message;
+        void imagePreview;
+        void streaming;
+        return rest;
+      });
+      sessionStorage.setItem(CHAT_KEY, JSON.stringify(persistable));
     } catch {
       // Chat persistence is convenience only.
     }
@@ -139,10 +224,77 @@ export default function AI() {
     try { sessionStorage.setItem(TUTOR_PREF_KEY, tutorPreference); } catch { /* no-op */ }
   }, [tutorPreference]);
 
-  useEffect(() => () => controllerRef.current?.abort(), []);
+  useEffect(() => () => {
+    controllerRef.current?.abort();
+    recognitionRef.current?.abort();
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel();
+  }, []);
+
+  const stopSpeaking = () => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel();
+    setSpeakingIndex(null);
+  };
+
+  const toggleSpeaking = (index: number, text: string) => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    if (speakingIndex === index) {
+      stopSpeaking();
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const plain = speakableText(text);
+    if (!plain) return;
+    const utterance = new SpeechSynthesisUtterance(plain);
+    utterance.lang = 'vi-VN';
+    utterance.onend = () => setSpeakingIndex(null);
+    utterance.onerror = () => setSpeakingIndex(null);
+    setSpeakingIndex(index);
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const stopListening = () => {
+    recognitionRef.current?.stop();
+    recognitionRef.current = null;
+    setListening(false);
+  };
+
+  const toggleListening = () => {
+    if (listening) {
+      stopListening();
+      return;
+    }
+    const Recognition = getSpeechRecognitionConstructor();
+    if (!Recognition) return;
+    try {
+      const recognition = new Recognition();
+      recognition.lang = 'vi-VN';
+      recognition.interimResults = true;
+      recognition.maxAlternatives = 1;
+      recognition.onresult = event => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; i += 1) {
+          const result = event.results[i];
+          if (result && result.isFinal) transcript += result[0]?.transcript || '';
+        }
+        if (transcript) setInput(current => (current ? `${current} ${transcript}` : transcript).slice(0, 12000));
+      };
+      recognition.onerror = () => stopListening();
+      recognition.onend = () => {
+        recognitionRef.current = null;
+        setListening(false);
+      };
+      recognitionRef.current = recognition;
+      recognition.start();
+      setListening(true);
+    } catch {
+      stopListening();
+    }
+  };
 
   const clearConversation = () => {
     controllerRef.current?.abort();
+    stopSpeaking();
+    if (listening) stopListening();
     busy.current = false;
     setLoading(false);
     setActiveTutorMode(null);
@@ -152,9 +304,12 @@ export default function AI() {
 
   const send = async (raw: string) => {
     const text = raw.trim();
-    if (!text || busy.current) return;
+    const photo = photoDataUrl;
+    if ((!text && !photo) || busy.current) return;
 
     busy.current = true;
+    stopSpeaking();
+    if (listening) stopListening();
     const context = buildKnowledgeContext(text, 6);
     const plan = buildTutorPlan(text, context.hits, progress, tutorPreference);
     const turnGoalContext = buildGoalTutorContext(progress, goal);
@@ -170,43 +325,153 @@ export default function AI() {
 
     const controller = new AbortController();
     controllerRef.current = controller;
-    const timer = window.setTimeout(() => controller.abort('timeout'), 30000);
+    const timer = window.setTimeout(() => controller.abort('timeout'), 60000);
 
     setInput('');
+    setPhotoPreview(null);
+    setPhotoDataUrl(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
     setLoading(true);
-    setMessages(current => [...current, { role: 'user', text }]);
+    setMessages(current => [...current, { role: 'user', text: text || '(đã gửi ảnh bài toán)', imagePreview: photo || undefined }]);
+
+    const history: { role: 'user' | 'model'; text: string }[] = [];
+    for (let i = 1; i < messages.length; i++) {
+      if (messages[i].source === 'gemini' && messages[i - 1].role === 'user') {
+        history.push(
+          { role: 'user', text: messages[i - 1].text },
+          { role: 'model', text: messages[i].text },
+        );
+      }
+    }
+
+    const requestPayload = {
+      message: text,
+      history: history.slice(-8),
+      appContext: context.text,
+      tutor: {
+        mode: plan.mode,
+        directSolutionAllowed: plan.directSolutionAllowed,
+        masterySummary: plan.masterySummary,
+        anchorConceptIds,
+        goalContext: turnGoalContext?.text || '',
+      },
+      image: photo ? { mime: 'image/jpeg', data: photo } : undefined,
+    };
+
+    const appendBotMessage = (message: Message) => {
+      setMessages(current => [...current, message]);
+    };
+
+    const appendLocalFallback = (detail: string) => {
+      const localContext = context.text || 'Thư viện chưa tìm thấy nội dung liên quan. Bạn có thể thử hỏi theo tên khái niệm, chủ đề hoặc mục tiêu học.';
+      const localGoal = turnGoalContext
+        ? `\n\n**Mục tiêu đang theo:** ${turnGoalContext.targetTitle} · ${turnGoalContext.progressPercent}% theo dữ liệu học tập.`
+        : '';
+      appendBotMessage({
+        role: 'bot',
+        source: 'local',
+        tutorMode: plan.mode,
+        text: `${detail}\n\n**Cách tiếp cận ${tutorModeLabel(plan.mode)}:** ${plan.localOpening}\n\n${localContext}${localGoal}`,
+        links: responseLinks,
+      });
+    };
 
     try {
       if (!navigator.onLine) throw new Error('Bạn đang ngoại tuyến.');
       if (import.meta.env.BASE_URL === '/mathnexus/') throw new Error('Bản GitHub Pages đang dùng thư viện tra cứu cục bộ.');
 
-      const history: { role: 'user' | 'model'; text: string }[] = [];
-      for (let i = 1; i < messages.length; i++) {
-        if (messages[i].source === 'gemini' && messages[i - 1].role === 'user') {
-          history.push(
-            { role: 'user', text: messages[i - 1].text },
-            { role: 'model', text: messages[i].text },
-          );
-        }
-      }
-
       const response = await fetch('/api/gemini', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,
-        body: JSON.stringify({
-          message: text,
-          history: history.slice(-8),
-          appContext: context.text,
-          tutor: {
-            mode: plan.mode,
-            directSolutionAllowed: plan.directSolutionAllowed,
-            masterySummary: plan.masterySummary,
-            anchorConceptIds,
-            goalContext: turnGoalContext?.text || '',
-          },
-        }),
+        body: JSON.stringify({ ...requestPayload, stream: true }),
       });
+
+      const contentType = response.headers.get('content-type') || '';
+
+      if (response.ok && contentType.includes('text/event-stream') && response.body) {
+        appendBotMessage({ role: 'bot', text: '', source: 'gemini', tutorMode: plan.mode, streaming: true, links: responseLinks });
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let streamed = '';
+        let doneMeta: { model?: string; fallbackUsed?: boolean } = {};
+        let streamFailed = false;
+
+        const applyDelta = (delta: string) => {
+          streamed += delta;
+          const snapshot = streamed;
+          setMessages(current => {
+            const next = [...current];
+            const last = next[next.length - 1];
+            if (last && last.role === 'bot') next[next.length - 1] = { ...last, text: snapshot };
+            return next;
+          });
+          const container = scrollRef.current;
+          if (container) container.scrollTop = container.scrollHeight;
+        };
+
+        try {
+          for (;;) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const events = buffer.split('\n\n');
+            buffer = events.pop() || '';
+            for (const event of events) {
+              for (const line of event.split('\n')) {
+                const trimmed = line.trim();
+                if (!trimmed.startsWith('data:')) continue;
+                let eventPayload: { type?: string; delta?: string; model?: string; fallbackUsed?: boolean; error?: string } | null = null;
+                try {
+                  eventPayload = JSON.parse(trimmed.slice(5).trim());
+                } catch {
+                  continue;
+                }
+                if (!eventPayload) continue;
+                if (eventPayload.type === 'delta' && typeof eventPayload.delta === 'string') {
+                  applyDelta(eventPayload.delta);
+                } else if (eventPayload.type === 'done') {
+                  doneMeta = { model: eventPayload.model, fallbackUsed: eventPayload.fallbackUsed };
+                } else if (eventPayload.type === 'error') {
+                  streamFailed = true;
+                }
+              }
+            }
+          }
+        } catch (readError) {
+          if (readError instanceof Error && readError.name === 'AbortError') return;
+          streamFailed = true;
+        } finally {
+          try {
+            reader.releaseLock();
+          } catch {
+            // Lock release is best-effort.
+          }
+        }
+
+        if (!streamed.trim()) {
+          setMessages(current => current.slice(0, -1));
+          throw new Error(streamFailed ? 'Gemini đang quá tải tạm thời.' : 'Gemini chưa trả về câu trả lời.');
+        }
+
+        setMessages(current => {
+          const next = [...current];
+          const last = next[next.length - 1];
+          if (last && last.role === 'bot') {
+            next[next.length - 1] = {
+              ...last,
+              text: streamed.trim(),
+              streaming: false,
+              model: doneMeta.model,
+              fallbackUsed: doneMeta.fallbackUsed === true,
+            };
+          }
+          return next;
+        });
+        return;
+      }
 
       const payload = (await response.json().catch(() => ({}))) as GeminiPayload;
 
@@ -218,18 +483,15 @@ export default function AI() {
         throw new Error('Gemini chưa trả về câu trả lời.');
       }
 
-      setMessages(current => [
-        ...current,
-        {
-          role: 'bot',
-          text: payload.text as string,
-          source: 'gemini',
-          model: typeof payload.model === 'string' ? payload.model : undefined,
-          fallbackUsed: payload.fallbackUsed === true,
-          tutorMode: plan.mode,
-          links: responseLinks,
-        },
-      ]);
+      appendBotMessage({
+        role: 'bot',
+        text: payload.text as string,
+        source: 'gemini',
+        model: typeof payload.model === 'string' ? payload.model : undefined,
+        fallbackUsed: payload.fallbackUsed === true,
+        tutorMode: plan.mode,
+        links: responseLinks,
+      });
     } catch (error) {
       if (controller.signal.aborted && controller.signal.reason !== 'timeout') return;
 
@@ -239,20 +501,7 @@ export default function AI() {
           ? error.message
           : 'Chưa kết nối được Gemini.';
 
-      const localContext = context.text || 'Thư viện chưa tìm thấy nội dung liên quan. Bạn có thể thử hỏi theo tên khái niệm, chủ đề hoặc mục tiêu học.';
-      const localGoal = turnGoalContext
-        ? `\n\n**Mục tiêu đang theo:** ${turnGoalContext.targetTitle} · ${turnGoalContext.progressPercent}% theo dữ liệu học tập.`
-        : '';
-      setMessages(current => [
-        ...current,
-        {
-          role: 'bot',
-          source: 'local',
-          tutorMode: plan.mode,
-          text: `${detail}\n\n**Cách tiếp cận ${tutorModeLabel(plan.mode)}:** ${plan.localOpening}\n\n${localContext}${localGoal}`,
-          links: responseLinks,
-        },
-      ]);
+      appendLocalFallback(detail);
     } finally {
       window.clearTimeout(timer);
       busy.current = false;
@@ -309,16 +558,27 @@ export default function AI() {
                   ? `Gemini${message.model ? ` · ${message.model}` : ''}${message.tutorMode ? ` · ${tutorModeLabel(message.tutorMode)}` : ''}${message.fallbackUsed ? ' · model dự phòng' : ''}`
                   : 'MathNexus'}</>}
           </span>}
-          <div className="chat-text"><ChatText text={message.text} /></div>
+          {message.imagePreview && <img src={message.imagePreview} alt="Ảnh bài toán đã gửi" className="chat-photo" />}
+          <div className="chat-text"><ChatText text={message.text} />{message.streaming && <span className="chat-caret" aria-hidden="true">▍</span>}</div>
           {!!message.links?.length && <div className="chat-links">
             {message.links.map(link => <Link key={link.to} to={link.to}>{link.label}<ArrowUpRight size={13} /></Link>)}
           </div>}
+          {message.role === 'bot' && message.text && !message.streaming && 'speechSynthesis' in window && (
+            <button
+              className="text-link"
+              onClick={() => toggleSpeaking(i, message.text)}
+              aria-label={speakingIndex === i ? 'Dừng đọc to' : 'Đọc to câu trả lời'}
+            >
+              {speakingIndex === i ? <><VolumeX size={14} /> Dừng đọc</> : <><Volume2 size={14} /> Đọc to</>}
+            </button>
+          )}
         </div>)}
 
         {loading && <div className="chat-message bot" role="status">
           <span className="chat-source"><Sparkles size={13} />Gemini đang xử lý câu hỏi{activeTutorMode ? ` · ${tutorModeLabel(activeTutorMode)}` : ''}…</span>
           <button className="text-link" onClick={() => {
             controllerRef.current?.abort();
+            stopSpeaking();
             busy.current = false;
             setLoading(false);
             setActiveTutorMode(null);
@@ -326,17 +586,69 @@ export default function AI() {
         </div>}
       </div>
 
+      {photoPreview && <div className="chat-photo-preview">
+        <img src={photoPreview} alt="Ảnh bài toán sắp gửi" />
+        <button
+          className="icon-button"
+          aria-label="Gỡ ảnh đính kèm"
+          disabled={loading}
+          onClick={() => {
+            setPhotoPreview(null);
+            setPhotoDataUrl(null);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+          }}
+        ><X size={16} /></button>
+      </div>}
+
       <form className="chat-input" onSubmit={event => { event.preventDefault(); void send(input); }}>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          aria-label="Đính kèm ảnh bài toán"
+          style={{ display: 'none' }}
+          disabled={loading}
+          onChange={event => {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            void downscalePhoto(file)
+              .then(dataUrl => {
+                setPhotoPreview(dataUrl);
+                setPhotoDataUrl(dataUrl);
+              })
+              .catch(() => {
+                setPhotoPreview(null);
+                setPhotoDataUrl(null);
+              });
+          }}
+        />
+        <button
+          type="button"
+          aria-label="Đính kèm ảnh bài toán"
+          title="Chụp hoặc chọn ảnh bài toán"
+          className="icon-button"
+          disabled={loading}
+          onClick={() => fileInputRef.current?.click()}
+        ><ImagePlus size={18} /></button>
+        {getSpeechRecognitionConstructor() && <button
+          type="button"
+          aria-label={listening ? 'Dừng nói' : 'Nói thay vì gõ'}
+          aria-pressed={listening}
+          title="Nói câu hỏi bằng tiếng Việt"
+          className="icon-button"
+          disabled={loading}
+          onClick={toggleListening}
+        ><Mic size={18} /></button>}
         <input
           aria-label="Câu hỏi cho trợ lý"
           value={input}
           onChange={event => setInput(event.target.value)}
           maxLength={12000}
           disabled={loading}
-          placeholder="Ví dụ: mình yếu đạo hàm, nên học gì trước?"
+          placeholder={listening ? 'Đang nghe… hãy nói câu hỏi' : 'Ví dụ: mình yếu đạo hàm, nên học gì trước?'}
           autoComplete="off"
         />
-        <button type="submit" aria-label="Gửi câu hỏi" className="button button-dark" disabled={loading || !input.trim()}><Send size={18} /></button>
+        <button type="submit" aria-label="Gửi câu hỏi" className="button button-dark" disabled={loading || (!input.trim() && !photoDataUrl)}><Send size={18} /></button>
       </form>
     </div>
 

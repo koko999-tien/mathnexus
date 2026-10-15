@@ -7,6 +7,8 @@ const REQUEST_BUDGET_MS = 24000;
 const ATTEMPT_TIMEOUT_MS = 7000;
 const RETRY_DELAY_MS = 650;
 const MAX_REQUEST_BYTES = 128 * 1024;
+const MAX_IMAGE_BASE64_BYTES = 3 * 1024 * 1024;
+const ALLOWED_IMAGE_MIMES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const INSTANCE_RATE_WINDOW_MS = 60_000;
 const INSTANCE_RATE_LIMIT = 20;
 const rateBuckets = new Map();
@@ -124,6 +126,98 @@ function normalizeHistory(history) {
       role: item.role,
       parts: [{ text: item.text.slice(0, 8000) }],
     }));
+}
+
+function normalizeImage(image) {
+  if (image === undefined || image === null) return { image: null };
+  if (!image || typeof image !== 'object' || Array.isArray(image)) {
+    return { error: { status: 400, code: 'INVALID_IMAGE', message: 'Image must be an object' } };
+  }
+
+  let mime = typeof image.mime === 'string' ? image.mime.trim().toLowerCase() : '';
+  let data = typeof image.data === 'string' ? image.data.trim() : '';
+
+  const dataUrlMatch = /^data:([^;,]+)?(;base64)?,(.*)$/s.exec(data);
+  if (dataUrlMatch) {
+    if (dataUrlMatch[1] && !mime) mime = dataUrlMatch[1].trim().toLowerCase();
+    data = (dataUrlMatch[3] || '').trim();
+  }
+
+  if (!ALLOWED_IMAGE_MIMES.has(mime)) {
+    return { error: { status: 400, code: 'INVALID_IMAGE', message: 'Image must be JPEG, PNG or WebP' } };
+  }
+
+  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(data) || data.length < 100) {
+    return { error: { status: 400, code: 'INVALID_IMAGE', message: 'Image data is not valid base64' } };
+  }
+
+  if (Buffer.byteLength(data, 'utf8') > MAX_IMAGE_BASE64_BYTES) {
+    return { error: { status: 413, code: 'IMAGE_TOO_LARGE', message: 'Image is too large' } };
+  }
+
+  return { image: { mime, data } };
+}
+
+function extractStreamText(payload) {
+  const parts = payload?.candidates?.[0]?.content?.parts;
+  if (!Array.isArray(parts)) return '';
+  return parts
+    .filter(part => part && !part.thought && typeof part.text === 'string')
+    .map(part => part.text)
+    .join('');
+}
+
+async function openGeminiStream({ apiKey, model, contents, signal, systemPrompt }) {
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`;
+
+  let geminiResponse;
+  try {
+    geminiResponse = await fetch(endpoint, {
+      signal,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
+      },
+      body: JSON.stringify({
+        systemInstruction: {
+          parts: [{ text: systemPrompt || SYSTEM_PROMPT }],
+        },
+        contents,
+        generationConfig: {
+          temperature: 0.25,
+          maxOutputTokens: 4096,
+        },
+      }),
+    });
+  } catch (error) {
+    const isTimeout = error?.name === 'TimeoutError' || error?.name === 'AbortError';
+    return {
+      ok: false,
+      status: isTimeout ? 504 : 503,
+      code: isTimeout ? 'TIMEOUT' : 'NETWORK_ERROR',
+      detail: isTimeout ? 'Gemini request timed out' : error instanceof Error ? error.message : 'Gemini network request failed',
+      model,
+    };
+  }
+
+  if (!geminiResponse.ok || !geminiResponse.body) {
+    let payload = {};
+    try {
+      payload = await geminiResponse.json();
+    } catch {
+      payload = {};
+    }
+    const detail = payload?.error?.message || `Gemini request failed with HTTP ${geminiResponse.status}`;
+    const code = payload?.error?.status || payload?.error?.code || 'GEMINI_UPSTREAM_ERROR';
+    return { ok: false, status: geminiResponse.status, code, detail, model };
+  }
+
+  return { ok: true, body: geminiResponse.body, model };
+}
+
+function sseSend(response, event) {
+  response.write(`data: ${JSON.stringify(event)}\n\n`);
 }
 
 
@@ -262,17 +356,8 @@ export default async function handler(request, response) {
     return response.status(403).json({ error: 'Cross-origin browser request is not allowed', code: 'ORIGIN_NOT_ALLOWED', requestId });
   }
 
-  if (requestBodyBytes(request) > MAX_REQUEST_BYTES) {
+  if (requestBodyBytes(request) > MAX_REQUEST_BYTES + MAX_IMAGE_BASE64_BYTES) {
     return response.status(413).json({ error: 'Request body is too large', code: 'REQUEST_TOO_LARGE', requestId });
-  }
-
-  const apiKey = cleanEnv(process.env.GEMINI_API_KEY);
-  if (!apiKey) {
-    return response.status(503).json({
-      error: 'GEMINI_API_KEY is not configured on the server',
-      code: 'MISSING_API_KEY',
-      requestId,
-    });
   }
 
   const rate = consumeInstanceRateLimit(request);
@@ -301,8 +386,18 @@ export default async function handler(request, response) {
   const message = typeof body.message === 'string' ? body.message.trim() : '';
   const appContext = typeof body.appContext === 'string' ? body.appContext.trim().slice(0, 12000) : '';
   const tutor = normalizeTutor(body.tutor);
+  const wantStream = body.stream === true;
 
-  if (!message) {
+  const imageResult = normalizeImage(body.image);
+  if (imageResult.error) {
+    return response.status(imageResult.error.status).json({
+      error: imageResult.error.message,
+      code: imageResult.error.code,
+      requestId,
+    });
+  }
+
+  if (!message && !imageResult.image) {
     return response.status(400).json({ error: 'Message is required', code: 'EMPTY_MESSAGE', requestId });
   }
 
@@ -310,21 +405,49 @@ export default async function handler(request, response) {
     return response.status(400).json({ error: 'Message is too long', code: 'MESSAGE_TOO_LONG', requestId });
   }
 
+  const bodyBytes = requestBodyBytes(request);
+  if (message && !imageResult.image && bodyBytes > MAX_REQUEST_BYTES) {
+    return response.status(413).json({ error: 'Request body is too large', code: 'REQUEST_TOO_LARGE', requestId });
+  }
+
+  if (imageResult.image && bodyBytes > MAX_IMAGE_BASE64_BYTES + 16 * 1024) {
+    return response.status(413).json({ error: 'Request body is too large', code: 'REQUEST_TOO_LARGE', requestId });
+  }
+
+  const apiKey = cleanEnv(process.env.GEMINI_API_KEY);
+  if (!apiKey) {
+    return response.status(503).json({
+      error: 'GEMINI_API_KEY is not configured on the server',
+      code: 'MISSING_API_KEY',
+      requestId,
+    });
+  }
+
   const contextBlocks = [
     appContext ? `Ngữ cảnh MathNexus:\n${appContext}` : '',
     tutorUserContext(tutor),
   ].filter(Boolean);
   const userText = contextBlocks.length
-    ? `${contextBlocks.join('\n\n')}\n\nCâu hỏi của người dùng:\n${message}`
+    ? `${contextBlocks.join('\n\n')}\n\nCâu hỏi của người dùng:\n${message || '(xem ảnh bài toán đính kèm)'}`
     : message;
 
   const dynamicSystemPrompt = [SYSTEM_PROMPT, tutorInstruction(tutor)].filter(Boolean).join('\n\n');
+
+  const userParts = [{ text: userText }];
+  if (imageResult.image) {
+    userParts.push({
+      inlineData: {
+        mimeType: imageResult.image.mime,
+        data: imageResult.image.data,
+      },
+    });
+  }
 
   const contents = [
     ...normalizeHistory(body.history),
     {
       role: 'user',
-      parts: [{ text: userText }],
+      parts: userParts,
     },
   ];
 
@@ -336,6 +459,114 @@ export default async function handler(request, response) {
   ])];
   const deadline = Date.now() + REQUEST_BUDGET_MS;
   const attempts = [];
+
+  const canStream = wantStream && typeof response.write === 'function' && typeof response.end === 'function';
+
+  if (canStream) {
+    let streamOpened = null;
+    let streamError = null;
+
+    for (const model of modelsToTry) {
+      if (Date.now() >= deadline - 500) break;
+      const opened = await openGeminiStream({
+        apiKey,
+        model,
+        contents,
+        signal: timeoutSignal(deadline),
+        systemPrompt: dynamicSystemPrompt,
+      });
+
+      attempts.push({ model, attempt: 1, code: opened.ok ? 'STREAM' : String(opened.code || opened.status) });
+
+      if (opened.ok) {
+        streamOpened = opened;
+        break;
+      }
+
+      streamError = opened;
+
+      const modelLooksInvalid =
+        opened.status === 404 ||
+        /model.*(not found|not supported|invalid)|not found.*model/i.test(String(opened.detail));
+
+      if (!modelLooksInvalid && !isTransientGeminiError(opened)) {
+        break;
+      }
+    }
+
+    if (streamOpened) {
+      response.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+      response.setHeader('X-Accel-Buffering', 'no');
+      sseSend(response, { type: 'start', model: streamOpened.model, tutorMode: tutor?.mode || null, requestId });
+
+      let fullText = '';
+      try {
+        const reader = streamOpened.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const events = buffer.split('\n\n');
+          buffer = events.pop() || '';
+          for (const event of events) {
+            for (const line of event.split('\n')) {
+              const trimmed = line.trim();
+              if (!trimmed.startsWith('data:')) continue;
+              const data = trimmed.slice(5).trim();
+              if (!data || data === '[DONE]') continue;
+              let payload = null;
+              try {
+                payload = JSON.parse(data);
+              } catch {
+                continue;
+              }
+              const delta = extractStreamText(payload);
+              if (delta) {
+                fullText += delta;
+                sseSend(response, { type: 'delta', delta });
+              }
+            }
+          }
+        }
+
+        try {
+          reader.releaseLock();
+        } catch {
+          // Lock release is best-effort.
+        }
+      } catch (error) {
+        sseSend(response, {
+          type: 'error',
+          code: error?.name === 'AbortError' || error?.name === 'TimeoutError' ? 'TIMEOUT' : 'NETWORK_ERROR',
+          error: error instanceof Error ? error.message.slice(0, 500) : 'Gemini stream failed',
+        });
+      }
+
+      sseSend(response, {
+        type: 'done',
+        text: fullText.trim(),
+        model: streamOpened.model,
+        fallbackUsed: streamOpened.model !== configuredModel,
+        tutorMode: tutor?.mode || null,
+        requestId,
+      });
+      return response.end();
+    }
+
+    if (streamError && !isTransientGeminiError(streamError)) {
+      return response.status(responseStatusFor(streamError)).json({
+        error: String(streamError.detail || 'Gemini request failed').slice(0, 1000),
+        code: String(streamError.code || 'GEMINI_UPSTREAM_ERROR'),
+        upstreamStatus: streamError.status || null,
+        model: streamError.model || configuredModel,
+        requestId,
+      });
+    }
+    // Transient stream failures fall through to the regular JSON path below.
+  }
 
   let lastError = null;
 
