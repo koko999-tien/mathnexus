@@ -1,7 +1,10 @@
+import { bktUpdate, seedMasteryFromHistory } from './bkt.ts';
+
 const PREFIX = 'mathnexus_';
 export const STORAGE_EVENT = 'mathnexus:storage';
 export const STORAGE_ERROR_EVENT = 'mathnexus:storage-error';
 export const PROGRESS_SCHEMA_VERSION = 1 as const;
+
 
 export function load<T>(key: string, fallback: T): T {
   try {
@@ -36,6 +39,7 @@ export interface QuestionPracticeStat {
   correctStreak: number;
   lastCorrect: boolean;
   updatedAt: string;
+  mastery?: number;
 }
 
 export interface ProgressData {
@@ -85,15 +89,18 @@ function normalizePractice(value: unknown): Record<string, QuestionPracticeStat>
   for (const [id, rawStat] of Object.entries(value)) {
     if (!id || !rawStat || typeof rawStat !== 'object') continue;
     const stat = rawStat as Partial<QuestionPracticeStat>;
-    const attempts = count(stat.attempts);
-    const correct = Math.min(count(stat.correct), attempts);
-    result[id] = {
-      attempts,
-      correct,
-      correctStreak: Math.min(count(stat.correctStreak), attempts),
-      lastCorrect: Boolean(stat.lastCorrect),
-      updatedAt: typeof stat.updatedAt === 'string' ? stat.updatedAt : '',
-    };
+      const attempts = count(stat.attempts);
+      const correct = Math.min(count(stat.correct), attempts);
+      result[id] = {
+        attempts,
+        correct,
+        correctStreak: Math.min(count(stat.correctStreak), attempts),
+        lastCorrect: Boolean(stat.lastCorrect),
+        updatedAt: typeof stat.updatedAt === 'string' ? stat.updatedAt : '',
+        ...(typeof stat.mastery === 'number' && Number.isFinite(stat.mastery)
+          ? { mastery: Math.max(0, Math.min(1, stat.mastery)) }
+          : {}),
+      };
   }
   return result;
 }
@@ -171,15 +178,17 @@ export function recordQuestionAttempt(questionId: string, correct: boolean): voi
   const today = localDate();
   const day = { ...emptyActivity(), ...p.activity[today] };
   recordQuestion(p, day, correct);
-
-  const previous = p.practice[questionId] || { attempts: 0, correct: 0, correctStreak: 0, lastCorrect: false, updatedAt: '' };
-  p.practice[questionId] = {
-    attempts: previous.attempts + 1,
-    correct: previous.correct + (correct ? 1 : 0),
-    correctStreak: correct ? previous.correctStreak + 1 : 0,
-    lastCorrect: correct,
-    updatedAt: new Date().toISOString(),
-  };
+  const previous = p.practice[questionId] || { attempts: 0, correct: 0, correctStreak: 0, lastCorrect: false,
+    updatedAt: '' };
+    const priorMastery = previous.mastery ?? seedMasteryFromHistory(previous);
+    p.practice[questionId] = {
+      attempts: previous.attempts + 1,
+      correct: previous.correct + (correct ? 1 : 0),
+      correctStreak: correct ? previous.correctStreak + 1 : 0,
+      lastCorrect: correct,
+      updatedAt: new Date().toISOString(),
+      mastery: bktUpdate(priorMastery, correct),
+    };
 
   p.activity[today] = day;
   p.lastDate = today;

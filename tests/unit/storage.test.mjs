@@ -40,13 +40,18 @@ test('practice memory tracks misses and recovery without double-counting answers
   recordQuestionAttempt('comb-5-2', false);
   let p = getProgress();
   assert.equal(p.questionsDone, 1);
-  assert.deepEqual(p.practice['comb-5-2'], {
-    attempts: 1,
-    correct: 0,
-    correctStreak: 0,
-    lastCorrect: false,
-    updatedAt: p.practice['comb-5-2'].updatedAt,
-  });
+  assert.deepEqual(
+    (({ mastery: _ignored, ...rest }) => rest)(p.practice['comb-5-2']),
+    {
+      attempts: 1,
+      correct: 0,
+      correctStreak: 0,
+      lastCorrect: false,
+      updatedAt: p.practice['comb-5-2'].updatedAt,
+    },
+  );
+  const afterMiss = p.practice['comb-5-2'].mastery;
+  assert.ok(afterMiss > 0.1 && afterMiss < 0.12, `mastery after first miss ~0.111, got ${afterMiss}`);
 
   recordQuestionAttempt('comb-5-2', true);
   recordQuestionAttempt('comb-5-2', true);
@@ -57,6 +62,7 @@ test('practice memory tracks misses and recovery without double-counting answers
   assert.equal(p.practice['comb-5-2'].correct, 2);
   assert.equal(p.practice['comb-5-2'].correctStreak, 2);
   assert.equal(p.practice['comb-5-2'].lastCorrect, true);
+  assert.ok(p.practice['comb-5-2'].mastery >= 0.85, `mastery after miss+2 corrects should clear 0.85, got ${p.practice['comb-5-2'].mastery}`);
 });
 
 test('streak uses local calendar days, survives month boundaries, and expires after a missed day', () => {

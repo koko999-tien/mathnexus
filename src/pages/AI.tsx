@@ -562,7 +562,7 @@ export default function AI() {
                   : 'MathNexus'}</>}
           </span>}
           {message.imagePreview && <img src={message.imagePreview} alt="Ảnh bài toán đã gửi" className="chat-photo" />}
-          <div className="chat-text"><ChatText text={message.text} />{message.streaming && <span className="chat-caret" aria-hidden="true">▍</span>}</div>
+          <div className="chat-text"><ChatText text={message.text} streaming={message.streaming} />{message.streaming && <span className="chat-caret" aria-hidden="true">▍</span>}</div>
           {!!message.links?.length && <div className="chat-links">
             {message.links.map(link => <Link key={link.to} to={link.to}>{link.label}<ArrowUpRight size={13} /></Link>)}
           </div>}

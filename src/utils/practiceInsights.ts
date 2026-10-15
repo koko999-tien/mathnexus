@@ -1,5 +1,6 @@
 import type { Quiz } from '../data/quiz';
 import type { ProgressData, QuestionPracticeStat } from './storage';
+import { isMastered, seedMasteryFromHistory } from './bkt.ts';
 
 export interface PracticeCategoryInsight {
   name: string;
@@ -18,8 +19,8 @@ export function questionAccuracy(stat?: QuestionPracticeStat): number | null {
 
 export function questionNeedsReview(stat?: QuestionPracticeStat): boolean {
   if (!stat || stat.attempts === 0) return false;
-  const hasMiss = stat.correct < stat.attempts;
-  return hasMiss && stat.correctStreak < 2;
+  const mastery = stat.mastery ?? seedMasteryFromHistory(stat);
+  return !isMastered(mastery);
 }
 
 export function practiceCategoryInsights(questions: Quiz[], progress: ProgressData): PracticeCategoryInsight[] {
