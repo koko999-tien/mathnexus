@@ -34,9 +34,15 @@ const Progress = lazy(() => import('./pages/Progress'));
 
 function Loader() {
   return (
-    <div className="flex items-center justify-center gap-3 h-64" role="status">
-      <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-      <span className="text-muted text-sm">Đang mở góc học tập…</span>
+    <div className="page-skeleton" role="status" aria-label="Đang tải nội dung">
+      <div className="skeleton skeleton-title" />
+      <div className="skeleton skeleton-text" />
+      <div className="skeleton-grid">
+        <div className="skeleton skeleton-card" />
+        <div className="skeleton skeleton-card" />
+        <div className="skeleton skeleton-card" />
+      </div>
+      <span className="skeleton-live">Đang mở góc học tập…</span>
     </div>
   );
 }

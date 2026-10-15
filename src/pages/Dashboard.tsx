@@ -134,12 +134,12 @@ const WATCH_CACHE_KEY = 'mathnexus:topic-watch-cache:v1';
 const WATCH_CACHE_MS = 15 * 60 * 1000;
 
 const RESEARCH_SEEDS = [
-  'algebraic topology',
-  'number theory',
-  'differential geometry',
-  'partial differential equations',
-  'mathematical physics',
-  'probability theory',
+  'calculus',
+  'linear algebra',
+  'geometry',
+  'probability',
+  'trigonometry',
+  'statistics',
 ];
 
 const LEARNING_TOOLS = [
@@ -791,18 +791,19 @@ export default function Dashboard() {
           </div>
 
           <div className="overview-papers-panel">
-            <div className="overview-panel-head">
-              <div>
-                <span>PAPER GẦN ĐÂY</span>
-                <strong>
-                  {[
-                    feed?.providers?.openAlex ? 'OpenAlex' : '',
-                    feed?.providers?.crossref ? 'Crossref' : '',
-                  ].filter(Boolean).join(' · ') || 'OpenAlex'}
-                </strong>
+              <div className="overview-panel-head">
+                <div>
+                  <span>PAPER GẦN ĐÂY</span>
+                  <strong>
+                    {[
+                      feed?.providers?.openAlex ? 'OpenAlex' : '',
+                      feed?.providers?.crossref ? 'Crossref' : '',
+                    ].filter(Boolean).join(' · ') || 'OpenAlex'}
+                  </strong>
+                  <small className="overview-panel-note">Mức nghiên cứu, để đọc mở rộng — nền tảng nằm ở Bài học.</small>
+                </div>
+                <FileText size={19} />
               </div>
-              <FileText size={19} />
-            </div>
 
             <div className="overview-paper-list">
               {(feed?.papers || []).slice(0, 7).map(paper => (

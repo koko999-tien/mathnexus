@@ -499,7 +499,7 @@ export default function AI() {
     }
   };
 
-  return <section className="page-enter">
+  return <section className="page-enter ai-page">
     <div className="page-header">
       <p className="eyebrow">TRỢ LÝ TOÁN HỌC</p>
       <h1>Hỏi đáp toán học</h1>
