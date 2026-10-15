@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { ArrowRight, Brain, Check, CircleAlert, Flag, Gauge, RotateCcw, Target, Trophy, X } from 'lucide-react';
 import { QUIZ, type Quiz, type QuizDifficulty } from '../data/quiz';
-import { GENERATED_BANK, GENERATED_CATS, countGenerated, generateSession } from '../utils/generatedQuiz';
+import { GENERATED_BANK, GENERATED_CATS, GENERATED_DIFFICULTIES, countGenerated, generateSession, templateById } from '../utils/generatedQuiz';
 import { MATH_CONCEPTS } from '../data/mathKnowledge';
 import { QUIZ_CONCEPT_MAP } from '../data/mathOntology';
 import { useProgress } from '../hooks/useProgress';
@@ -14,7 +14,7 @@ import { practiceCategoryInsights, practiceOverview, questionAccuracy, questions
 
 const CATS = ['Tất cả', ...new Set(QUIZ.map(q => q.cat))];
 const DIFFICULTIES: Array<'Tất cả' | QuizDifficulty> = ['Tất cả', 'Cơ bản', 'Vừa', 'Khó'];
-const GEN_DIFFICULTIES: Array<'Tất cả' | QuizDifficulty> = ['Tất cả', 'Cơ bản', 'Vừa'];
+const GEN_DIFFICULTIES: Array<'Tất cả' | QuizDifficulty> = ['Tất cả', ...GENERATED_DIFFICULTIES];
 const SESSION_SIZES = ['5', '10', 'all'] as const;
 type PracticeMode = 'normal' | 'review' | 'goal' | 'placement';
 const PLACEMENT_SIZE = 8;
@@ -31,6 +31,7 @@ export default function Practice() {
   // Sinh đề chỉ có ý nghĩa ở lane thường và ôn yếu (không gắn khái niệm/mục tiêu cụ thể).
   // Placement luôn dùng đề sinh để bao quát nhiều kỹ năng.
   const src = mode === 'placement' ? 'gen' : (concept || mode === 'goal') ? 'bank' : requestedSrc;
+  const onlyTemplates = params.get('tpl')?.split(',').map(id => id.trim()).filter(id => templateById(id)) || [];
   const seedParam = Number(params.get('seed') || '0');
   const [autoSeed] = useState(() => Date.now());
   const seed = Number.isFinite(seedParam) && seedParam > 0 ? Math.floor(seedParam) : autoSeed;
@@ -58,9 +59,9 @@ export default function Practice() {
     (difficulty === 'Tất cả' || question.difficulty === difficulty)
   );
 
-  const genPoolSize = src === 'gen' ? countGenerated(cat, difficulty) : 0;
+  const genPoolSize = src === 'gen' ? countGenerated(cat, difficulty, onlyTemplates) : 0;
   const genLimit = size === 'all' ? Math.max(genPoolSize, 1) : Number(size);
-  const generated = src === 'gen' && mode !== 'placement' ? generateSession(seed, genLimit, cat, difficulty) : [];
+  const generated = src === 'gen' && mode !== 'placement' ? generateSession(seed, genLimit, cat, difficulty, onlyTemplates) : [];
   const placementQuestions = mode === 'placement' ? generateSession(seed, PLACEMENT_SIZE, 'Tất cả', 'Tất cả') : [];
   const weakTemplateIds = src === 'gen' && mode === 'review'
     ? new Set(questionsNeedingReview(GENERATED_BANK, progress).map(question => question.id))
@@ -110,7 +111,7 @@ export default function Practice() {
     setParams(next, { replace: true });
   };
 
-  const sessionKey = [src, seed, goalDiagnostic?.targetConceptId || '', concept?.id || '', cat, difficulty, size, mode].join('|');
+  const sessionKey = [src, seed, onlyTemplates.join(','), goalDiagnostic?.targetConceptId || '', concept?.id || '', cat, difficulty, size, mode].join('|');
 
   return <section className="page-enter">
     <div className="page-header"><p className="eyebrow">LUYỆN TẬP</p><h1>{mode === 'placement' ? 'Kiểm tra trình độ đầu vào' : 'Luyện tập theo kết quả trước'}</h1><p>{mode === 'placement' ? `8 câu bao quát 8 chuyên đề, không tính giờ. Làm xong MathNexus biết bạn đang đứng ở đâu để gợi ý lộ trình.` : mode === 'goal' ? goalDiagnostic ? 'Đang kiểm tra lộ trình tới “' + goalDiagnostic.targetTitle + '”. MathNexus chỉ lấy các câu hỏi thuộc những khái niệm trên đường tới mục tiêu mà bạn chưa có đủ dữ liệu.' : 'Chưa có mục tiêu học tập hợp lệ để tạo phiên kiểm tra.' : concept ? 'Phiên này chỉ tập trung vào khái niệm “' + concept.title + '”. MathNexus chỉ lấy các câu hỏi đã được gắn trực tiếp với khái niệm này.' : 'Các câu bạn thường làm sai sẽ được ưu tiên trong những lần ôn tiếp theo.'}</p></div>
@@ -138,7 +139,7 @@ export default function Practice() {
         <button type="button" className={'button ' + (mode === 'review' ? 'button-dark' : 'button-light')} onClick={() => setMode(mode === 'review' ? 'normal' : 'review')}><Brain size={16} />{mode === 'review' ? 'Thoát ôn câu yếu' : 'Ôn câu cần nhớ'}{overview.reviewQuestions > 0 && <span className="practice-count-badge">{overview.reviewQuestions}</span>}</button>
         {learningGoal.goal && <button type="button" className={'button ' + (mode === 'goal' ? 'button-dark' : 'button-light')} onClick={() => setMode(mode === 'goal' ? 'normal' : 'goal')}><Flag size={16} />{mode === 'goal' ? 'Thoát kiểm tra mục tiêu' : 'Kiểm tra mục tiêu'}</button>}
       </div>}
-      <p className="helper-text">{src === 'gen' ? `Đề sinh tự động theo seed ${seed} — mỗi lần Đổi đề là một bộ số mới, đáp án tính chính xác ngay trên máy. ` : ''}{mode === 'goal' && goalDiagnostic ? 'Mục tiêu: “' + goalDiagnostic.targetTitle + '” · ' + goalDiagnostic.conceptIds.length + ' khái niệm chưa đủ dữ liệu · ' : concept ? 'Khái niệm đang chọn: “' + concept.title + '”. ' : ''}{mode === 'review' ? src === 'gen' ? 'Chế độ ôn tập sinh đề mới cho đúng những kỹ năng bạn từng sai.' : 'Chế độ ôn tập chỉ lấy những câu bạn từng làm sai và chưa trả lời đúng liên tiếp 2 lần.' : (src === 'gen' ? (sessionQuestions?.length || 0) : filtered.length) + ' câu phù hợp với bộ lọc hiện tại.'}</p>
+      <p className="helper-text">{src === 'gen' ? `Đề sinh tự động theo seed ${seed}${onlyTemplates.length ? ' · đúng kỹ năng vừa hỏi AI' : ''} — mỗi lần Đổi đề là một bộ số mới, đáp án tính chính xác ngay trên máy. ` : ''}{mode === 'goal' && goalDiagnostic ? 'Mục tiêu: “' + goalDiagnostic.targetTitle + '” · ' + goalDiagnostic.conceptIds.length + ' khái niệm chưa đủ dữ liệu · ' : concept ? 'Khái niệm đang chọn: “' + concept.title + '”. ' : ''}{mode === 'review' ? src === 'gen' ? 'Chế độ ôn tập sinh đề mới cho đúng những kỹ năng bạn từng sai.' : 'Chế độ ôn tập chỉ lấy những câu bạn từng làm sai và chưa trả lời đúng liên tiếp 2 lần.' : (src === 'gen' ? (sessionQuestions?.length || 0) : filtered.length) + ' câu phù hợp với bộ lọc hiện tại.'}</p>
     </div>
 
     {insights.length > 0 && <div className="practice-insights panel"><div className="panel-heading-row"><div><p className="eyebrow">DỮ LIỆU TỪ CHÍNH CÁC LẦN BẠN LÀM</p><h2 className="panel-title">Điểm cần chú ý theo chuyên đề</h2></div><Link to="/progress" className="text-link">Mở trang tiến độ<ArrowRight size={15} /></Link></div>

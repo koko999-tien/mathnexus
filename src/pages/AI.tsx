@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import { Send, Sparkles, BookOpen, Trash2, ArrowUpRight, GraduationCap, Mic, ImagePlus, Volume2, VolumeX, X } from 'lucide-react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Send, Sparkles, BookOpen, Trash2, ArrowUpRight, GraduationCap, Mic, ImagePlus, Volume2, VolumeX, X, Target } from 'lucide-react';
+import { detectSkillTemplates } from '../utils/generatedQuiz';
 import { buildKnowledgeContext } from '../utils/knowledgeSearch';
 import { buildTutorPlan, tutorModeLabel, type TutorMode, type TutorModePreference } from '../utils/tutorPlanner';
 import { useProgress } from '../hooks/useProgress';
@@ -186,6 +187,7 @@ function friendlyGeminiError(payload: GeminiPayload, status: number): string {
 
 export default function AI() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const progress = useProgress();
   const { goal } = useLearningGoal();
   const goalContext = buildGoalTutorContext(progress, goal);
@@ -301,6 +303,18 @@ export default function AI() {
     setActiveTutorMode(null);
     setMessages([WELCOME]);
     try { sessionStorage.removeItem(CHAT_KEY); } catch { /* no-op */ }
+  };
+
+  const drillSimilar = (botIndex: number) => {
+    const userText = messages.slice(0, botIndex).reverse().find(message => message.role === 'user')?.text || '';
+    const botText = messages[botIndex]?.text || '';
+    const templates = detectSkillTemplates(`${userText}\n${botText}`);
+    const params = new URLSearchParams();
+    params.set('src', 'gen');
+    params.set('seed', String(Date.now()));
+    params.set('size', '5');
+    if (templates.length) params.set('tpl', templates.join(','));
+    navigate('/practice?' + params.toString());
   };
 
   const send = async (raw: string) => {
@@ -552,14 +566,19 @@ export default function AI() {
           {!!message.links?.length && <div className="chat-links">
             {message.links.map(link => <Link key={link.to} to={link.to}>{link.label}<ArrowUpRight size={13} /></Link>)}
           </div>}
-          {message.role === 'bot' && message.text && !message.streaming && 'speechSynthesis' in window && (
-            <button
-              className="text-link"
-              onClick={() => toggleSpeaking(i, message.text)}
-              aria-label={speakingIndex === i ? 'Dừng đọc to' : 'Đọc to câu trả lời'}
-            >
-              {speakingIndex === i ? <><VolumeX size={14} /> Dừng đọc</> : <><Volume2 size={14} /> Đọc to</>}
-            </button>
+          {message.role === 'bot' && message.text && !message.streaming && message.source && (
+            <span className="chat-actions">
+              {'speechSynthesis' in window && <button
+                className="text-link"
+                onClick={() => toggleSpeaking(i, message.text)}
+                aria-label={speakingIndex === i ? 'Dừng đọc to' : 'Đọc to câu trả lời'}
+              >
+                {speakingIndex === i ? <><VolumeX size={14} /> Dừng đọc</> : <><Volume2 size={14} /> Đọc to</>}
+              </button>}
+              <button className="text-link" onClick={() => drillSimilar(i)} aria-label="Luyện 5 bài tương tự">
+                <Target size={14} /> Luyện 5 bài tương tự
+              </button>
+            </span>
           )}
         </div>)}
 

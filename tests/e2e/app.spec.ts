@@ -673,6 +673,23 @@ test('bookshelf finds real open copies of a curated book', async ({ page }) => {
 });
 
 
+test('AI answer offers similar drills that open a matching practice session', async ({ page }) => {
+  await page.route('**/api/gemini', route => route.fulfill({
+    status: 200,
+    json: { text: 'Đạo hàm của x^3 là 3x^2 theo quy tắc lũy thừa.', tutorMode: 'CONCEPT_EXPLANATION' },
+  }));
+
+  await page.goto('/ai');
+  await page.getByLabel('Câu hỏi cho trợ lý').fill('Tính đạo hàm của x^3');
+  await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+  await expect(page.getByRole('button', { name: 'Luyện 5 bài tương tự' })).toBeVisible();
+  await page.getByRole('button', { name: 'Luyện 5 bài tương tự' }).click();
+  await expect(page).toHaveURL(/practice\?[^]*src=gen/);
+  await expect(page).toHaveURL(/tpl=gen-derivative/);
+  await expect(page.getByText('đúng kỹ năng vừa hỏi AI')).toBeVisible();
+});
+
+
 test('dashboard and progress prioritize weak-question review', async ({ page }) => {
   await page.goto('/');
   await page.evaluate(() => {

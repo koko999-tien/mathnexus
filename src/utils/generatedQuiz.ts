@@ -239,10 +239,53 @@ const TEMPLATES: Template[] = [
       return { q: `${value} có phải số nguyên tố không?`, options, correct: i, ex: isPrime ? `${value} chỉ có hai ước dương là 1 và ${value}.` : `${value} có ước ngoài 1 và chính nó nên là hợp số.` };
     },
   },
+  {
+    id: 'gen-bayes-screening',
+    cat: 'Xác suất',
+    difficulty: 'Khó',
+    make: rng => {
+      const prevalence = pick(rng, [1, 2]);
+      const sensitivity = 99;
+      const falsePositive = pick(rng, [4, 5]);
+      const pD = prevalence / 100;
+      const pPos = sensitivity / 100 * pD + falsePositive / 100 * (1 - pD);
+      const posterior = (sensitivity / 100 * pD) / pPos;
+      const correct = `${(posterior * 100).toFixed(1).replace('.', ',')}%`;
+      const { options, correct: i } = uniqueOptions(rng, correct, [`${prevalence}%`, `${sensitivity}%`, `${(100 - posterior * 100).toFixed(1).replace('.', ',')}%`]);
+      return { q: `Bệnh tỷ lệ ${prevalence}%. Test đúng ${sensitivity}% khi có bệnh, dương giả ${falsePositive}%. P(bệnh | dương tính) gần nhất?`, options, correct: i, ex: `Bayes: ${sensitivity}%·${prevalence}% / (${sensitivity}%·${prevalence}%+${falsePositive}%·${100 - prevalence}%) ≈ ${correct}.` };
+    },
+  },
+  {
+    id: 'gen-quadratic-roots',
+    cat: 'Đại số',
+    difficulty: 'Vừa',
+    make: rng => {
+      const roots = pick(rng, [[2, 3], [1, 4], [-1, 5], [2, -3], [-2, -4]] as const);
+      const [r1, r2] = [...roots].sort((x, y) => x - y);
+      const b = -(r1 + r2);
+      const c = r1 * r2;
+      const polyText = `x²${b >= 0 ? '+' : ''}${b}x${c >= 0 ? '+' : ''}${c}=0`;
+      const correct = `x=${r1} hoặc x=${r2}`;
+      const { options, correct: i } = uniqueOptions(rng, correct, [`x=${-r1} hoặc x=${-r2}`, `x=${r1}`, `Vô nghiệm`]);
+      return { q: `Nghiệm của ${polyText}?`, options, correct: i, ex: `Phân tích (x−${r1})(x−${r2})=0 nên ${correct}.` };
+    },
+  },
+  {
+    id: 'gen-amgm-max',
+    cat: 'Bất đẳng thức',
+    difficulty: 'Vừa',
+    make: rng => {
+      const half = int(rng, 3, 9);
+      const sum = half * 2;
+      const correct = String(half * half);
+      const { options, correct: i } = uniqueOptions(rng, correct, [String(sum), String(half * half + 1), String(sum * sum)]);
+      return { q: `x,y≥0 và x+y=${sum}. Giá trị lớn nhất của xy?`, options, correct: i, ex: `AM–GM: √(xy)≤${sum}/2=${half} nên xy≤${correct}, dấu bằng khi x=y=${half}.` };
+    },
+  },
 ];
 
 export const GENERATED_CATS = [...new Set(TEMPLATES.map(template => template.cat))];
-export const GENERATED_DIFFICULTIES: QuizDifficulty[] = ['Cơ bản', 'Vừa'];
+export const GENERATED_DIFFICULTIES: QuizDifficulty[] = ['Cơ bản', 'Vừa', 'Khó'];
 
 export const GENERATED_BANK: Quiz[] = TEMPLATES.map(template => ({
   id: template.id,
@@ -254,8 +297,10 @@ export const GENERATED_BANK: Quiz[] = TEMPLATES.map(template => ({
   ex: '',
 }));
 
-export function countGenerated(cat = 'Tất cả', difficulty = 'Tất cả'): number {
+export function countGenerated(cat = 'Tất cả', difficulty = 'Tất cả', only?: string[]): number {
+  const allowed = only && only.length ? new Set(only) : null;
   return TEMPLATES.filter(template =>
+    (!allowed || allowed.has(template.id)) &&
     (cat === 'Tất cả' || template.cat === cat) &&
     (difficulty === 'Tất cả' || template.difficulty === difficulty),
   ).length;
@@ -263,6 +308,40 @@ export function countGenerated(cat = 'Tất cả', difficulty = 'Tất cả'): n
 
 export function templateById(templateId: string) {
   return TEMPLATES.find(template => template.id === templateId);
+}
+
+// Đoán kỹ năng từ câu hỏi/câu trả lời (tiếng Việt, không dấu cũng được)
+// để gợi ý đúng dạng bài tương tự. Không khớp gì → trả về rỗng (luyện tổng hợp).
+const SKILL_KEYWORDS: Array<{ match: string[]; templates: string[] }> = [
+  { match: ['đạo hàm', 'dao ham'], templates: ['gen-derivative-monomial', 'gen-derivative-poly'] },
+  { match: ['tích phân', 'tich phan', 'nguyên hàm', 'nguyen ham'], templates: ['gen-definite-integral'] },
+  { match: ['xác suất', 'xac suat', 'bayes'], templates: ['gen-bayes-screening'] },
+  { match: ['logarit', 'log_'], templates: ['gen-log-power'] },
+  { match: ['ma trận', 'ma tran', 'định thức', 'dinh thuc', 'det('], templates: ['gen-det-2x2'] },
+  { match: ['số phức', 'so phuc', 'module', '|'], templates: ['gen-complex-modulus'] },
+  { match: ['lượng giác', 'luong giac', 'sin(', 'cos('], templates: ['gen-trig-special'] },
+  { match: ['tổ hợp', 'to hop', 'giai thừa', 'giai thua', 'c('], templates: ['gen-combination', 'gen-factorial'] },
+  { match: ['trung bình', 'trung binh', 'thống kê', 'thong ke'], templates: ['gen-mean'] },
+  { match: ['nguyên tố', 'nguyen to', 'đồng dư', 'dong du', 'modulo'], templates: ['gen-prime-check'] },
+  { match: ['phương trình bậc hai', 'phuong trinh bac hai', 'nghiệm của x'], templates: ['gen-quadratic-roots', 'gen-abs-equation'] },
+  { match: ['bất đẳng thức', 'bat dang thuc', 'lớn nhất', 'lon nhat', 'nhỏ nhất', 'nho nhat'], templates: ['gen-amgm-max'] },
+];
+
+function foldVietnamese(text: string): string {
+  return text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+export function detectSkillTemplates(text: string): string[] {
+  const folded = foldVietnamese(text);
+  const found: string[] = [];
+  for (const rule of SKILL_KEYWORDS) {
+    if (rule.match.some(keyword => folded.includes(foldVietnamese(keyword)))) {
+      for (const id of rule.templates) {
+        if (!found.includes(id)) found.push(id);
+      }
+    }
+  }
+  return found;
 }
 
 export function generateQuestion(templateId: string, seed: number): GeneratedQuiz | null {
@@ -282,8 +361,10 @@ export function generateQuestion(templateId: string, seed: number): GeneratedQui
   };
 }
 
-export function generateSession(seed: number, count: number, cat = 'Tất cả', difficulty = 'Tất cả'): GeneratedQuiz[] {
+export function generateSession(seed: number, count: number, cat = 'Tất cả', difficulty = 'Tất cả', only?: string[]): GeneratedQuiz[] {
+  const allowed = only && only.length ? new Set(only.filter(id => templateById(id))) : null;
   const pool = TEMPLATES.filter(template =>
+    (!allowed || allowed.has(template.id)) &&
     (cat === 'Tất cả' || template.cat === cat) &&
     (difficulty === 'Tất cả' || template.difficulty === difficulty),
   );

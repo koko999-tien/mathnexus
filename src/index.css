@@ -312,6 +312,7 @@ svg { flex-shrink: 0; }
 .book-matches strong { display: block; font-size: 13px; }
 .book-matches small { display: block; color: var(--color-muted); font-size: 12px; }
 .book-match-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; font-size: 12px; }
+.chat-actions { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 8px; }
 .dark .green { --tone-bg: #31452b; --tone-ink: #b2cd99; }
 .dark .blue { --tone-bg: #283c4c; --tone-ink: #a0bedb; }
 .dark .peach { --tone-bg: #423b2c; --tone-ink: #d8b781; }
