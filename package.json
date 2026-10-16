@@ -18,29 +18,29 @@
     "audit:prod": "npm audit --omit=dev --audit-level=high"
   },
   "dependencies": {
-    "@react-three/drei": "^10.7.8",
-    "@react-three/fiber": "^9.7.0",
+    "@react-three/drei": "^10.7.9",
+    "@react-three/fiber": "^9.8.1",
     "@tailwindcss/vite": "^4.3.3",
     "@types/katex": "^0.16.8",
     "decimal.js": "^10.6.0",
-    "katex": "^0.18.7",
-    "lucide-react": "^1.47.0",
+    "katex": "^0.19.0",
+    "lucide-react": "^1.55.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-router-dom": "^7.18.4",
     "tailwindcss": "^4.3.3",
-    "three": "^0.186.0"
+    "three": "^0.186.1"
   },
   "devDependencies": {
-    "@playwright/test": "^1.63.0",
-    "@types/node": "^24.13.3",
+    "@playwright/test": "^1.64.0",
+    "@types/node": "^24.19.2",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
-    "oxlint": "^1.81.0",
-    "sharp": "^0.35.4",
+    "oxlint": "^1.87.0",
+    "sharp": "^0.35.5",
     "typescript": "~6.0.2",
-    "vite": "^8.3.0",
+    "vite": "^8.3.4",
     "vite-plugin-pwa": "^1.3.0"
   }
 }
