@@ -542,7 +542,7 @@ export default function AI() {
     <div className="page-header">
       <p className="eyebrow">TRỢ LÝ TOÁN HỌC</p>
       <h1>Hỏi đáp toán học</h1>
-      <p>Trợ lý dùng câu hỏi, nội dung liên quan và tiến độ học hiện có để chọn cách trả lời. Mặc định sẽ gợi ý từng bước; bạn vẫn có thể yêu cầu lời giải đầy đủ.</p>
+      <p>Trợ lý gợi ý từng bước theo tiến độ của bạn. Muốn lời giải đầy đủ, cứ nói rõ.</p>
     </div>
 
     {goalContext && <div className="helper-text mb-3" role="status">
