@@ -21,6 +21,7 @@ import {
   saveProgress,
   type ProgressData,
 } from './storage.ts';
+import { loadNotes, saveNotes, type NotebookNote } from './notebook.ts';
 
 export const BACKUP_VERSION = 2;
 
@@ -30,6 +31,7 @@ export interface MathNexusBackupV2 {
   exportedAt: string;
   progress: ProgressData;
   notes: string;
+  notebook?: NotebookNote[];
   learningGoal: LearningGoal | null;
   exploration: ExplorationSummary;
   canvas: MathCanvasState;
@@ -39,6 +41,7 @@ export interface ParsedBackup {
   sourceVersion: 1 | 2;
   progress: ProgressData;
   notes: string;
+  notebook?: NotebookNote[];
   learningGoal?: LearningGoal | null;
   exploration?: ExplorationSummary;
   canvas?: MathCanvasState;
@@ -49,12 +52,15 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 export function createBackupSnapshot(): MathNexusBackupV2 {
+  const notebook = loadNotes();
+  const activeText = (() => { const value = load<unknown>('notes', ''); return typeof value === 'string' ? value : ''; })();
   return {
     app: 'MathNexus',
     version: BACKUP_VERSION,
     exportedAt: new Date().toISOString(),
     progress: getProgress(),
-    notes: (() => { const value = load<unknown>('notes', ''); return typeof value === 'string' ? value : ''; })(),
+    notes: activeText || notebook[0]?.text || '',
+    notebook,
     learningGoal: getLearningGoal(),
     exploration: getExplorationSummary(),
     canvas: loadCanvasState(),
@@ -98,6 +104,7 @@ export function parseBackupSnapshot(text: string): ParsedBackup {
     sourceVersion: 2,
     progress: normalizeProgress(raw.progress),
     notes: raw.notes,
+    notebook: Array.isArray(raw.notebook) ? raw.notebook : undefined,
     learningGoal,
     exploration: normalizeExplorationSummary(raw.exploration),
     canvas: normalizeCanvasState(raw.canvas),
@@ -115,6 +122,9 @@ export function restoreBackupSnapshot(snapshot: ParsedBackup): { ok: true } | { 
 
   try {
     if (!save('notes', snapshot.notes)) throw new Error('Không lưu được sổ tay.');
+    if (snapshot.notebook && !saveNotes(snapshot.notebook.filter(note => note && typeof note.id === 'string'))) {
+      throw new Error('Không lưu được các ghi chú.');
+    }
     if (!saveProgress(snapshot.progress)) throw new Error('Không lưu được tiến độ.');
 
     if (snapshot.sourceVersion === 2) {

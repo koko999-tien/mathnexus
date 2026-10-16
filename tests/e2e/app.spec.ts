@@ -1159,3 +1159,19 @@ test('goal diagnostic debrief explains concept evidence after a complete session
   await expect(debrief.locator('.diagnostic-concept-row').first()).toBeVisible();
   await expect(debrief.getByRole('link', { name: /Ôn đúng điểm yếu|Tiếp tục lộ trình/ })).toBeVisible();
 });
+
+
+test('notebook supports multiple notes, preview and attached questions', async ({ page }) => {
+  await page.goto('/notebook');
+  await page.getByRole('button', { name: 'Ghi chú mới' }).click();
+  await page.getByLabel('Tiêu đề ghi chú').fill('Ôn đạo hàm');
+  await page.getByLabel('Nội dung sổ tay').fill('Nho cong thuc dao ham');
+  await page.getByRole('button', { name: 'Trước', exact: true }).click();
+  await expect(page.locator('.notebook-preview')).toContainText('Nho cong thuc');
+  await page.getByRole('button', { name: 'Soạn', exact: true }).click();
+  await page.getByRole('button', { name: /Gắn câu hỏi/ }).click();
+  await page.getByLabel('Tìm câu hỏi hoặc bài học để gắn').fill('C(5,2)');
+  await page.getByRole('button', { name: 'Gắn câu hỏi: C(5,2) bằng?' }).click();
+  await expect(page.getByLabel('Nội dung sổ tay')).toHaveValue(/Câu hỏi đã gắn/);
+});
+
