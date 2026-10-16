@@ -77,6 +77,55 @@ test('dap an dung khop cong thuc doc lap', () => {
   }
 });
 
+test('template hinh toa do + vecto + bien doi tuyen tinh dung cong thuc doc lap', () => {
+  for (const seed of SEEDS) {
+    const lin = generateQuestion('gen-lin-transform-image', seed);
+    assert.ok(lin);
+    const linMatch = /T\(x,y\)=\((-?\d+)x([+-]\d+)y, (-?\d+)x([+-]\d+)y\)\. T\((\d+),(\d+)\)/.exec(lin.q);
+    assert.ok(linMatch, lin.q);
+    const [a, b, c, d, x, y] = linMatch.slice(1).map(Number);
+    assert.equal(lin.a[lin.i], `(${a * x + b * y}, ${c * x + d * y})`);
+
+    const dot = generateQuestion('gen-vector-dot', seed);
+    assert.ok(dot);
+    const dotMatch = /a=\((-?\d+), (-?\d+)\), b=\((-?\d+), (-?\d+)\)/.exec(dot.q);
+    assert.ok(dotMatch, dot.q);
+    const [a2, b2, c2, d2] = dotMatch.slice(1).map(Number);
+    assert.equal(dot.a[dot.i], String(a2 * c2 + b2 * d2));
+
+    const par = generateQuestion('gen-vector-parallel', seed);
+    assert.ok(par);
+    const parMatch = /u=\((\d+), (\d+)\), v=\((\d+), (\d+)\)/.exec(par.q);
+    assert.ok(parMatch, par.q);
+    const [u1, u2, v1, v2] = parMatch.slice(1).map(Number);
+    const isParallel = u1 * v2 === u2 * v1;
+    assert.equal(par.a[par.i], isParallel ? 'Cùng phương' : 'Không cùng phương');
+
+    const dist = generateQuestion('gen-coord-distance', seed);
+    assert.ok(dist);
+    const distMatch = /A\((\d+), (\d+)\) đến B\((\d+), (\d+)\)/.exec(dist.q);
+    assert.ok(distMatch, dist.q);
+    const [x0, y0, x1, y1] = distMatch.slice(1).map(Number);
+    const expected = Math.sqrt((x1 - x0) ** 2 + (y1 - y0) ** 2);
+    assert.equal(Number(dist.a[dist.i]), expected);
+    assert.ok(Number.isInteger(expected), dist.q);
+
+    const mid = generateQuestion('gen-coord-midpoint', seed);
+    assert.ok(mid);
+    const midMatch = /A\((\d+), (\d+)\) và B\((\d+), (\d+)\)/.exec(mid.q);
+    assert.ok(midMatch, mid.q);
+    const [mx0, my0, mx1, my1] = midMatch.slice(1).map(Number);
+    assert.equal(mid.a[mid.i], `(${(mx0 + mx1) / 2}, ${(my0 + my1) / 2})`);
+
+    const slope = generateQuestion('gen-coord-slope', seed);
+    assert.ok(slope);
+    const slopeMatch = /A\((\d+), (\d+)\) và B\((\d+), (\d+)\)/.exec(slope.q);
+    assert.ok(slopeMatch, slope.q);
+    const [sx0, sy0, sx1, sy1] = slopeMatch.slice(1).map(Number);
+    assert.equal(slope.a[slope.i], String((sy1 - sy0) / (sx1 - sx0)));
+  }
+});
+
 test('template khong ton tai tra ve null', () => {
   assert.equal(generateQuestion('khong-co', 1), null);
   assert.equal(templateById('khong-co'), undefined);
@@ -86,6 +135,8 @@ test('detect skill dung ca tieng Viet khong dau', () => {
   assert.deepEqual(detectSkillTemplates('Tính đạo hàm của x^3'), ['gen-derivative-monomial', 'gen-derivative-poly']);
   assert.deepEqual(detectSkillTemplates('tinh dao ham cua x^3'), ['gen-derivative-monomial', 'gen-derivative-poly']);
   assert.deepEqual(detectSkillTemplates('Bài toán xác suất Bayes'), ['gen-bayes-screening']);
+  assert.deepEqual(detectSkillTemplates('Tính tích vô hướng hai vectơ'), ['gen-vector-dot', 'gen-vector-parallel', 'gen-complex-modulus']);
+  assert.deepEqual(detectSkillTemplates('tim toa do trung diem'), ['gen-coord-distance', 'gen-coord-midpoint', 'gen-coord-slope']);
   assert.deepEqual(detectSkillTemplates('Hôm nay trời đẹp'), []);
 });
 

@@ -282,6 +282,81 @@ const TEMPLATES: Template[] = [
       return { q: `x,y≥0 và x+y=${sum}. Giá trị lớn nhất của xy?`, options, correct: i, ex: `AM–GM: √(xy)≤${sum}/2=${half} nên xy≤${correct}, dấu bằng khi x=y=${half}.` };
     },
   },
+  {
+    id: 'gen-lin-transform-image',
+    cat: 'Đại số tuyến tính',
+    difficulty: 'Vừa',
+    make: rng => {
+      const [a, b, c, d] = [int(rng, -2, 3), int(rng, -2, 3), int(rng, -2, 3), int(rng, -2, 3)];
+      const [x, y] = [int(rng, 1, 4), int(rng, 1, 4)];
+      const px = a * x + b * y;
+      const py = c * x + d * y;
+      const correct = `(${px}, ${py})`;
+      const { options, correct: i } = uniqueOptions(rng, correct, [`(${px + 1}, ${py})`, `(${px}, ${py + 1})`, `(${py}, ${px})`]);
+      return { q: `T(x,y)=(${a}x${b >= 0 ? '+' : ''}${b}y, ${c}x${d >= 0 ? '+' : ''}${d}y). T(${x},${y}) bằng?`, options, correct: i, ex: `Thay vào: (${a}·${x}${b >= 0 ? '+' : ''}${b}·${y}, ${c}·${x}${d >= 0 ? '+' : ''}${d}·${y})=${correct}.` };
+    },
+  },
+  {
+    id: 'gen-vector-dot',
+    cat: 'Đại số tuyến tính',
+    difficulty: 'Cơ bản',
+    make: rng => {
+      const [a, b, c, d] = [int(rng, -4, 5), int(rng, -4, 5), int(rng, -4, 5), int(rng, -4, 5)];
+      const correct = String(a * c + b * d);
+      const { options, correct: i } = uniqueOptions(rng, correct, [String(a * c - b * d), String(a * d + b * c), String(Math.abs(a * c + b * d) + 1)]);
+      return { q: `a=(${a}, ${b}), b=(${c}, ${d}). Tích vô hướng a·b bằng?`, options, correct: i, ex: `a·b=${a}·${c}+${b}·${d}=${correct}.` };
+    },
+  },
+  {
+    id: 'gen-vector-parallel',
+    cat: 'Đại số tuyến tính',
+    difficulty: 'Vừa',
+    make: rng => {
+      const parallel = rng() < 0.5;
+      const [a, b] = [int(rng, 1, 5), int(rng, 1, 5)];
+      const k = int(rng, 2, 3);
+      const [c, d] = parallel ? [a * k, b * k] : [a * k + 1, b * k];
+      const correct = parallel ? 'Cùng phương' : 'Không cùng phương';
+      const { options, correct: i } = uniqueOptions(rng, correct, [parallel ? 'Không cùng phương' : 'Cùng phương', 'Vuông góc', 'Không xác định']);
+      return { q: `u=(${a}, ${b}), v=(${c}, ${d}). Hai vectơ này?`, options, correct: i, ex: parallel ? `v=${k}·u nên cùng phương.` : `${a}·${d}−${b}·${c}=${a * d - b * c}≠0 nên không cùng phương.` };
+    },
+  },
+  {
+    id: 'gen-coord-distance',
+    cat: 'Hình học',
+    difficulty: 'Cơ bản',
+    make: rng => {
+      const [dx, dy, expected] = pick(rng, [[3, 4, 5], [5, 12, 13], [6, 8, 10], [8, 15, 17]] as const);
+      const [x0, y0] = [int(rng, 0, 4), int(rng, 0, 4)];
+      const correct = String(expected);
+      const { options, correct: i } = uniqueOptions(rng, correct, [String(expected + 1), String(dx + dy), String(expected - 1)]);
+      return { q: `Khoảng cách A(${x0}, ${y0}) đến B(${x0 + dx}, ${y0 + dy})?`, options, correct: i, ex: `AB=√(${dx}²+${dy}²)=√${dx * dx + dy * dy}=${correct}.` };
+    },
+  },
+  {
+    id: 'gen-coord-midpoint',
+    cat: 'Hình học',
+    difficulty: 'Cơ bản',
+    make: rng => {
+      const [x1, y1] = [int(rng, 0, 6), int(rng, 0, 6)];
+      const [dx, dy] = [int(rng, 1, 4) * 2, int(rng, 1, 4) * 2];
+      const correct = `(${(x1 + x1 + dx) / 2}, ${(y1 + y1 + dy) / 2})`;
+      const { options, correct: i } = uniqueOptions(rng, correct, [`(${x1 + dx}, ${y1 + dy})`, `(${x1}, ${y1})`, `(${(x1 + x1 + dx) / 2 + 1}, ${(y1 + y1 + dy) / 2})`]);
+      return { q: `Trung điểm của A(${x1}, ${y1}) và B(${x1 + dx}, ${y1 + dy})?`, options, correct: i, ex: `M=((${x1}+${x1 + dx})/2, (${y1}+${y1 + dy})/2)=${correct}.` };
+    },
+  },
+  {
+    id: 'gen-coord-slope',
+    cat: 'Hình học',
+    difficulty: 'Vừa',
+    make: rng => {
+      const slope = pick(rng, [-3, -2, -1, 1, 2, 3]);
+      const [x0, y0] = [int(rng, 0, 4), int(rng, 0, 4)];
+      const correct = String(slope);
+      const { options, correct: i } = uniqueOptions(rng, correct, [String(-slope), String(slope + 1), `1/${slope}`]);
+      return { q: `Đường thẳng qua A(${x0}, ${y0}) và B(${x0 + 1}, ${y0 + slope}) có hệ số góc?`, options, correct: i, ex: `m=Δy/Δx=${slope}/1=${correct}.` };
+    },
+  },
 ];
 
 export const GENERATED_CATS = [...new Set(TEMPLATES.map(template => template.cat))];
@@ -325,6 +400,9 @@ const SKILL_KEYWORDS: Array<{ match: string[]; templates: string[] }> = [
   { match: ['nguyên tố', 'nguyen to', 'đồng dư', 'dong du', 'modulo'], templates: ['gen-prime-check'] },
   { match: ['phương trình bậc hai', 'phuong trinh bac hai', 'nghiệm của x'], templates: ['gen-quadratic-roots', 'gen-abs-equation'] },
   { match: ['bất đẳng thức', 'bat dang thuc', 'lớn nhất', 'lon nhat', 'nhỏ nhất', 'nho nhat'], templates: ['gen-amgm-max'] },
+  { match: ['biến đổi tuyến tính', 'bien doi tuyen tinh', 'ánh xạ tuyến tính'], templates: ['gen-lin-transform-image', 'gen-det-2x2'] },
+  { match: ['vectơ', 'vecto', 'vector', 'tích vô hướng', 'tich vo huong', 'cùng phương', 'cung phuong'], templates: ['gen-vector-dot', 'gen-vector-parallel', 'gen-complex-modulus'] },
+  { match: ['tọa độ', 'toa do', 'khoảng cách', 'khoang cach', 'trung điểm', 'trung diem', 'hệ số góc', 'he so goc'], templates: ['gen-coord-distance', 'gen-coord-midpoint', 'gen-coord-slope'] },
 ];
 
 function foldVietnamese(text: string): string {
