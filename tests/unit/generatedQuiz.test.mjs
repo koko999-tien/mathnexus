@@ -131,6 +131,17 @@ test('template khong ton tai tra ve null', () => {
   assert.equal(templateById('khong-co'), undefined);
 });
 
+test('phuong trinh bac nhat thay nghiem vao de bang nhau', () => {
+  for (const seed of SEEDS) {
+    const question = generateQuestion('gen-linear-equation', seed);
+    assert.ok(question);
+    const match = /Nghiệm của (-?\d+)x([+-]\d+)=(-?\d+)\?/.exec(question.q);
+    assert.ok(match, question.q);
+    const [a, b, c] = match.slice(1).map(Number);
+    assert.equal(a * Number(question.a[question.i]) + b, c);
+  }
+});
+
 test('detect skill dung ca tieng Viet khong dau', () => {
   assert.deepEqual(detectSkillTemplates('Tính đạo hàm của x^3'), ['gen-derivative-monomial', 'gen-derivative-poly']);
   assert.deepEqual(detectSkillTemplates('tinh dao ham cua x^3'), ['gen-derivative-monomial', 'gen-derivative-poly']);

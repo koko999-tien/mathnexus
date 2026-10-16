@@ -357,6 +357,20 @@ const TEMPLATES: Template[] = [
       return { q: `Đường thẳng qua A(${x0}, ${y0}) và B(${x0 + 1}, ${y0 + slope}) có hệ số góc?`, options, correct: i, ex: `m=Δy/Δx=${slope}/1=${correct}.` };
     },
   },
+  {
+    id: 'gen-linear-equation',
+    cat: 'Đại số',
+    difficulty: 'Cơ bản',
+    make: rng => {
+      const root = int(rng, -5, 8);
+      const a = pick(rng, [2, 3, 4, 5]);
+      const b = int(rng, -9, 9);
+      const c = a * root + b;
+      const correct = String(root);
+      const { options, correct: i } = uniqueOptions(rng, correct, [String(root + 1), String(root - 1), String(-root)]);
+      return { q: `Nghiệm của ${a}x${b >= 0 ? '+' : ''}${b}=${c}?`, options, correct: i, ex: `${a}x=${c}${b >= 0 ? '−' : '+'}${Math.abs(b)}=${a * root} nên x=${correct}.` };
+    },
+  },
 ];
 
 export const GENERATED_CATS = [...new Set(TEMPLATES.map(template => template.cat))];
@@ -398,6 +412,7 @@ const SKILL_KEYWORDS: Array<{ match: string[]; templates: string[] }> = [
   { match: ['tổ hợp', 'to hop', 'giai thừa', 'giai thua', 'c('], templates: ['gen-combination', 'gen-factorial'] },
   { match: ['trung bình', 'trung binh', 'thống kê', 'thong ke'], templates: ['gen-mean'] },
   { match: ['nguyên tố', 'nguyen to', 'đồng dư', 'dong du', 'modulo'], templates: ['gen-prime-check'] },
+  { match: ['phương trình bậc nhất', 'phuong trinh bac nhat', 'tìm x', 'tim x'], templates: ['gen-linear-equation'] },
   { match: ['phương trình bậc hai', 'phuong trinh bac hai', 'nghiệm của x'], templates: ['gen-quadratic-roots', 'gen-abs-equation'] },
   { match: ['bất đẳng thức', 'bat dang thuc', 'lớn nhất', 'lon nhat', 'nhỏ nhất', 'nho nhat'], templates: ['gen-amgm-max'] },
   { match: ['biến đổi tuyến tính', 'bien doi tuyen tinh', 'ánh xạ tuyến tính'], templates: ['gen-lin-transform-image', 'gen-det-2x2'] },

@@ -56,7 +56,7 @@ export const MATH_CONCEPTS: MathConcept[] = [
   { id:'proof', title:'Phương pháp chứng minh', domain:'foundations', level:'THPT', description:'Trực tiếp, phản chứng, phản ví dụ và quy nạp.', prerequisites:['logic'], lessonIds:['proof'], tags:['chứng minh','quy nạp','phản chứng'] },
 
   { id:'algebraic-expressions', title:'Biểu thức đại số', domain:'algebra', level:'THCS', description:'Biến đổi biểu thức, hằng đẳng thức và phân tích nhân tử.', prerequisites:['number-systems'], tags:['biểu thức','nhân tử'] },
-  { id:'linear-equations', title:'Phương trình bậc nhất', domain:'algebra', level:'THCS', description:'Giải ax+b=0 và diễn giải bằng giao điểm của đường thẳng.', prerequisites:['algebraic-expressions'], toolPaths:['/tools'], tags:['phương trình','bậc nhất'] },
+  { id:'linear-equations', title:'Phương trình bậc nhất', domain:'algebra', level:'THCS', description:'Giải ax+b=0 và diễn giải bằng giao điểm của đường thẳng.', prerequisites:['algebraic-expressions'], lessonIds:['lineq'], toolPaths:['/tools'], tags:['phương trình','bậc nhất'] },
   { id:'quadratics', title:'Phương trình & hàm bậc hai', domain:'algebra', level:'THPT', description:'Biệt thức, nghiệm, parabol, đỉnh và trục đối xứng.', prerequisites:['linear-equations','functions'], lessonIds:['quad'], formulaIds:['delta'], toolPaths:['/graph','/tools'], tags:['bậc hai','delta','parabol'] },
   { id:'inequalities', title:'Bất đẳng thức', domain:'algebra', level:'THPT', description:'So sánh, miền nghiệm và kỹ thuật đánh giá.', prerequisites:['algebraic-expressions'], lessonIds:['amgm'], formulaIds:['amgmf'], tags:['bất đẳng thức','am-gm'] },
   { id:'sequences', title:'Dãy số', domain:'algebra', level:'THPT', description:'Cấp số cộng, cấp số nhân, số hạng tổng quát và tổng hữu hạn.', prerequisites:['functions'], lessonIds:['seq'], toolPaths:['/tools'], tags:['dãy','cấp số'] },
@@ -66,7 +66,7 @@ export const MATH_CONCEPTS: MathConcept[] = [
 
   { id:'euclidean-geometry', title:'Hình học Euclid', domain:'geometry', level:'THCS', description:'Điểm, đường, góc, tam giác và các quan hệ cơ bản.', prerequisites:['number-systems'], tags:['tam giác','góc','hình học'] },
   { id:'pythagoras', title:'Định lý Pythagoras', domain:'geometry', level:'THCS', description:'Quan hệ độ dài trong tam giác vuông và khoảng cách tọa độ.', prerequisites:['euclidean-geometry'], lessonIds:['pyth'], formulaIds:['py'], tags:['pythagoras','tam giác vuông'] },
-  { id:'coordinate-geometry', title:'Hình học tọa độ', domain:'geometry', level:'THPT', description:'Khoảng cách, phương trình đường và mô tả hình bằng tọa độ.', prerequisites:['pythagoras','linear-equations'], tags:['tọa độ','đường thẳng'] },
+  { id:'coordinate-geometry', title:'Hình học tọa độ', domain:'geometry', level:'THPT', description:'Khoảng cách, phương trình đường và mô tả hình bằng tọa độ.', prerequisites:['pythagoras','linear-equations'], lessonIds:['coord'], toolPaths:['/graph'], tags:['tọa độ','đường thẳng'] },
   { id:'vectors', title:'Vector', domain:'geometry', level:'THPT', description:'Độ lớn, hướng, cộng vector và tích vô hướng.', prerequisites:['coordinate-geometry'], lessonIds:['vec'], toolPaths:['/tools'], tags:['vector','tích vô hướng'] },
   { id:'cosine-law', title:'Định lý cosine', domain:'geometry', level:'THPT', description:'Mở rộng Pythagoras cho tam giác bất kỳ.', prerequisites:['pythagoras','trigonometric-functions'], formulaIds:['cos'], tags:['cosine','tam giác'] },
 
