@@ -204,6 +204,7 @@ export default function AI() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
   const [listening, setListening] = useState(false);
+  const [micNote, setMicNote] = useState('');
   const [speakingIndex, setSpeakingIndex] = useState<number | null>(null);
 
   useEffect(() => {
@@ -279,14 +280,21 @@ export default function AI() {
           const result = event.results[i];
           if (result && result.isFinal) transcript += result[0]?.transcript || '';
         }
-        if (transcript) setInput(current => (current ? `${current} ${transcript}` : transcript).slice(0, 12000));
+        if (transcript) {
+          setMicNote('');
+          setInput(current => (current ? `${current} ${transcript}` : transcript).slice(0, 12000));
+        }
       };
-      recognition.onerror = () => stopListening();
+      recognition.onerror = () => {
+        stopListening();
+        setMicNote('Không dùng được mic (trình duyệt chặn hoặc thiếu mic). Hãy bấm biểu tượng ổ khóa trên thanh địa chỉ để cho phép, hoặc gõ câu hỏi.');
+      };
       recognition.onend = () => {
         recognitionRef.current = null;
         setListening(false);
       };
       recognitionRef.current = recognition;
+      setMicNote('');
       recognition.start();
       setListening(true);
     } catch {
@@ -393,7 +401,9 @@ export default function AI() {
 
     try {
       if (!navigator.onLine) throw new Error('Bạn đang ngoại tuyến.');
-      if (import.meta.env.BASE_URL === '/mathnexus/') throw new Error('Bản GitHub Pages đang dùng thư viện tra cứu cục bộ.');
+      const isStaticPages = import.meta.env.BASE_URL === '/mathnexus/';
+      if (photo && isStaticPages) throw new Error('Bản GitHub Pages không đọc được ảnh. Hãy mở bản Vercel của MathNexus để AI xem ảnh bài toán.');
+      if (isStaticPages) throw new Error('Bản GitHub Pages đang dùng thư viện tra cứu cục bộ.');
 
       const response = await fetch('/api/gemini', {
         method: 'POST',
@@ -444,7 +454,22 @@ export default function AI() {
           }
           parser.finish();
         } catch (readError) {
-          if (readError instanceof Error && readError.name === 'AbortError') return;
+          if (readError instanceof Error && readError.name === 'AbortError') {
+            // Người dùng bấm Dừng: giữ phần đã hiện, tắt trạng thái stream
+            // để không kẹt caret nháy và hiện đủ nút Đọc to/Luyện tiếp.
+            const partial = streamed.trim();
+            setMessages(current => {
+              if (partial) {
+                const next = [...current];
+                const last = next[next.length - 1];
+                if (last && last.role === 'bot') next[next.length - 1] = { ...last, text: partial, streaming: false };
+                return next;
+              }
+              const trimmed = current[current.length - 1]?.role === 'bot' ? current.slice(0, -1) : current;
+              return trimmed;
+            });
+            return;
+          }
           streamFailed = true;
         } finally {
           try {
@@ -658,6 +683,7 @@ export default function AI() {
         />
         <button type="submit" aria-label="Gửi câu hỏi" className="button button-dark" disabled={loading || (!input.trim() && !photoDataUrl)}><Send size={18} /></button>
       </form>
+      {micNote && <p className="helper-text" role="status">{micNote}</p>}
     </div>
 
     <p className="helper-text mt-3">Các liên kết dưới câu trả lời là tài liệu MathNexus đã dùng để tham chiếu. Tiến độ học chỉ dùng để điều chỉnh cách hỗ trợ và không được dùng để tự suy đoán năng lực khi chưa có đủ dữ liệu.</p>
