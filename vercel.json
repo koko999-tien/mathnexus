@@ -9,6 +9,12 @@
     },
     "api/discovery.js": {
       "maxDuration": 30
+    },
+    "api/library.js": {
+      "maxDuration": 30
+    },
+    "api/telemetry.js": {
+      "maxDuration": 15
     }
   },
   "headers": [
