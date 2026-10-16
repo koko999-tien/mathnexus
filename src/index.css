@@ -404,7 +404,7 @@ svg { flex-shrink: 0; }
   .lesson-card { padding: 20px; }
   .lesson-card h3 { font-size: 17px; }
   .lesson-excerpt { font-size: 13px; }
-  .notebook-layout { grid-template-columns: 1fr; }
+  .notebook-list ul { max-height: none; }
   .lesson-category { margin-top: 14px; }
   .dashboard-bottom { grid-template-columns: 1fr; gap: 20px; margin-top: 26px; }
   .quick-tool h3 { font-size: 14px; }
@@ -1301,4 +1301,8 @@ svg { flex-shrink: 0; }
   .diagnostic-concept-row { grid-template-columns: minmax(0, 1fr) auto; }
   .diagnostic-concept-row > svg { display: none; }
   .diagnostic-debrief-next .button { width: 100%; }
+}
+
+@media (max-width: 639px) {
+  .notebook-layout { grid-template-columns: minmax(0, 1fr); }
 }
