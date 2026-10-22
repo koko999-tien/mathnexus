@@ -76,6 +76,17 @@ Sau deploy Vercel:
 5. kiểm tra endpoint từ origin khác trả 403;
 6. kiểm tra query string không bao giờ xuất hiện trong telemetry log.
 
+## Product analytics
+
+Trang production dùng **Vercel Web Analytics** để đếm lượt xem theo route template:
+
+- chỉ bật ở production, tắt ở localhost và GitHub Pages;
+- route `/lesson/:id`, `/book/:id`, `/formula/:id` đã gộp ID, không gửi query string;
+- không dùng cookie, không gửi tên hiển thị, nội dung học, câu trả lời hay localStorage;
+- gói Hobby chỉ có pageview. Không dùng `track()` custom event vì cần gói Pro.
+
+Bật trong Vercel: Project → Analytics → Enable Web Analytics, sau đó deploy lại. Kiểm tra tab Analytics có pageview cho `/`, `/practice`, `/lesson/:id` và không thấy ID bài học cụ thể.
+
 ## Privacy rule
 
 Nếu một metric mới cần nội dung người dùng để hoạt động, metric đó không được thêm vào pipeline mặc định. Cần một thiết kế/consent riêng trước.

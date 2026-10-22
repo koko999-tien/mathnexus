@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  analyticsHostEnabled,
   telemetryErrorName,
   telemetryRouteTemplate,
 } from '../../src/utils/observability.ts';
@@ -19,4 +20,13 @@ test('observability reports error classes without error messages', () => {
   assert.equal(telemetryErrorName(error), 'TypeError');
   assert.equal(telemetryErrorName({ name: 'Custom Error!' }), 'Custom_Error_');
   assert.equal(telemetryErrorName('raw rejection text'), 'NonErrorRejection');
+});
+
+test('product analytics stays off on local and static-only hosts', () => {
+  assert.equal(analyticsHostEnabled('mathnexus-three.vercel.app'), true);
+  assert.equal(analyticsHostEnabled('preview-abc.vercel.app'), true);
+  assert.equal(analyticsHostEnabled('localhost'), false);
+  assert.equal(analyticsHostEnabled('127.0.0.1'), false);
+  assert.equal(analyticsHostEnabled('::1'), false);
+  assert.equal(analyticsHostEnabled('koko999-tien.github.io'), false);
 });

@@ -5,6 +5,7 @@ import { Sidebar } from './components/layout/Sidebar';
 import { TopBar } from './components/layout/TopBar';
 import { BottomNav } from './components/layout/BottomNav';
 import { AppStatus } from './components/layout/AppStatus';
+import { WebAnalytics } from './components/layout/WebAnalytics';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { NAVIGATION } from './data/navigation';
 import NotFound from './pages/NotFound';
@@ -73,6 +74,7 @@ export default function App() {
   return (
     <BrowserRouter basename={routerBase || '/'}>
       <RouteEffects />
+      <WebAnalytics />
       <a href="#main-content" className="skip-link">Đi đến nội dung chính</a>
       <div className="app-shell">
         <Sidebar />

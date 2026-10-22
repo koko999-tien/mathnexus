@@ -53,6 +53,7 @@ Checklist này dùng cho release production, tách biệt với việc merge PR 
 
 ### Observability
 - [ ] Có performance telemetry trong Vercel Function logs.
+- [ ] Vercel Web Analytics đã bật và pageview chỉ hiện route template, không có ID/query.
 - [ ] Log chỉ chứa route template + numeric metrics/whitelisted error metadata.
 - [ ] Không xuất hiện AI prompt, notes, displayName, localStorage hay query string.
 

@@ -97,13 +97,16 @@ function stackLocation(error: Error) {
   };
 }
 
+export function analyticsHostEnabled(hostname: string) {
+  return hostname !== 'localhost'
+    && hostname !== '127.0.0.1'
+    && hostname !== '::1'
+    && !hostname.endsWith('.github.io');
+}
+
 function telemetryEnabled() {
   if (!import.meta.env.PROD || typeof window === 'undefined') return false;
-  const host = window.location.hostname;
-  return host !== 'localhost'
-    && host !== '127.0.0.1'
-    && host !== '::1'
-    && !host.endsWith('.github.io');
+  return analyticsHostEnabled(window.location.hostname);
 }
 
 function sendTelemetry(payload: TelemetryPayload) {
