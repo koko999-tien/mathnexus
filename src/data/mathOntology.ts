@@ -208,6 +208,18 @@ export const QUIZ_CONCEPT_MAP: Record<string, string> = {
   'gravity-inverse-square': 'newtonian-gravity',
   'nbody-no-closed-form': 'nbody-problem',
   'hamilton-equations': 'hamiltonian-mechanics',
+  'calc-lhopital-tan-cubic': 'limits',
+  'calc-improper-integral-p': 'definite-integrals',
+  'linear-eigen-2-1-1-2': 'eigen',
+  'series-basel-sum': 'series',
+  'number-phi-36': 'modular-arithmetic',
+  'prob-two-aces-conditional': 'conditional-probability',
+  'de-logistic-solution': 'first-order-ode',
+  'matrix-rank-3x3': 'matrices',
+  'complex-fifth-roots-sum': 'de-moivre',
+  'graph-euler-circuit': 'graph-theory',
+  'trig-sin-18-exact': 'trig-identities',
+  'prob-two-positive-tests': 'bayes',
 };
 
 export const ATOM_BY_ID = new Map(MATH_ATOMS.map(atom => [atom.id, atom]));

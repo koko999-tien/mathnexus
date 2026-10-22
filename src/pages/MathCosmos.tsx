@@ -1,14 +1,15 @@
-import { useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Box, Cpu, Focus, Layers3, Network, Search, Sparkles, X } from 'lucide-react';
 import { ChatText } from '../components/ui/ChatText';
 import { PrecisionBadge } from '../components/ui/PrecisionBadge';
 import { MATH_CONCEPTS, MATH_DOMAINS } from '../data/mathKnowledge';
 import { MATH_ATOMS } from '../data/mathOntology';
-import { MathCosmosGraph } from '../cosmos/MathCosmosGraph';
 import { cosmosNodeById, cosmosSearch, type CosmosNode } from '../cosmos/cosmosGraph';
 import { useCosmosGraph } from '../cosmos/useCosmosGraph';
 import { recordAtomExploration, recordConceptExploration } from '../exploration/explorationState';
+
+const MathCosmosGraph = lazy(() => import('../cosmos/MathCosmosGraph').then(module => ({ default: module.MathCosmosGraph })));
 
 const QUICK_JUMPS = [
   ['concept:taylor', 'Taylor'],
@@ -81,14 +82,16 @@ export default function MathCosmos() {
     </div>
 
     <div className="cosmos-stage">
-      <MathCosmosGraph
-        nodes={data.nodes}
-        edges={data.edges}
-        selectedId={selected?.id || null}
-        onSelect={selectNode}
-        reduceMotion={reduceMotion}
-        quality={mobileQuality ? 'mobile' : 'desktop'}
-      />
+      <Suspense fallback={<div className="cosmos-stage-loading" role="status">Đang tải bản đồ 3D…</div>}>
+        <MathCosmosGraph
+          nodes={data.nodes}
+          edges={data.edges}
+          selectedId={selected?.id || null}
+          onSelect={selectNode}
+          reduceMotion={reduceMotion}
+          quality={mobileQuality ? 'mobile' : 'desktop'}
+        />
+      </Suspense>
 
       <div className="cosmos-search-panel">
         <label>

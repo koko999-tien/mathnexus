@@ -1,16 +1,40 @@
-import { useParams, Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Link, useParams } from 'react-router-dom';
 import { BOOKS } from '../data/books';
 import { recordActivity } from '../utils/storage';
 import { ArrowLeft } from 'lucide-react';
+import { PageMeta } from '../components/seo/PageMeta';
+import { SITE_URL } from '../data/seo';
+import NotFound from './NotFound';
 
 export function BookDetail() {
   const { id } = useParams();
-  const book = BOOKS.find(b => b.id === id);
-  useEffect(() => { if (book) recordActivity('book', book.id); }, [book]);
-  if (!book) return <p className="text-muted">Sách không tồn tại.</p>;
+  const book = BOOKS.find(item => item.id === id);
+
+  useEffect(() => {
+    if (book) recordActivity('book', book.id);
+  }, [book]);
+
+  if (!book) return <NotFound />;
+  const description = `${book.why} ${book.ideas}`.slice(0, 158);
+  const path = `/book/${encodeURIComponent(book.id)}`;
 
   return (
     <section>
+      <PageMeta
+        title={`${book.t} · MathNexus`}
+        description={description}
+        path={path}
+        type="article"
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'Book',
+          name: book.t,
+          description,
+          inLanguage: 'vi',
+          url: `${SITE_URL}${path}`,
+        }}
+      />
       <Link to="/books" className="inline-flex items-center gap-1 text-accent font-semibold text-sm no-underline mb-4">
         <ArrowLeft size={14} /> Tủ sách
       </Link>
@@ -31,4 +55,3 @@ export function BookDetail() {
 }
 
 export default BookDetail;
-import { useEffect } from 'react';

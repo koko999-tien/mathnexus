@@ -1,15 +1,35 @@
-import { useParams, Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { FORMS } from '../data/formulas';
 import { MathText } from '../components/ui/MathText';
 import { ArrowLeft } from 'lucide-react';
+import { PageMeta } from '../components/seo/PageMeta';
+import { SITE_URL } from '../data/seo';
+import NotFound from './NotFound';
 
 export function FormulaDetail() {
   const { id } = useParams();
-  const formula = FORMS.find(f => f.id === id);
-  if (!formula) return <p className="text-muted">Công thức không tồn tại.</p>;
+  const formula = FORMS.find(item => item.id === id);
+  if (!formula) return <NotFound />;
+
+  const description = `${formula.what} ${formula.why}`.slice(0, 158);
+  const path = `/formula/${encodeURIComponent(formula.id)}`;
 
   return (
     <section>
+      <PageMeta
+        title={`${formula.name} · MathNexus`}
+        description={description}
+        path={path}
+        type="article"
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'Article',
+          headline: formula.name,
+          description,
+          inLanguage: 'vi',
+          url: `${SITE_URL}${path}`,
+        }}
+      />
       <Link to="/formulas" className="inline-flex items-center gap-1 text-accent font-semibold text-sm no-underline mb-4">
         <ArrowLeft size={14} /> Công thức
       </Link>

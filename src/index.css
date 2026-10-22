@@ -166,10 +166,19 @@ svg { flex-shrink: 0; }
 .progress-track > span { display: block; height: 100%; background: #82a566; border-radius: 9px; transition: width .3s; }
 .daily-goal .text-link { margin-top: 21px; }
 .app-footer { padding: 22px 38px; border-top: 1px solid var(--color-line); font-size: 12px; color: var(--color-muted); }
-.app-footer > div:first-child { display: flex; align-items: center; gap: 13px; }
-.app-footer a { margin-left: auto; }
+.app-footer > div:first-child { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; }
+.app-footer > div:first-child a { margin-left: 0; color: var(--color-muted); text-decoration: none; }
+.app-footer > div:first-child a:first-of-type { margin-left: auto; }
+.app-footer > div:first-child a:hover { color: var(--color-accent); }
 .footer-brand { font-weight: 700; font-size: 14px; color: var(--color-ink); letter-spacing: -.5px; }
 .footer-brand > span { color: var(--color-sage); }
+.legal-page { max-width: 780px; line-height: 1.75; }
+.legal-page h1 { font-size: clamp(29px, 3vw, 38px); letter-spacing: -1px; font-weight: 650; margin: 5px 0 12px; }
+.legal-page .legal-lead { color: var(--color-muted); font-size: 15px; margin-bottom: 6px; }
+.legal-page h2 { font-size: 19px; font-weight: 650; margin: 28px 0 8px; }
+.legal-page p { margin-bottom: 13px; }
+.legal-page code { padding: 2px 5px; border-radius: 4px; background: var(--color-bg); border: 1px solid var(--color-line); font-size: .9em; }
+.legal-page a { color: var(--color-accent); text-decoration: underline; text-underline-offset: 2px; }
 .app-status { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 9px; }
 .app-status > span, .app-status button { display: flex; align-items: center; gap: 6px; }
 .app-status button { min-height: 32px; color: var(--color-accent); }
@@ -429,6 +438,7 @@ svg { flex-shrink: 0; }
   .app-footer { padding-left: 18px; padding-right: 18px; }
   .app-footer > div:first-child { flex-wrap: wrap; gap: 6px 12px; }
   .app-footer > div:first-child > span:nth-child(2) { display: none; }
+  .app-footer > div:first-child a:first-of-type { margin-left: 0; }
   .app-status { font-size: 9px; }
   .app-dialog { margin-top: 5dvh; max-height: 90dvh; }
   .app-dialog.drawer { margin-top: 0; max-height: 100dvh; }
@@ -936,6 +946,7 @@ svg { flex-shrink: 0; }
 .math-cosmos-canvas { position:absolute; inset:0; }
 .math-cosmos-canvas > div { width:100%!important; height:100%!important; }
 .cosmos-webgl-fallback { display:grid; place-items:center; min-height:680px; padding:28px; color:#cbd5e1; background:radial-gradient(circle at center,#111827,#05070d 68%); text-align:center; }
+.cosmos-stage-loading { position:absolute; inset:0; display:grid; place-items:center; color:#cbd5e1; background:radial-gradient(circle at center,#111827,#05070d 68%); font-size:12px; letter-spacing:.04em; }
 
 .cosmos-search-panel { position:absolute; top:16px; left:16px; z-index:4; width:min(360px,calc(100% - 32px)); }
 .cosmos-search-panel > label { display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:center; gap:8px; padding:10px 12px; border:1px solid rgba(148,163,184,.22); border-radius:12px; background:rgba(8,12,20,.82); backdrop-filter:blur(16px); color:#cbd5e1; }
