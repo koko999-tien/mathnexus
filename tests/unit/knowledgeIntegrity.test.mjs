@@ -37,3 +37,10 @@ test('content coverage distinguishes missing learning resources from missing ass
     );
   }
 });
+
+test('every concept has a direct learning resource and an assessment', () => {
+  const report = buildKnowledgeIntegrityReport();
+
+  assert.equal(report.summary.conceptsWithNoDirectResource, 0, coverageGaps(report).filter(gap => !gap.hasDirectLearningResource).map(gap => gap.conceptId).join(', '));
+  assert.equal(report.summary.conceptsWithNoAssessment, 0, coverageGaps(report).filter(gap => !gap.hasAssessment).map(gap => gap.conceptId).join(', '));
+});

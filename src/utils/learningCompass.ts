@@ -69,8 +69,8 @@ export function buildLearningCompass(
   } else {
     const assessable = mastery
       .filter(item => item.score === null && (questionIdsByConcept.get(item.conceptId)?.length || 0) > 0)
-      .map(item => ({ item, graph: progressById.get(item.conceptId) }))
-      .filter(entry => entry.graph?.state === 'ready')
+      .map(item => ({ item, graph: progressById.get(item.conceptId), concept: MATH_CONCEPTS.find(concept => concept.id === item.conceptId) }))
+      .filter(entry => entry.graph?.state === 'ready' && entry.concept && !unreadLesson(entry.concept, progress))
       .sort((a, b) => (a.graph?.depth || 0) - (b.graph?.depth || 0))[0];
 
     if (assessable) {

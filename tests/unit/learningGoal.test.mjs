@@ -42,8 +42,8 @@ test('goal engine advances after prerequisite evidence is recorded', () => {
 
   assert.ok((state?.progressPercent || 0) > 0);
   assert.equal(state?.nextAction?.conceptId, 'algebraic-expressions');
-  assert.equal(state?.nextAction?.kind, 'practice');
-  assert.match(state?.nextAction?.to || '', /concept=algebraic-expressions/);
+  assert.equal(state?.nextAction?.kind, 'lesson');
+  assert.equal(state?.nextAction?.to, '/lesson/expr');
 });
 
 test('strong direct evidence can complete a goal even when the learner skipped the suggested route', () => {

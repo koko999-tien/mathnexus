@@ -194,7 +194,7 @@ test('dashboard recommendations and knowledge map adapt to learning history', as
 
   await page.goto('/progress');
   await expect(page.getByRole('heading', { name: 'Theo chuyên đề' })).toBeVisible();
-  await expect(page.getByRole('progressbar', { name: 'Tiến độ Giải tích' })).toHaveAttribute('aria-valuenow', '25');
+  await expect(page.getByRole('progressbar', { name: 'Tiến độ Giải tích' })).toHaveAttribute('aria-valuenow', '20');
   await expect(page.getByText('14 ngày gần đây')).toBeVisible();
 });
 
@@ -352,7 +352,7 @@ test('search without accents opens lessons and completion survives reload', asyn
   await page.reload();
   await expect(page.getByRole('status').filter({ hasText: 'Đã hoàn thành' })).toBeVisible();
   await page.goto('/progress');
-  await expect(page.locator('.stat-card').filter({ hasText: 'Bài học hoàn thành' })).toContainText('1/34');
+  await expect(page.locator('.stat-card').filter({ hasText: 'Bài học hoàn thành' })).toContainText('1/39');
   await expect(page.locator('.stat-card').filter({ hasText: 'Ngày học liên tiếp' })).toContainText('1');
 });
 
@@ -373,9 +373,9 @@ test('library filters have a useful empty state and can be cleared', async ({ pa
   await page.getByRole('textbox', { name: 'Tìm bài học' }).fill('khongcotrongthuvien');
   await expect(page.getByRole('heading', { name: 'Chưa có bài học phù hợp' })).toBeVisible();
   await page.getByRole('button', { name: 'Xóa bộ lọc' }).click();
-  await expect(page.locator('.lesson-card')).toHaveCount(34);
+  await expect(page.locator('.lesson-card')).toHaveCount(39);
   await page.getByLabel('Cấp học').selectOption('THCS');
-  await expect(page.locator('.lesson-card')).toHaveCount(3);
+  await expect(page.locator('.lesson-card')).toHaveCount(6);
   await page.reload();
   await expect(page.getByLabel('Cấp học')).toHaveValue('THCS');
 });
@@ -573,7 +573,7 @@ test('external book workspace saves progress notes bookmarks and OCR search loca
 });
 
 test('quiz scores a complete session once per answer and persists results', async ({ page }) => {
-  await page.goto('/practice?cat=' + encodeURIComponent('Tổ hợp'));
+  await page.goto('/practice?concept=counting');
   await expect(page.getByRole('button', { name: 'Câu tiếp theo' })).toBeDisabled();
   await page.getByRole('button', { name: 'A 10', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('Chính xác');
@@ -590,7 +590,7 @@ test('quiz scores a complete session once per answer and persists results', asyn
 
 
 test('adaptive practice remembers weak questions and filters by difficulty', async ({ page }) => {
-  await page.goto('/practice?cat=' + encodeURIComponent('Tổ hợp'));
+  await page.goto('/practice?concept=counting');
   await expect(page.getByRole('heading', { name: 'Luyện tập theo kết quả trước' })).toBeVisible();
   await expect(page.getByLabel('Độ khó luyện tập')).toHaveValue('Tất cả');
 
