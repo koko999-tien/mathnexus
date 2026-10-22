@@ -941,6 +941,37 @@ test('notes, personal goals and exported backup are usable', async ({ page }) =>
       chunkHashes: ['e2e'],
       updatedAt: '2026-09-22T00:00:00.000Z',
     }));
+    localStorage.setItem('mathnexus:library-reading:v1', JSON.stringify([{
+      id: 'book:calculus',
+      title: 'Calculus',
+      authors: ['Ada Example'],
+      cover: '',
+      openLibraryKey: '/works/OL1W',
+      openLibraryUrl: 'https://openlibrary.org/works/OL1W',
+      archiveId: 'calculus',
+      status: 'reading',
+      progress: 42,
+      note: 'Đọc chương 1',
+      bookmarks: [],
+      updatedAt: '2026-09-22T00:00:00.000Z',
+    }]));
+    localStorage.setItem('mathnexus:research-shelf:v1', JSON.stringify([{
+      id: 'paper:topology',
+      kind: 'paper',
+      title: 'Algebraic Topology',
+      url: 'https://arxiv.org/abs/2609.12345',
+      savedAt: '2026-09-22T00:00:00.000Z',
+    }]));
+    localStorage.setItem('mathnexus_tool_history_v1', JSON.stringify([{
+      id: 'calc-gcd-48-18',
+      tool: 'gcd',
+      title: 'ƯCLN',
+      input: '48, 18',
+      result: '6',
+      values: ['48', '18'],
+      meta: '',
+      at: '2026-09-22T00:00:00.000Z',
+    }]));
   });
 
   await page.goto('/progress');
@@ -965,6 +996,9 @@ test('notes, personal goals and exported backup are usable', async ({ page }) =>
   expect(backup.exploration.discoveredConceptIds).toContain('taylor');
   expect(backup.canvas.title).toBe('Canvas backup');
   expect(backup.canvas.objects[0].text).toBe('Taylor backup');
+  expect(backup.libraryReading[0].progress).toBe(42);
+  expect(backup.researchShelf[0].title).toBe('Algebraic Topology');
+  expect(backup.toolHistory[0].result).toBe('6');
 
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Cập nhật tài liệu, tìm kiếm và học toán');

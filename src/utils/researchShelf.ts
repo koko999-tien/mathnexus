@@ -63,32 +63,32 @@ export function normalizeResearchShelfItem(value: unknown): ResearchShelfItem | 
   };
 }
 
+export function normalizeResearchShelfItems(value: unknown): ResearchShelfItem[] {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  return value
+    .map(normalizeResearchShelfItem)
+    .filter((item): item is ResearchShelfItem => Boolean(item))
+    .filter(item => {
+      const key = item.url.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, MAX_ITEMS);
+}
+
 export function getResearchShelf(storage: Pick<Storage, 'getItem'> = localStorage): ResearchShelfItem[] {
   try {
     const raw = storage.getItem(RESEARCH_SHELF_KEY);
-    const parsed = JSON.parse(raw || '[]');
-    if (!Array.isArray(parsed)) return [];
-    const seen = new Set<string>();
-    return parsed
-      .map(normalizeResearchShelfItem)
-      .filter((item): item is ResearchShelfItem => Boolean(item))
-      .filter(item => {
-        const key = item.url.toLowerCase();
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      })
-      .slice(0, MAX_ITEMS);
+    return normalizeResearchShelfItems(JSON.parse(raw || '[]'));
   } catch {
     return [];
   }
 }
 
 export function saveResearchShelf(items: ResearchShelfItem[], storage: Pick<Storage, 'setItem'> = localStorage) {
-  const normalized = items
-    .map(normalizeResearchShelfItem)
-    .filter((item): item is ResearchShelfItem => Boolean(item))
-    .slice(0, MAX_ITEMS);
+  const normalized = normalizeResearchShelfItems(items);
   storage.setItem(RESEARCH_SHELF_KEY, JSON.stringify(normalized));
   return normalized;
 }

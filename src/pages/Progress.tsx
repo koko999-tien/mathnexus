@@ -46,7 +46,7 @@ export default function Progress() {
       if (file.size > 8 * 1024 * 1024) throw new Error('Tệp quá lớn. Vui lòng chọn bản sao lưu nhỏ hơn 8 MB.');
       const backup = parseBackupSnapshot(await file.text());
       const confirmText = backup.sourceVersion === 2
-        ? 'Khôi phục sẽ thay thế tiến độ, sổ tay, mục tiêu học, dữ liệu khám phá và Math Canvas hiện tại. Tiếp tục?'
+        ? 'Khôi phục sẽ thay thế tiến độ, sổ tay, mục tiêu học, dữ liệu khám phá, Math Canvas, sách đang đọc, kệ nghiên cứu và lịch sử công cụ hiện tại. Tiếp tục?'
         : 'Đây là bản sao lưu MathNexus v1. Chỉ tiến độ và sổ tay sẽ được thay thế; mục tiêu học, dữ liệu khám phá và Math Canvas hiện tại sẽ được giữ nguyên. Tiếp tục?';
       if (!window.confirm(confirmText)) return;
 
@@ -168,7 +168,7 @@ export default function Progress() {
 
     <div className="panel mt-5"><h2 className="panel-title">Những điều bạn đã khám phá</h2>{completed.length ? <div className="completed-lessons">{completed.map(lesson => <Link key={lesson.id} to={'/lesson/' + lesson.id}><Check size={16} /><span>{lesson.t}<small>{lesson.cat} · {lesson.lv}</small></span><ArrowUpRight size={16} /></Link>)}</div> : <div className="empty-state"><BookOpen size={30} /><p>Bạn chưa hoàn thành bài học nào.</p><Link to="/library" className="button button-light">Mở thư viện</Link></div>}</div>
 
-    <div className="panel mt-5"><h2 className="panel-title">Dữ liệu luôn trong tay bạn</h2><p className="helper-text mb-4">Tiến độ, sổ tay, mục tiêu học, dữ liệu khám phá và Math Canvas đều được lưu cục bộ. Bản sao lưu v2 mang toàn bộ dữ liệu học tập bền vững sang thiết bị khác.</p><div className="flex flex-wrap gap-3"><button onClick={exportData} className="button button-light"><Download size={16} />Tải bản sao lưu</button><button onClick={() => inputRef.current?.click()} className="button button-light"><Upload size={16} />Khôi phục dữ liệu</button><input ref={inputRef} type="file" accept=".json,application/json" aria-label="Chọn bản sao lưu" className="hidden" onChange={event => void importData(event)} /><button onClick={reset} className="button button-light text-red-600"><RotateCcw size={16} />Đặt lại tiến độ</button></div></div>
+    <div className="panel mt-5"><h2 className="panel-title">Dữ liệu luôn trong tay bạn</h2><p className="helper-text mb-4">Tiến độ, sổ tay, mục tiêu học, dữ liệu khám phá, Math Canvas, sách đang đọc, kệ nghiên cứu và lịch sử công cụ đều được lưu cục bộ. Bản sao lưu v2 mang toàn bộ dữ liệu học tập bền vững sang thiết bị khác.</p><div className="flex flex-wrap gap-3"><button onClick={exportData} className="button button-light"><Download size={16} />Tải bản sao lưu</button><button onClick={() => inputRef.current?.click()} className="button button-light"><Upload size={16} />Khôi phục dữ liệu</button><input ref={inputRef} type="file" accept=".json,application/json" aria-label="Chọn bản sao lưu" className="hidden" onChange={event => void importData(event)} /><button onClick={reset} className="button button-light text-red-600"><RotateCcw size={16} />Đặt lại tiến độ</button></div></div>
     {message && <p role="status" className="form-message">{message}</p>}
   </section>;
 }

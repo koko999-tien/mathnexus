@@ -22,6 +22,24 @@ import {
   type ProgressData,
 } from './storage.ts';
 import { loadNotes, saveNotes, type NotebookNote } from './notebook.ts';
+import {
+  getLibraryReadingRecords,
+  normalizeLibraryReadingRecords,
+  saveLibraryReadingRecords,
+  type LibraryReadingRecord,
+} from './libraryReading.ts';
+import {
+  getResearchShelf,
+  normalizeResearchShelfItems,
+  saveResearchShelf,
+  type ResearchShelfItem,
+} from './researchShelf.ts';
+import {
+  loadToolHistory,
+  normalizeToolHistoryEntries,
+  saveToolHistory,
+  type ToolHistoryEntry,
+} from './toolHistory.ts';
 
 export const BACKUP_VERSION = 2;
 
@@ -35,6 +53,9 @@ export interface MathNexusBackupV2 {
   learningGoal: LearningGoal | null;
   exploration: ExplorationSummary;
   canvas: MathCanvasState;
+  libraryReading: LibraryReadingRecord[];
+  researchShelf: ResearchShelfItem[];
+  toolHistory: ToolHistoryEntry[];
 }
 
 export interface ParsedBackup {
@@ -45,6 +66,29 @@ export interface ParsedBackup {
   learningGoal?: LearningGoal | null;
   exploration?: ExplorationSummary;
   canvas?: MathCanvasState;
+  libraryReading?: LibraryReadingRecord[];
+  researchShelf?: ResearchShelfItem[];
+  toolHistory?: ToolHistoryEntry[];
+}
+
+function optionalCollection<T>(
+  raw: Record<string, unknown>,
+  key: string,
+  label: string,
+  normalize: (value: unknown) => T[],
+): T[] | undefined {
+  if (!(key in raw)) return undefined;
+  if (!Array.isArray(raw[key])) throw new Error(`Dữ liệu ${label} trong bản sao lưu không hợp lệ.`);
+  return normalize(raw[key]);
+}
+
+function saveResearchShelfOrFalse(items: ResearchShelfItem[]): boolean {
+  try {
+    saveResearchShelf(items);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -64,6 +108,9 @@ export function createBackupSnapshot(): MathNexusBackupV2 {
     learningGoal: getLearningGoal(),
     exploration: getExplorationSummary(),
     canvas: loadCanvasState(),
+    libraryReading: getLibraryReadingRecords(),
+    researchShelf: getResearchShelf(),
+    toolHistory: loadToolHistory(),
   };
 }
 
@@ -108,6 +155,9 @@ export function parseBackupSnapshot(text: string): ParsedBackup {
     learningGoal,
     exploration: normalizeExplorationSummary(raw.exploration),
     canvas: normalizeCanvasState(raw.canvas),
+    libraryReading: optionalCollection(raw, 'libraryReading', 'sách đang đọc', normalizeLibraryReadingRecords),
+    researchShelf: optionalCollection(raw, 'researchShelf', 'kệ nghiên cứu', normalizeResearchShelfItems),
+    toolHistory: optionalCollection(raw, 'toolHistory', 'lịch sử công cụ', normalizeToolHistoryEntries),
   };
 }
 
@@ -118,6 +168,9 @@ export function restoreBackupSnapshot(snapshot: ParsedBackup): { ok: true } | { 
     learningGoal: getLearningGoal(),
     exploration: getExplorationSummary(),
     canvas: loadCanvasState(),
+    libraryReading: getLibraryReadingRecords(),
+    researchShelf: getResearchShelf(),
+    toolHistory: loadToolHistory(),
   };
 
   try {
@@ -131,6 +184,15 @@ export function restoreBackupSnapshot(snapshot: ParsedBackup): { ok: true } | { 
       if (!save(LEARNING_GOAL_KEY, snapshot.learningGoal ?? null)) throw new Error('Không lưu được mục tiêu học tập.');
       if (!snapshot.exploration || !saveExplorationSummary(snapshot.exploration)) throw new Error('Không lưu được dữ liệu khám phá.');
       if (!snapshot.canvas || !saveCanvasState(snapshot.canvas).ok) throw new Error('Không lưu được Math Canvas.');
+      if (snapshot.libraryReading !== undefined && !saveLibraryReadingRecords(snapshot.libraryReading)) {
+        throw new Error('Không lưu được sách đang đọc.');
+      }
+      if (snapshot.researchShelf !== undefined && !saveResearchShelfOrFalse(snapshot.researchShelf)) {
+        throw new Error('Không lưu được kệ nghiên cứu.');
+      }
+      if (snapshot.toolHistory !== undefined && !saveToolHistory(snapshot.toolHistory)) {
+        throw new Error('Không lưu được lịch sử công cụ.');
+      }
     }
 
     return { ok: true };
@@ -141,6 +203,9 @@ export function restoreBackupSnapshot(snapshot: ParsedBackup): { ok: true } | { 
     save(LEARNING_GOAL_KEY, previous.learningGoal ?? null);
     saveExplorationSummary(previous.exploration);
     saveCanvasState(previous.canvas);
+    saveLibraryReadingRecords(previous.libraryReading);
+    saveResearchShelfOrFalse(previous.researchShelf);
+    saveToolHistory(previous.toolHistory);
 
     return {
       ok: false,

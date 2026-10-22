@@ -42,17 +42,20 @@ function normalizeEntry(raw: unknown): ToolHistoryEntry | null {
   };
 }
 
-export function loadToolHistory(): ToolHistoryEntry[] {
-  const raw = load<unknown>(TOOL_HISTORY_KEY, []);
-  if (!Array.isArray(raw)) return [];
-  return raw
+export function normalizeToolHistoryEntries(value: unknown): ToolHistoryEntry[] {
+  if (!Array.isArray(value)) return [];
+  return value
     .map(normalizeEntry)
     .filter((entry): entry is ToolHistoryEntry => Boolean(entry))
     .slice(0, TOOL_HISTORY_LIMIT);
 }
 
+export function loadToolHistory(): ToolHistoryEntry[] {
+  return normalizeToolHistoryEntries(load<unknown>(TOOL_HISTORY_KEY, []));
+}
+
 export function saveToolHistory(entries: ToolHistoryEntry[]): boolean {
-  return save(TOOL_HISTORY_KEY, entries.slice(0, TOOL_HISTORY_LIMIT));
+  return save(TOOL_HISTORY_KEY, normalizeToolHistoryEntries(entries));
 }
 
 export function historySignature(entry: Pick<ToolHistoryEntry, 'tool' | 'input' | 'result' | 'meta'>): string {

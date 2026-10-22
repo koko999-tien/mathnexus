@@ -11,7 +11,12 @@ Mục tiêu: mọi thay đổi schema hoặc ID kiến thức phải có đườ
 | Learning Goal | `mathnexus_learning_goal_v1` | 1 | v2 |
 | Exploration | `mathnexus_exploration_state_v1` | 1 | v2 |
 | Math Canvas | `mathnexus_canvas_v1_*` | 1 | v2 |
+| Library reading | `mathnexus:library-reading:v1` | 1 | v2 |
+| Research shelf | `mathnexus:research-shelf:v1` | 1 | v2 |
+| Tool history | `tool_history_v1` | 1 | v2 |
 | Backup envelope | file JSON | 2 | n/a |
+
+`libraryReading`, `researchShelf` và `toolHistory` là các trường additive trong envelope v2. Backup v2 cũ thiếu các trường này vẫn đọc được và không xoá dữ liệu hiện có; backup mới luôn xuất đủ ba trường.
 
 Theme, transient UI state và AI conversation session không được coi là durable learning data mặc định.
 
