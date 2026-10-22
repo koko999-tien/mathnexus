@@ -1,6 +1,8 @@
 import test, { beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  appendToActiveNote,
+  calculationBlock,
   lessonBlock,
   loadActiveId,
   loadNotes,
@@ -53,4 +55,18 @@ test('khoi tao block gan cau hoi va bai hoc', () => {
   const lesson = lessonBlock('Đạo hàm', '/lesson/der');
   assert.match(lesson, /Đạo hàm/);
   assert.match(lesson, /\/lesson\/der/);
+});
+
+test('gui ket qua may tinh vao ghi chu dang mo', () => {
+  const [first] = loadNotes();
+  const second = { id: 'note-b', title: 'Máy tính', text: 'Ghi chú gốc', updatedAt: new Date().toISOString() };
+  saveNotes([first, second]);
+  saveActiveId('note-b');
+  assert.match(calculationBlock('Giải phương trình', 'a = 1', 'x = 2'), /Kết quả: x = 2/);
+  assert.equal(appendToActiveNote(calculationBlock('Giải phương trình', 'a = 1, b = -5, c = 6', 'x₁ = 2, x₂ = 3')), true);
+  const active = loadNotes().find(note => note.id === 'note-b');
+  assert.match(active.text, /Ghi chú gốc/);
+  assert.match(active.text, /Máy tính: Giải phương trình/);
+  assert.match(active.text, /x₁ = 2, x₂ = 3/);
+  assert.equal(loadNotes().find(note => note.id === first.id).text, '');
 });

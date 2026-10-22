@@ -93,3 +93,18 @@ export function questionBlock(question: string, answer: string, explanation: str
 export function lessonBlock(title: string, path: string): string {
   return `\n\n> Bài học đã gắn: ${title}\n> Mở lại: ${path}\n`;
 }
+
+export function calculationBlock(title: string, input: string, result: string): string {
+  return `\n\n> Máy tính: ${title}${input ? `\n> Đầu vào: ${input}` : ''}\n> Kết quả: ${result}\n`;
+}
+
+export function appendToActiveNote(block: string): boolean {
+  const notes = loadNotes();
+  const activeId = loadActiveId(notes[0]?.id || '');
+  const target = notes.find(note => note.id === activeId) || notes[0];
+  if (!target) return false;
+  target.text += block;
+  target.updatedAt = new Date().toISOString();
+  return saveNotes(notes);
+}
+

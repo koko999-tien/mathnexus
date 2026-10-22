@@ -795,6 +795,32 @@ test('advanced math workbench solves linear algebra, statistics and sequences', 
   await expect(system.locator('output')).toContainText('y = 1');
 });
 
+test('tool history restores inputs and sends calculations to the notebook', async ({ page }) => {
+  await page.goto('/tools');
+  const history = page.getByRole('region', { name: 'Tính toán gần đây' });
+  await expect(history).toContainText('Đổi một con số trong công cụ bên dưới');
+
+  const equation = page.getByRole('region', { name: 'Giải phương trình' });
+  await equation.getByLabel('a', { exact: true }).fill('0.5');
+  await expect(equation.locator('output')).toContainText('x₁');
+  await expect(history.locator('li').filter({ hasText: 'a = 0.5, b = -5, c = 6' })).toBeVisible({ timeout: 6000 });
+
+  await equation.getByLabel('a', { exact: true }).fill('0.4');
+  await expect(history.locator('li').filter({ hasText: 'a = 0.4, b = -5, c = 6' })).toBeVisible({ timeout: 6000 });
+
+  const previous = history.locator('li').filter({ hasText: 'a = 0.5, b = -5, c = 6' });
+  await previous.getByRole('button', { name: 'Gửi vào Sổ tay: Giải phương trình' }).click();
+  await expect(history.locator('.tool-history-notice')).toContainText('Đã gửi "Giải phương trình" vào Sổ tay.');
+
+  await previous.getByRole('button', { name: 'Khôi phục: Giải phương trình' }).click();
+  await expect(equation.getByLabel('a', { exact: true })).toHaveValue('0.5');
+
+  await page.goto('/notebook');
+  await expect(page.getByLabel('Nội dung sổ tay')).toHaveValue(/Máy tính: Giải phương trình/);
+  await expect(page.getByLabel('Nội dung sổ tay')).toHaveValue(/a = 0.5, b = -5, c = 6/);
+  await expect(page.getByLabel('Nội dung sổ tay')).toHaveValue(/Hai nghiệm thực/);
+});
+
 test('function laboratory exposes mathematical analysis and tangent lines', async ({ page }) => {
   await page.goto('/graph');
   await expect(page.locator('.function-analysis')).toContainText('16');
