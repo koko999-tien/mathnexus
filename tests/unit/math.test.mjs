@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { gcd, lcm, isPrime, factorial, nCr, nPr, solveQuadratic, renderMath } from '../../src/utils/math.ts';
+import { gcd, lcm, isPrime, factorial, nCr, nPr, solveQuadratic } from '../../src/utils/math.ts';
+import { renderMath } from '../../src/utils/mathRender.ts';
 import { arithmeticSequence, descriptiveStatistics, geometricSequence, invertMatrix2, parseNumberList, quadraticAnalysis, solveLinearSystem2, vector2 } from '../../src/utils/advancedMath.ts';
 import { compileExpression } from '../../src/utils/expressionMath.ts';
 import { findRootNear, localBehavior, numericalDerivative, simpsonIntegral, tangentLine } from '../../src/utils/calculusMath.ts';

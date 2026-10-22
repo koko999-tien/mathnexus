@@ -54,7 +54,7 @@ svg { flex-shrink: 0; }
 .skip-link:focus { top: 10px; }
 .app-shell { display: flex; min-height: 100dvh; }
 .app-content { display: flex; flex: 1; flex-direction: column; min-width: 0; }
-.main-content { flex: 1; width: 100%; max-width: 1440px; margin: 0 auto; padding: 34px 38px 40px; }
+.main-content { flex: 1; width: 100%; max-width: 1440px; min-height: calc(100dvh - 73px); margin: 0 auto; padding: 34px 38px 40px; }
 .desktop-sidebar { width: 242px; height: 100dvh; display: flex; flex-direction: column; position: sticky; top: 0; flex-shrink: 0; background: var(--color-sidebar); border-right: 1px solid var(--color-line); }
 .brand { display: flex; align-items: center; gap: 10px; padding: 29px 22px 24px; color: var(--color-ink); font-size: 23px; font-weight: 750; letter-spacing: -.9px; }
 .brand-mark { width: 39px; height: 42px; border-radius: 12px; background: #365b42; color: #e2efc9; display: flex; align-items: center; justify-content: center; font: italic 700 29px Georgia, serif; letter-spacing: -3px; padding-right: 4px; }
@@ -387,7 +387,7 @@ svg { flex-shrink: 0; }
   .topbar-search { width: 40px; min-height: 40px; justify-content: center; border: 0; background: transparent; padding: 0; }
   .topbar-search span, .topbar-search kbd, .topbar-divider, .topbar-avatar { display: none; }
   .mobile-brand { font-size: 21px; margin-left: 3px; }
-  .main-content { padding: 24px 17px 30px; }
+  .main-content { min-height: calc(100dvh - 64px); padding: 24px 17px 30px; }
   .dashboard-heading { margin-bottom: 20px; }
   .dashboard-heading h1 { font-size: 26px; letter-spacing: -.8px; max-width: 315px; }
   .dashboard-heading > div > p:last-child { font-size: 12px; margin-top: 8px; }

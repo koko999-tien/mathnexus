@@ -12,7 +12,7 @@ import { useLearningGoal } from '../hooks/useLearningGoal';
 import { conceptProgress, directDependents, learningPathTo } from '../utils/knowledgeGraph';
 import { atomsForConcept, atomDependencies, ontologyDepthScore } from '../utils/mathOntology';
 import { conceptMastery, masteryLabel } from '../utils/conceptMastery';
-import { ChatText } from '../components/ui/ChatText';
+import { ChatTextLazy } from '../components/ui/ChatTextLazy';
 import { recordAtomExploration, recordConceptExploration } from '../exploration/explorationState';
 
 const STATE_LABEL = {
@@ -208,9 +208,9 @@ function AtomInspector({ atom }: { atom: MathAtom }) {
   return <div className="atom-inspector">
     <div className="atom-inspector-head"><span className={'atom-kind ' + atom.kind}>{ONTOLOGY_KIND_META[atom.kind].label}</span>{atom.difficulty && <span>{atom.difficulty}</span>}</div>
     <h3>{atom.title}</h3>
-    <p><ChatText text={atom.summary} /></p>
-    {atom.formula && <div className="atom-formula"><ChatText text={atom.formula} /></div>}
-    {atom.body && <p className="atom-body"><ChatText text={atom.body} /></p>}
+    <p><ChatTextLazy text={atom.summary} /></p>
+    {atom.formula && <div className="atom-formula"><ChatTextLazy text={atom.formula} /></div>}
+    {atom.body && <p className="atom-body"><ChatTextLazy text={atom.body} /></p>}
     {dependencies.length > 0 && <div className="atom-dependencies"><strong>Dựa trên</strong>{dependencies.map(item => <span key={item.id}>{item.title}</span>)}</div>}
     {atom.kind === 'misconception' && <div className="misconception-note"><AlertTriangle size={14} /><span>Đây là lỗi tư duy cần chủ động kiểm tra khi luyện tập.</span></div>}
     {atom.kind === 'exercise' && <Link className="text-link ontology-practice-link" to="/practice"><GraduationCap size={14} />Mở khu luyện tập<ArrowRight size={13} /></Link>}

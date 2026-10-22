@@ -42,7 +42,7 @@ import {
   toggleResearchShelfItem,
   type ResearchShelfItem,
 } from '../utils/researchShelf';
-import { ChatText } from '../components/ui/ChatText';
+import { ChatTextLazy } from '../components/ui/ChatTextLazy';
 import './dashboard.css';
 
 type SourceKind = 'web' | 'paper' | 'video' | 'tool';
@@ -756,7 +756,7 @@ export default function Dashboard() {
             {feedError && <p className="overview-error">{feedError}</p>}
 
             {feed?.briefing ? (
-              <div className="overview-briefing"><ChatText text={feed.briefing} /></div>
+              <div className="overview-briefing"><ChatTextLazy text={feed.briefing} /></div>
             ) : !feedLoading && (
               <p className="overview-muted">
                 {feed?.warning || 'Chưa có bản tổng hợp trực tiếp từ web.'}
@@ -1070,7 +1070,7 @@ export default function Dashboard() {
                 </small>
               </div>
               {searchResult.synthesis ? (
-                <div className="overview-briefing"><ChatText text={searchResult.synthesis} /></div>
+                <div className="overview-briefing"><ChatTextLazy text={searchResult.synthesis} /></div>
               ) : (
                 <p className="overview-muted">{searchResult.warning || 'Không có bản tổng hợp.'}</p>
               )}

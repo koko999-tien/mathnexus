@@ -87,6 +87,10 @@ Trang production dùng **Vercel Web Analytics** để đếm lượt xem theo ro
 
 Bật trong Vercel: Project → Analytics → Enable Web Analytics, sau đó deploy lại. Kiểm tra tab Analytics có pageview cho `/`, `/practice`, `/lesson/:id` và không thấy ID bài học cụ thể.
 
+**Vercel Speed Insights** dùng cùng route template và cùng điều kiện bật/tắt, thu LCP/CLS/INP/FCP từ thiết bị thật. Hobby có 10.000 event/30 ngày cho một project; bật ở Project → Speed Insights.
+
+Đo lab trên máy yếu/mạng chậm bằng `npm run perf:audit`: build production, chạy Chromium với Slow 3G, CPU chậm 4×, viewport 390×844, in DCL/FCP/LCP/CLS/TBT/JS cho các route chính. Script tự dừng preview server sau khi đo.
+
 ## Privacy rule
 
 Nếu một metric mới cần nội dung người dùng để hoạt động, metric đó không được thêm vào pipeline mặc định. Cần một thiết kế/consent riêng trước.

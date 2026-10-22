@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { renderMath } from '../../utils/math';
+import { renderMath } from '../../utils/mathRender';
 
 interface MathTextProps {
   expr: string;
