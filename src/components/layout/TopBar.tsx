@@ -1,4 +1,4 @@
-import { Moon, Sun, Menu, Search, ChevronRight } from 'lucide-react';
+import { Moon, Sun, Menu, Search, ChevronRight, Sparkles } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Navigation } from './Sidebar';
@@ -30,6 +30,7 @@ export function TopBar({ dark, toggleTheme }: { dark: boolean; toggleTheme: () =
       <Link to="/" className="mobile-brand">MathNexus<span>·</span></Link>
       <div className="breadcrumb"><span>Không gian học tập</span><ChevronRight size={14} /><strong>{title}</strong></div>
       <button className="topbar-search" onClick={() => setSearchOpen(true)} aria-label="Tìm kiếm"><Search size={18} /><span>Tìm kiếm kiến thức…</span><kbd>Ctrl K</kbd></button>
+      <Link to="/ai" className="button button-dark topbar-ai"><Sparkles size={16} /><span>Hỏi AI</span></Link>
       <button onClick={toggleTheme} className="icon-button" aria-label={dark ? 'Bật giao diện sáng' : 'Bật giao diện tối'}>{dark ? <Sun size={19} /> : <Moon size={19} />}</button>
       <span className="topbar-divider" />
       <Link to="/progress" className="avatar topbar-avatar" aria-label="Tiến độ cá nhân">{p.displayName.charAt(0).toUpperCase()}</Link>
