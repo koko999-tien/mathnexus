@@ -18,8 +18,8 @@ export default defineConfig({
       start_url: base,
       scope: base,
       display: 'standalone',
-      background_color: '#f5f7f2',
-      theme_color: '#f5f7f2',
+      background_color: '#f6f7fb',
+      theme_color: '#f6f7fb',
       categories: ['education', 'productivity'],
       icons: [
         { src: 'icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },

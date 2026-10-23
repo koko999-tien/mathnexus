@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { LESSONS } from '../data/lessons';
 import { lessonDescription, lessonHtml } from '../data/lessonContent';
@@ -13,11 +13,40 @@ export function Lesson() {
   const { id } = useParams();
   const lesson = LESSONS.find(item => item.id === id);
   const p = useProgress();
+  const [textSize, setTextSize] = useState(1);
+  const [readProgress, setReadProgress] = useState(0);
 
   useEffect(() => {
     if (!lesson) return;
     saveProgress({ ...getProgress(), lastLesson: lesson.id });
   }, [lesson]);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem('mn-text-size');
+      const saved = raw === null ? NaN : Number(raw);
+      if ([0, 1, 2].includes(saved)) setTextSize(saved);
+    } catch { /* storage unavailable */ }
+  }, []);
+
+  useEffect(() => {
+    let raf = 0;
+    const update = () => {
+      const el = document.documentElement;
+      const max = el.scrollHeight - el.clientHeight;
+      setReadProgress(max > 0 ? Math.min(1, window.scrollY / max) : 0);
+    };
+    const onScroll = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(update); };
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('scroll', onScroll); window.removeEventListener('resize', onScroll); };
+  }, [id]);
+
+  const chooseTextSize = (size: number) => {
+    setTextSize(size);
+    try { window.localStorage.setItem('mn-text-size', String(size)); } catch { /* storage unavailable */ }
+  };
 
   if (!lesson) return <NotFound />;
   const done = p.lessonsRead.includes(lesson.id);
@@ -53,7 +82,16 @@ export function Lesson() {
         <span className="inline-flex items-center gap-1"><Clock3 size={14} /> {lesson.m}</span>
         {done && <span className="flex items-center gap-1 text-accent font-semibold" role="status"><Check size={14} /> Đã hoàn thành</span>}
       </div>
-      <article className="panel lesson-body" dangerouslySetInnerHTML={{ __html: lessonHtml(lesson) }} />
+      <div className="reading-progress" aria-hidden="true"><span style={{ transform: `scaleX(${readProgress})` }} /></div>
+      <div className="lesson-tools">
+        <span>Cỡ chữ</span>
+        <div className="text-size-group" role="group" aria-label="Chỉnh cỡ chữ bài học">
+          <button type="button" aria-pressed={textSize === 0} aria-label="Cỡ chữ nhỏ" onClick={() => chooseTextSize(0)}><span style={{ fontSize: 12 }}>A</span></button>
+          <button type="button" aria-pressed={textSize === 1} aria-label="Cỡ chữ vừa" onClick={() => chooseTextSize(1)}><span style={{ fontSize: 15 }}>A</span></button>
+          <button type="button" aria-pressed={textSize === 2} aria-label="Cỡ chữ lớn" onClick={() => chooseTextSize(2)}><span style={{ fontSize: 18 }}>A</span></button>
+        </div>
+      </div>
+      <article className="panel lesson-body" data-text-size={textSize} dangerouslySetInnerHTML={{ __html: lessonHtml(lesson) }} />
       <div className="flex flex-wrap items-center gap-3 mt-5">
         {!done && <button onClick={() => recordActivity('lesson', lesson.id)} className="button button-dark"><Check size={16} />Đánh dấu đã đọc</button>}
         <Link to={`/practice?cat=${encodeURIComponent(lesson.cat)}`} className="button button-light">Luyện tập chủ đề này</Link>

@@ -20,7 +20,7 @@
   border-radius: 10px;
   background: var(--color-panel);
   color: var(--color-muted);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -40,7 +40,7 @@
   border-radius: 10px;
   background: var(--color-panel);
   color: var(--color-muted);
-  font-size: 8px;
+  font-size: 11px;
   line-height: 1.55;
 }
 
@@ -72,7 +72,7 @@
   border-radius: 9px;
   background: var(--color-panel);
   color: var(--color-ink);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .library-external-options select {
@@ -97,7 +97,7 @@
   gap: 12px;
   align-items: center;
   color: var(--color-muted);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .library-source-summary strong {
@@ -111,7 +111,7 @@
   gap: 8px;
   min-height: 180px;
   color: var(--color-muted);
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .wikipedia-grid,
@@ -162,7 +162,7 @@
 .wikipedia-card-body > span,
 .openbook-meta {
   color: var(--color-muted);
-  font-size: 7px;
+  font-size: 10.5px;
   font-weight: 700;
   letter-spacing: .04em;
   text-transform: uppercase;
@@ -179,7 +179,7 @@
   overflow: hidden;
   margin: 0 0 10px;
   color: var(--color-muted);
-  font-size: 8px;
+  font-size: 11px;
   line-height: 1.55;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 4;
@@ -201,7 +201,7 @@
   border: 1px solid var(--color-line);
   border-radius: 8px;
   color: var(--color-ink);
-  font-size: 7.5px;
+  font-size: 10.5px;
   font-weight: 700;
 }
 
@@ -255,14 +255,14 @@
 
 .openbook-body h3 {
   margin: 4px 0;
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1.4;
 }
 
 .openbook-authors {
   overflow: hidden;
   color: var(--color-muted);
-  font-size: 7.5px;
+  font-size: 10.5px;
   line-height: 1.45;
   text-overflow: ellipsis;
 }
@@ -281,7 +281,7 @@
   border-radius: 999px;
   background: var(--color-mist);
   color: var(--color-muted);
-  font-size: 6.5px;
+  font-size: 10.5px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -294,7 +294,7 @@
   border-radius: 999px;
   background: var(--color-mist);
   color: var(--color-muted);
-  font-size: 6.5px;
+  font-size: 10.5px;
   font-weight: 700;
 }
 
@@ -319,7 +319,7 @@
   border-radius: 8px;
   background: var(--color-panel);
   color: var(--color-ink);
-  font-size: 8px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -345,7 +345,7 @@
   align-items: center;
   gap: 5px;
   color: var(--color-accent);
-  font-size: 8.5px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -360,7 +360,7 @@
   align-items: center;
   gap: 5px;
   color: var(--color-muted);
-  font-size: 7.5px;
+  font-size: 10.5px;
 }
 
 .library-reader-actions button {
@@ -389,7 +389,7 @@
 .library-reader-paper h1 {
   max-width: 760px;
   margin: 4px 0 10px;
-  font-size: clamp(28px, 5vw, 48px);
+  font-size: clamp(26px, 3.4vw, 36px);
   line-height: 1.05;
   letter-spacing: -.04em;
 }
@@ -400,7 +400,7 @@
   gap: 7px 12px;
   align-items: center;
   color: var(--color-muted);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .library-reader-meta a {
@@ -445,7 +445,7 @@
   padding: 14px clamp(22px, 5vw, 54px);
   border-top: 1px solid var(--color-line);
   color: var(--color-muted);
-  font-size: 7.5px;
+  font-size: 10.5px;
 }
 
 .library-reader-loading {
@@ -528,7 +528,7 @@
 
 .library-domain-head > span {
   color: var(--color-muted);
-  font-size: 7.5px;
+  font-size: 10.5px;
 }
 
 .library-domain-list {
@@ -544,7 +544,7 @@
   border-radius: 999px;
   background: var(--color-bg);
   color: var(--color-muted);
-  font-size: 7.5px;
+  font-size: 10.5px;
   font-weight: 700;
 }
 
@@ -583,7 +583,7 @@
   max-width: 760px;
   margin: 3px 0 0;
   color: var(--color-muted);
-  font-size: 8px;
+  font-size: 11px;
   line-height: 1.55;
 }
 
@@ -599,7 +599,7 @@
   border-radius: 999px;
   background: var(--color-mist);
   color: var(--color-muted);
-  font-size: 7px;
+  font-size: 10.5px;
 }
 
 .library-domain-stats strong {
@@ -620,7 +620,7 @@
   display: block;
   margin-bottom: 5px;
   color: var(--color-muted);
-  font-size: 7px;
+  font-size: 10.5px;
   font-weight: 700;
   letter-spacing: .06em;
   text-transform: uppercase;
@@ -640,7 +640,7 @@
   border-radius: 7px;
   background: var(--color-panel);
   color: var(--color-ink);
-  font-size: 7.5px;
+  font-size: 10.5px;
   line-height: 1.35;
 }
 
@@ -664,7 +664,7 @@
   border-radius: 8px;
   background: var(--color-panel);
   color: var(--color-ink);
-  font-size: 7.5px;
+  font-size: 10.5px;
   font-weight: 700;
 }
 
@@ -689,7 +689,7 @@
   align-items: center;
   gap: 4px;
   color: var(--color-accent);
-  font-size: 7.5px;
+  font-size: 10.5px;
   font-weight: 700;
 }
 
@@ -699,14 +699,14 @@
 
 .library-book-reader-head h1 {
   margin: 3px 0 5px;
-  font-size: clamp(22px, 4vw, 38px);
+  font-size: clamp(21px, 3vw, 30px);
   line-height: 1.08;
 }
 
 .library-book-reader-head p:last-child {
   margin: 0;
   color: var(--color-muted);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .library-book-frame {
@@ -814,7 +814,7 @@
 .library-book-detail-main h1 {
   max-width: 900px;
   margin: 4px 0 7px;
-  font-size: clamp(28px, 5vw, 48px);
+  font-size: clamp(26px, 3.4vw, 36px);
   line-height: 1.05;
   letter-spacing: -.04em;
 }
@@ -822,7 +822,7 @@
 .library-book-subtitle {
   margin: 0 0 7px;
   color: var(--color-muted);
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .library-book-meta {
@@ -830,7 +830,7 @@
   flex-wrap: wrap;
   gap: 6px 12px;
   color: var(--color-muted);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .library-book-section {
@@ -851,7 +851,7 @@
   margin: 0;
   white-space: pre-line;
   color: var(--color-ink);
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1.7;
 }
 
@@ -869,7 +869,7 @@
   border-radius: 8px;
   background: var(--color-bg);
   color: var(--color-ink);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .library-reading-controls label {
@@ -878,7 +878,7 @@
   gap: 8px;
   align-items: center;
   color: var(--color-muted);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .library-reading-controls input[type="range"] {
@@ -898,7 +898,7 @@
 .library-book-section textarea {
   padding: 10px;
   resize: vertical;
-  font-size: 8.5px;
+  font-size: 11px;
   line-height: 1.55;
 }
 
@@ -915,7 +915,7 @@
 .library-bookmark-form input {
   min-height: 36px;
   padding: 0 9px;
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .library-bookmark-form button {
@@ -925,7 +925,7 @@
   border-radius: 8px;
   background: var(--color-ink);
   color: var(--color-panel);
-  font-size: 8px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -943,7 +943,7 @@
   border: 1px solid var(--color-line);
   border-radius: 8px;
   background: var(--color-bg);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .library-bookmark-list button {
@@ -971,7 +971,7 @@
 
 .library-inside-results article p {
   margin: 0;
-  font-size: 8.5px;
+  font-size: 11px;
   line-height: 1.6;
 }
 
@@ -979,7 +979,7 @@
   display: block;
   margin-top: 5px;
   color: var(--color-muted);
-  font-size: 7px;
+  font-size: 10.5px;
 }
 
 .library-book-links {
@@ -996,7 +996,7 @@
   border: 1px solid var(--color-line);
   border-radius: 7px;
   color: var(--color-ink);
-  font-size: 7.5px;
+  font-size: 10.5px;
 }
 
 @media (max-width: 760px) {
@@ -1083,17 +1083,17 @@
 }
 
 .library-wiki-concept-grid strong {
-  font-size: 8.5px;
+  font-size: 11px;
 }
 
 .library-wiki-concept-grid small {
   color: var(--color-muted);
-  font-size: 7px;
+  font-size: 10.5px;
 }
 
 .library-wiki-concept-grid span {
   color: var(--color-muted);
-  font-size: 7.5px;
+  font-size: 10.5px;
   line-height: 1.45;
 }
 
@@ -1119,19 +1119,19 @@
 }
 
 .library-related-concepts strong {
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .library-related-concepts small {
   margin-top: 2px;
   color: var(--color-muted);
-  font-size: 7px;
+  font-size: 10.5px;
 }
 
 .library-related-concepts p {
   margin: 5px 0 0;
   color: var(--color-muted);
-  font-size: 7.5px;
+  font-size: 10.5px;
   line-height: 1.45;
 }
 
@@ -1150,7 +1150,7 @@
   border: 1px solid var(--color-line);
   border-radius: 7px;
   color: var(--color-ink);
-  font-size: 7px;
+  font-size: 10.5px;
   font-weight: 700;
   white-space: nowrap;
 }

@@ -1,4 +1,5 @@
-import { lazy, Suspense, useEffect, useRef } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { ArrowUp } from 'lucide-react';
 import { BrowserRouter, Link, Routes, Route, useLocation } from 'react-router-dom';
 import { useTheme } from './hooks/useTheme';
 import { Sidebar } from './components/layout/Sidebar';
@@ -76,6 +77,25 @@ function RouteMeta() {
   return <PageMeta {...seo} path={path} />;
 }
 
+function BackToTop() {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setVisible(window.scrollY > 600);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+  const goTop = () => {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+  };
+  return (
+    <button type="button" className={`back-to-top${visible ? ' is-visible' : ''}`} onClick={goTop} aria-label="Về đầu trang" tabIndex={visible ? 0 : -1}>
+      <ArrowUp size={20} />
+    </button>
+  );
+}
+
 export default function App() {
   const theme = useTheme();
   const routerBase = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -130,6 +150,7 @@ export default function App() {
         </div>
         <BottomNav />
       </div>
+      <BackToTop />
     </BrowserRouter>
   );
 }

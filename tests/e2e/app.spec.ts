@@ -241,6 +241,9 @@ test('deep ontology exposes definitions, misconceptions and evidence mastery', a
 
 
 test('Math Cosmos exposes the 3D knowledge universe and spatial node search', async ({ page }, info) => {
+  // Whole-flow budget: this WebGL sweep can exceed the default 30 s test
+  // timeout when the suite runs in parallel; assertions below stay strict.
+  test.setTimeout(90_000);
   await page.goto('/cosmos');
   await expect(page.getByRole('heading', { name: 'Bản đồ toán học 3D' })).toBeVisible();
   const canvas = page.getByTestId('math-cosmos-canvas');
@@ -1107,6 +1110,9 @@ test('AI uses an explicit Learning Goal as transparent tutor context', async ({ 
 });
 
 test('every route fits the viewport and has no client-side errors', async ({ page }) => {
+  // Whole-flow budget: sweeping 18 routes can exceed the default 30 s test
+  // timeout when the suite runs in parallel; per-route checks stay strict.
+  test.setTimeout(90_000);
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
     for (const route of ['/library', '/map', '/cosmos', '/books', '/book/unknown', '/think', '/practice', '/graph', '/tools', '/calculus', '/simulations/gravity', '/formulas', '/formula/deMoivre', '/ai', '/notebook', '/canvas', '/progress', '/does-not-exist']) {
