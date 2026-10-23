@@ -28,9 +28,9 @@
     "@vercel/speed-insights": "^2.0.0",
     "decimal.js": "^10.6.0",
     "katex": "^0.19.0",
-    "lucide-react": "^1.55.0",
-    "react": "19.2.8",
-    "react-dom": "19.2.8",
+    "lucide-react": "^1.60.0",
+    "react": "19.2.9",
+    "react-dom": "19.2.9",
     "react-router-dom": "^7.18.4",
     "tailwindcss": "^4.3.3",
     "three": "^0.186.1"
