@@ -244,7 +244,9 @@ test('Math Cosmos exposes the 3D knowledge universe and spatial node search', as
   await page.goto('/cosmos');
   await expect(page.getByRole('heading', { name: 'Bản đồ toán học 3D' })).toBeVisible();
   const canvas = page.getByTestId('math-cosmos-canvas');
-  await expect(canvas).toBeVisible();
+  // The canvas mounts only after the lazy ~900 kB three.js chunk loads, which can
+  // exceed the default 5 s assertion timeout when the suite runs in parallel.
+  await expect(canvas).toBeVisible({ timeout: 15_000 });
   await expect(canvas).toHaveAttribute('data-quality', info.project.name === 'desktop-chromium' ? 'desktop' : 'mobile');
   await expect(page.getByText('InstancedMesh', { exact: true })).toBeVisible();
   await expect(page.locator('.cosmos-runtime-badges')).toContainText(/Bố trí bằng Worker|Bố trí dự phòng/);
@@ -274,7 +276,8 @@ test('Math Cosmos degrades to deterministic layout fallback and honors reduced m
   await page.goto('/cosmos');
 
   const canvas = page.getByTestId('math-cosmos-canvas');
-  await expect(canvas).toHaveAttribute('data-reduced-motion', 'true');
+  // Same lazy-chunk mount as above: allow more than the default 5 s under load.
+  await expect(canvas).toHaveAttribute('data-reduced-motion', 'true', { timeout: 15_000 });
   await expect(page.locator('.cosmos-runtime-badges')).toContainText('Bố trí dự phòng');
   await expect(page.locator('.cosmos-hud')).toContainText('Định nghĩa đạo hàm');
 });
