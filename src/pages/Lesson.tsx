@@ -23,7 +23,8 @@ export function Lesson() {
 
   useEffect(() => {
     try {
-      const saved = Number(window.localStorage.getItem('mn-text-size'));
+      const raw = window.localStorage.getItem('mn-text-size');
+      const saved = raw === null ? NaN : Number(raw);
       if ([0, 1, 2].includes(saved)) setTextSize(saved);
     } catch { /* storage unavailable */ }
   }, []);

@@ -1,7 +1,7 @@
 .overview-workspace {
   display: flex;
   flex-direction: column;
-  gap: 44px;
+  gap: 32px;
   padding-bottom: 24px;
 }
 
@@ -27,7 +27,7 @@
 .overview-kicker {
   margin-bottom: 10px;
   color: var(--color-accent);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 750;
   letter-spacing: 1.35px;
 }
@@ -35,9 +35,9 @@
 .overview-header h1 {
   margin-bottom: 15px;
   max-width: 920px;
-  font-size: clamp(38px, 5vw, 66px);
-  line-height: 1;
-  letter-spacing: -3px;
+  font-size: clamp(30px, 3.6vw, 44px);
+  line-height: 1.1;
+  letter-spacing: -1.2px;
   font-weight: 720;
 }
 
@@ -75,7 +75,7 @@
 .overview-modes a > span {
   grid-row: 1 / span 2;
   color: var(--color-muted);
-  font-size: 9px;
+  font-size: 11px;
   letter-spacing: .8px;
 }
 
@@ -85,7 +85,7 @@
 
 .overview-modes small {
   color: var(--color-muted);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .overview-youtube-search {
@@ -117,7 +117,7 @@
 
 .overview-youtube-copy h2 {
   margin-bottom: 5px;
-  font-size: clamp(22px, 2.6vw, 30px);
+  font-size: clamp(20px, 2.2vw, 25px);
   line-height: 1.1;
   letter-spacing: -1px;
 }
@@ -125,7 +125,7 @@
 .overview-youtube-copy p:last-child {
   margin-bottom: 0;
   color: var(--color-muted);
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1.6;
 }
 
@@ -167,7 +167,7 @@
   border-radius: 9px;
   background: var(--color-ink);
   color: var(--color-panel);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -185,7 +185,7 @@
   display: block;
   margin-bottom: 8px;
   color: var(--color-muted);
-  font-size: 7px;
+  font-size: 10.5px;
   font-weight: 700;
   letter-spacing: .7px;
   text-transform: uppercase;
@@ -223,7 +223,7 @@
 
 .overview-youtube-recent strong {
   overflow: hidden;
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1.4;
   text-overflow: ellipsis;
 }
@@ -231,7 +231,7 @@
 .overview-youtube-recent small {
   margin-top: 2px;
   color: var(--color-muted);
-  font-size: 7px;
+  font-size: 10.5px;
 }
 
 .overview-section,
@@ -264,7 +264,7 @@
 .overview-section-heading h2,
 .overview-search-copy h2 {
   margin-bottom: 6px;
-  font-size: clamp(25px, 3vw, 34px);
+  font-size: clamp(21px, 2.4vw, 27px);
   line-height: 1.08;
   letter-spacing: -1.2px;
 }
@@ -273,7 +273,7 @@
 .overview-search-copy p:last-child {
   margin-bottom: 0;
   color: var(--color-muted);
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.65;
 }
 
@@ -287,7 +287,7 @@
   border-radius: 9px;
   background: var(--color-panel);
   color: var(--color-ink);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 650;
 }
 
@@ -345,14 +345,14 @@
   display: block;
   margin-bottom: 3px;
   color: var(--color-muted);
-  font-size: 7px;
+  font-size: 10.5px;
   font-weight: 750;
   letter-spacing: 1px;
 }
 
 .overview-panel-head strong {
   display: block;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.4;
 }
 
@@ -362,13 +362,13 @@
 
 .overview-result-head small {
   color: var(--color-muted);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .overview-briefing {
   margin: 16px 0;
   color: var(--color-ink);
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.75;
   white-space: pre-wrap;
 }
@@ -378,7 +378,7 @@
 .overview-muted {
   margin: 16px 0;
   color: var(--color-muted);
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1.55;
 }
 
@@ -440,7 +440,7 @@
 .overview-paper-row strong {
   display: block;
   overflow: hidden;
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1.45;
   text-overflow: ellipsis;
 }
@@ -450,7 +450,7 @@
   display: block;
   margin-top: 2px;
   color: var(--color-muted);
-  font-size: 7px;
+  font-size: 10.5px;
   line-height: 1.4;
 }
 
@@ -467,7 +467,7 @@
   padding-top: 11px;
   border-top: 1px solid var(--color-line);
   color: var(--color-muted);
-  font-size: 7px;
+  font-size: 10.5px;
 }
 
 .overview-live-meta span {
@@ -528,7 +528,7 @@
   border-radius: 9px;
   background: var(--color-ink);
   color: var(--color-panel);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -545,7 +545,7 @@
   border-radius: 999px;
   background: color-mix(in srgb, var(--color-panel) 70%, transparent);
   color: var(--color-muted);
-  font-size: 7px;
+  font-size: 10.5px;
 }
 
 .overview-search-results {
@@ -621,14 +621,14 @@
 }
 
 .overview-video-strip strong {
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1.4;
 }
 
 .overview-video-strip small {
   margin-top: 2px;
   color: var(--color-muted);
-  font-size: 7px;
+  font-size: 10.5px;
 }
 
 .overview-corpus {
@@ -643,12 +643,12 @@
   border: 1px solid var(--color-line);
   border-radius: 8px;
   color: var(--color-muted);
-  font-size: 7px;
+  font-size: 10.5px;
 }
 
 .overview-corpus strong {
   color: var(--color-ink);
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .overview-tool-grid {
@@ -693,12 +693,12 @@
 
 .overview-tool-card strong {
   margin-bottom: 4px;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .overview-tool-card small {
   color: var(--color-muted);
-  font-size: 7.5px;
+  font-size: 10.5px;
   line-height: 1.5;
 }
 
@@ -732,12 +732,12 @@
 .overview-domain-list span,
 .overview-domain-list small {
   color: var(--color-muted);
-  font-size: 7px;
+  font-size: 10.5px;
 }
 
 .overview-domain-list strong {
   overflow: hidden;
-  font-size: 8px;
+  font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -750,7 +750,7 @@
   display: block;
   margin-bottom: 5px;
   color: var(--color-muted);
-  font-size: 7px;
+  font-size: 10.5px;
   text-transform: uppercase;
   letter-spacing: .7px;
 }
@@ -764,7 +764,7 @@
 .overview-continue-main p {
   margin-bottom: 14px;
   color: var(--color-muted);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .overview-progress-data {
@@ -777,7 +777,7 @@
 
 .overview-progress-data span {
   color: var(--color-muted);
-  font-size: 7px;
+  font-size: 10.5px;
 }
 
 .overview-progress-data strong {
@@ -807,11 +807,11 @@
 .overview-goal-row small {
   margin-bottom: 2px;
   color: var(--color-muted);
-  font-size: 7px;
+  font-size: 10.5px;
 }
 
 .overview-goal-row strong {
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .overview-goal-row > span:last-child {
@@ -828,7 +828,7 @@
   padding-top: 15px;
   border-top: 1px solid var(--color-line);
   color: var(--color-muted);
-  font-size: 8px;
+  font-size: 11px;
   line-height: 1.55;
 }
 
@@ -892,8 +892,8 @@
   }
 
   .overview-header h1 {
-    font-size: 40px;
-    letter-spacing: -2px;
+    font-size: 34px;
+    letter-spacing: -1px;
   }
 
   .overview-modes {
@@ -925,7 +925,7 @@
 
 @media (max-width: 540px) {
   .overview-header h1 {
-    font-size: 35px;
+    font-size: 30px;
   }
 
   .overview-tool-grid {
@@ -960,7 +960,7 @@
   border-radius: 999px;
   background: var(--color-panel);
   color: var(--color-muted);
-  font-size: 7.5px;
+  font-size: 10.5px;
 }
 
 .overview-query-chips > button {
@@ -1002,7 +1002,7 @@
   gap: 6px;
   margin-bottom: 7px;
   color: var(--color-muted);
-  font-size: 8px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -1011,13 +1011,13 @@
   border: 0;
   background: transparent;
   color: var(--color-accent);
-  font-size: 7.5px;
+  font-size: 10.5px;
   font-weight: 700;
 }
 
 .overview-memory-group small {
   color: var(--color-muted);
-  font-size: 7.5px;
+  font-size: 10.5px;
 }
 
 .overview-saved-chip {
@@ -1072,7 +1072,7 @@
   border-radius: 8px;
   background: transparent;
   color: var(--color-muted);
-  font-size: 8px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -1082,7 +1082,7 @@
   border-radius: 999px;
   background: var(--color-mist);
   color: var(--color-ink);
-  font-size: 7px;
+  font-size: 10.5px;
   text-align: center;
 }
 
@@ -1106,7 +1106,7 @@
   border-radius: 8px;
   background: var(--color-bg);
   color: var(--color-ink);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .overview-paper-controls label {
@@ -1114,7 +1114,7 @@
   align-items: center;
   gap: 5px;
   white-space: nowrap;
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .overview-paper-controls input {
@@ -1175,7 +1175,7 @@
 
 .overview-shelf-head small {
   color: var(--color-muted);
-  font-size: 7.5px;
+  font-size: 10.5px;
 }
 
 .overview-shelf-head > button,
@@ -1193,7 +1193,7 @@
 .overview-shelf-head > button {
   min-height: 31px;
   padding: 5px 9px;
-  font-size: 8px;
+  font-size: 11px;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -1227,7 +1227,7 @@
   border-radius: 999px;
   background: var(--color-mist);
   color: var(--color-muted);
-  font-size: 7px;
+  font-size: 10.5px;
   font-weight: 700;
   text-align: center;
 }
@@ -1243,14 +1243,14 @@
 }
 
 .overview-shelf-row a strong {
-  font-size: 8.5px;
+  font-size: 11px;
   line-height: 1.4;
 }
 
 .overview-shelf-row a small {
   margin-top: 2px;
   color: var(--color-muted);
-  font-size: 7px;
+  font-size: 10.5px;
 }
 
 .overview-shelf-row > button {
@@ -1278,7 +1278,7 @@
 
 .overview-external-search > span {
   color: var(--color-muted);
-  font-size: 7.5px;
+  font-size: 10.5px;
   font-weight: 700;
 }
 
@@ -1290,7 +1290,7 @@
   border: 1px solid var(--color-line);
   border-radius: 999px;
   color: var(--color-muted);
-  font-size: 7.5px;
+  font-size: 10.5px;
   font-weight: 700;
 }
 
@@ -1364,7 +1364,7 @@
   outline: 0;
   background: var(--color-bg);
   color: var(--color-ink);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .overview-paper-filter-input::placeholder {
@@ -1374,7 +1374,7 @@
 .overview-paper-count {
   margin-left: 5px;
   color: var(--color-muted);
-  font-size: 7px;
+  font-size: 10.5px;
   font-weight: 600;
 }
 
@@ -1432,13 +1432,13 @@
 }
 
 .overview-personal-title strong {
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .overview-personal-head small,
 .overview-personal-head > span {
   color: var(--color-muted);
-  font-size: 7.5px;
+  font-size: 10.5px;
 }
 
 .overview-personal-head small {
@@ -1475,14 +1475,14 @@
 }
 
 .overview-topic-watch-head strong {
-  font-size: 9.5px;
+  font-size: 11px;
   line-height: 1.35;
 }
 
 .overview-topic-watch-head small {
   margin-top: 3px;
   color: var(--color-muted);
-  font-size: 7px;
+  font-size: 10.5px;
 }
 
 .overview-topic-watch-head > span {
@@ -1491,7 +1491,7 @@
   border-radius: 999px;
   background: var(--color-mist);
   color: var(--color-muted);
-  font-size: 7px;
+  font-size: 10.5px;
   font-weight: 700;
 }
 
@@ -1520,14 +1520,14 @@
 }
 
 .overview-topic-paper-list strong {
-  font-size: 8.5px;
+  font-size: 11px;
   line-height: 1.4;
 }
 
 .overview-topic-paper-list small {
   margin-top: 2px;
   color: var(--color-muted);
-  font-size: 7px;
+  font-size: 10.5px;
 }
 
 .overview-topic-watch-card > button {
@@ -1541,7 +1541,7 @@
   border-radius: 8px;
   background: var(--color-panel);
   color: var(--color-ink);
-  font-size: 7.5px;
+  font-size: 10.5px;
   font-weight: 700;
 }
 
